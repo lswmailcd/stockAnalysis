@@ -1,0 +1,9 @@
+
+*.png
+*.xls
+*.gz
+*.sql
+*.csv
+*.txt
+resource/desktop.ini
+*.pyc
