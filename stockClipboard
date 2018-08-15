@@ -1,0 +1,234 @@
+workbook = xlwt.Workbook(encoding = 'ascii')
+worksheet = workbook.add_sheet('stockBasic20171219')
+worksheet.write(0, 0, u"代码")
+worksheet.write(0, 1, u"名称")
+worksheet.write(0, 2, u"市盈率")
+worksheet.write(0, 3, u"动态年收益")
+engine = create_engine('mysql://root:0609@127.0.0.1:3306/stockdatabase')
+conn = engine.connect()
+stockNumValid = 0
+for i in range(stockNum):
+    data = ts.get_hist_data(code[i], start=date, end=date)
+    if data.values.size != 0:
+        price[i] = data.values[0, 2]
+        sqlString = "select esp from stockbasics where code=" + code[i]
+        ret = conn.execute(sqlString)
+        if ret.rowcount!=0:
+            eps_now = ret.first().esp
+        else:
+            pe[i] = -1000
+            continue
+        sqlString = 'select eps from stockprofit_2016_3 where code=' + code[i]
+        ret = conn.execute(sqlString)
+        if ret.rowcount!=0:
+            esp_2016_3 = ret.first().eps
+        else:
+            pe[i] = -1000
+            continue
+        sqlString = 'select eps from stockprofit_2016_4 where code=' + code[i]
+        ret = conn.execute(sqlString)
+        if ret.rowcount!=0:
+            esp_2016_4 = ret.first().eps
+        else:
+            pe[i] = -1000
+            continue
+        eps[i] = eps_now + esp_2016_4 - esp_2016_3
+        pe[i] = price[i]/eps[i]
+        if pe[i]>0:
+            stockNumValid += 1
+            worksheet.write(stockNumValid, 0, code[i])
+            worksheet.write(stockNumValid, 1, name[i])
+            worksheet.write(stockNumValid, 2, pe[i])
+            worksheet.write(stockNumValid, 3,  eps[i])
+        else:
+            print code[i], name[i], pe[i]
+workbook.save('.\\data\\stockBasic20171219.xls')
+
+================stockPriceReq============================
+for i in range(nrows):
+    foundData = 0
+    if market[i]=="fund":
+        url = "http://fund.eastmoney.com/f10/F10DataApi.aspx?type=lsjz&code=" + code[i]
+        url = url + "&page=1&per=20&sdate="
+        url = url + date
+        url = url + "&edate="
+        url = url + date
+        url = url + "&rt=0.19110643402290917"
+        data = urllib.urlopen(url).read()
+        bs = bs4.BeautifulSoup(data, "html.parser")
+        foundData = 1
+        try:
+            closePrice = float(bs.find_all("td")[2].get_text())
+        except Exception, e:
+            print code[i], name[i],"没有今日数据!"
+            foundData=0
+    elif market[i]=="sh" or market[i]=="sz":
+        data = ts.get_hist_data(code[i], start=date, end=date)
+        if data.values.size != 0:
+            closePrice = data.values[0, 2]
+            foundData = 1
+        else:
+            print code[i], name[i], "没有今日数据!"
+            foundData = 0
+    if foundData==1:
+        print code[i], name[i], closePrice
+        worksheet.write(i, 0, code[i])
+        worksheet.write(i, 1, name[i])
+        worksheet.write(i, 2, closePrice)
+#        url = "http://market.finance.sina.com.cn/downxls.php?date="
+#        url += date
+#        url += "&symbol="
+#        url += market[i]
+#        url += code[i]
+#        data = urllib.urlopen(url).read()
+#        ustr = data.decode('GBK')
+#        print code[i], getClosePrice(ustr)
+#        if not(u"当天没有数据" in ustr):
+#            worksheet.write(i, 0, code[i])
+#            worksheet.write(i, 1, float(getClosePrice(ustr)))
+
+============unicode字符串进入sql语句，必须在字符串前后加单引号===========
+for i in range(nrows):
+    code = str(table.cell(i + 1, 0).value)
+    name = table.cell(i + 1, 1).value
+    pe = table.cell(i + 1, 2).value
+    profit_dynamic = table.cell(i + 1, 3).value
+    sqlString = "insert into pe_main_20171219 values("
+    sqlString += "'"
+    sqlString += code
+    sqlString += "'"
+    sqlString += ","
+    sqlString += "'"
+    sqlString += name
+    sqlString += "'"
+    sqlString += ","
+    sqlString += "%.4f" %(pe)
+    sqlString += ","
+    sqlString += "%.4f" %(profit_dynamic)
+    sqlString += ")"
+    conn.execute(sqlString)
+
+
+ ===========stockBasicDecision========================
+ # -*- coding: utf-8 -*-
+import urllib
+import numpy as np
+import bs4
+import xlrd
+import xlwt
+import tushare as ts
+import time
+import pandas as pd
+from sqlalchemy import create_engine
+
+discountRate = 0.045
+date = "2014-07-30"#time.strftime('%Y-%m-%d',time.localtime(time.time()))#"2017-11-13"
+stockColIndex = 0
+#读取market文件，确定当前证券的市场
+market = xlrd.open_workbook('.\\data\\market.xlsx')
+table = market.sheets()[0]
+nMarketRows = table.nrows-1
+a = np.zeros([nMarketRows])
+marketCode = np.array(a, dtype=np.unicode)
+marketName = np.array(a, dtype=np.unicode)
+marketClass = np.array(a, dtype=np.unicode)
+for i in range(nMarketRows):
+    marketClass[i]= table.cell(i+1,0).value
+    marketCode[i] = table.cell(i+1,1).value
+    marketName[i] = table.cell(i+1,2).value
+
+data = xlrd.open_workbook('.\\data\\data.xls')
+table = data.sheets()[0]
+nrows = table.nrows-1
+idx = 0
+for i in range(nrows):
+    if table.cell(i + 1, stockColIndex).value != "":
+        idx+=1
+stockNum = idx
+a = np.zeros([stockNum])
+price = np.array(a)
+eps = np.array(a)
+pe = np.array(a)
+code = np.array(a, dtype=np.unicode)
+name = np.array(a, dtype=np.unicode)
+market = np.array(a, dtype=np.unicode)
+
+idx = 0
+for i in range(stockNum):
+    code[idx] = table.cell(i + 1, stockColIndex).value
+    for j in range(nMarketRows):
+        if code[idx] == marketCode[j]:
+            market[idx] = marketClass[j]
+            name[idx] = marketName[j]
+            break
+    idx += 1
+workbook = xlwt.Workbook(encoding = 'ascii')
+worksheet = workbook.add_sheet('stockBasic20140730')
+worksheet.write(0, 0, u"代码")
+worksheet.write(0, 1, u"名称")
+worksheet.write(0, 2, u"市盈率")
+worksheet.write(0, 3, u"动态年收益")
+engine = create_engine('mysql://root:0609@127.0.0.1:3306/stockdatabase?charset=utf8', encoding='utf-8')
+conn = engine.connect()
+stockNumValid = 0
+normalEnd = True
+try:
+    for i in range(stockNum):
+        data = ts.get_h_data(code[i], start=date, end=date, autype=None)
+        time.sleep(2)
+        if data.values.size != 0:
+            price[i] = data.values[0, 2]
+            sqlString = 'select eps from stockprofit_2014_2 where code=' + code[i]
+            ret = conn.execute(sqlString)
+            if ret.rowcount!=0:
+                eps_2014_2 = ret.first().eps
+            else:
+                pe[i] = -1000
+                continue
+            sqlString = 'select eps from stockprofit_2013_4 where code=' + code[i]
+            ret = conn.execute(sqlString)
+            if ret.rowcount!=0:
+                eps_2013_4 = ret.first().eps
+            else:
+                pe[i] = -1000
+                continue
+            sqlString = 'select eps from stockprofit_2013_2 where code=' + code[i]
+            ret = conn.execute(sqlString)
+            if ret.rowcount!=0:
+                eps_2013_2 = ret.first().eps
+            else:
+                pe[i] = -1000
+                continue
+            eps[i] = eps_2014_2 + eps_2013_4 - eps_2013_2
+            pe[i] = price[i]/eps[i]
+            if pe[i]>0:
+                stockNumValid += 1
+                worksheet.write(stockNumValid, 0, code[i])
+                worksheet.write(stockNumValid, 1, name[i])
+                worksheet.write(stockNumValid, 2, pe[i])
+                worksheet.write(stockNumValid, 3,  eps[i])
+            print code[i], name[i], pe[i]
+except Exception, e:
+    workbook.save('.\\data\\stockBasic20140730.xls')
+    normalEnd = False
+    print "ERROR: stock basic info has been wrotten to excel files patially!"
+if normalEnd:
+    workbook.save('.\\data\\stockBasic20140730.xls')
+    print "stock basic info has been wrotten to excel files"
+
+============mysql删除完全相同的两行的SQL语句序列=====================
+alter table stockprofit_2016_4 add column id int(11) PRIMARY KEY AUTO_INCREMENT;
+DELETE FROM stockprofit_2016_4
+WHERE
+    id IN (SELECT
+        id
+    FROM
+        (SELECT
+            MAX(id) AS id, COUNT(code) AS ucount
+        FROM
+            stockprofit_2016_4
+        GROUP BY code
+        HAVING ucount > 1
+        ORDER BY ucount DESC) AS tab);
+ALTER table stockprofit_2016_4 DROP column id;
+ALTER table stockprofit_2016_4 add PRIMARY KEY (code);
