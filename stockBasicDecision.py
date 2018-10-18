@@ -9,6 +9,7 @@ import tushare as ts
 import time
 import pandas as pd
 from sqlalchemy import create_engine
+import stockTools as st
 
 def getClosePrice(d):
     d=-1
@@ -18,7 +19,7 @@ def getClosePrice(d):
     return ustr[d:d1]
 
 discountRate = 0.045
-date = "2018-08-03"#time.strftime('%Y-%m-%d',time.localtime(time.time()))#"2017-11-13"
+date = "2018-10-18"#time.strftime('%Y-%m-%d',time.localtime(time.time()))#"2017-11-13"
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('stockBasicToday')
 worksheet.write(0, 0, u"代码")
@@ -50,19 +51,9 @@ try:
         if start == False and code[i] != "000001":
             continue
         start = True
-        data = ts.get_k_data(code[i], start=date, end=date, autype=None)
-        #time.sleep(random.randint(1, 5))
-        #url = "http://market.finance.sina.com.cn/downxls.php?date="
-        #url += date
-        #url += "&symbol="
-        #url += type[i]
-        #url += code[i]
-        #data = urllib.urlopen(url).read()
-        #ustr = data.decode('utf8')
-        if data.values.size != 0:#if not (u"当天没有数据" in ustr):#
-            price[i] = data.values[0, 2]#getClosePrice(ustr)#
-            #print code[i], name[i], price[i]
-            sqlString = 'select eps from stockprofit_2018_1 where code=' + code[i]
+        found, price[i], _ = st.getClosePrice(code[i], date ) #ts.get_k_data(code[i], start=date, end=date, autype=None)
+        if found:
+            sqlString = 'select eps from stockprofit_2018_2 where code=' + code[i]
             ret = conn.execute(sqlString)
             if ret.rowcount!=0:
                 epsLatest = ret.first().eps
@@ -80,7 +71,7 @@ try:
             else:
                 pe[i] = -1000
                 continue
-            sqlString = 'select eps from stockprofit_2017_1 where code=' + code[i]
+            sqlString = 'select eps from stockprofit_2017_2 where code=' + code[i]
             ret = conn.execute(sqlString)
             if ret.rowcount!=0:
                 epsSub2 = ret.first().eps
@@ -89,15 +80,15 @@ try:
             else:
                 pe[i] = -1000
                 continue
-        eps[i] = epsLatest + epsSub1 - epsSub2
-        pe[i] = price[i]/eps[i]
-        if pe[i] > 0:
-            stockNumValid += 1
-            worksheet.write(stockNumValid, 0, code[i])
-            worksheet.write(stockNumValid, 1, name[i])
-            worksheet.write(stockNumValid, 2, pe[i])
-            worksheet.write(stockNumValid, 3,  eps[i])
-        #print code[i], name[i], pe[i]
+            eps[i] = epsLatest + epsSub1 - epsSub2
+            pe[i] = price[i]/eps[i]
+            if pe[i] > 0:
+                stockNumValid += 1
+                worksheet.write(stockNumValid, 0, code[i])
+                worksheet.write(stockNumValid, 1, name[i])
+                worksheet.write(stockNumValid, 2, pe[i])
+                worksheet.write(stockNumValid, 3,  eps[i])
+            #print code[i], name[i], pe[i]
 except Exception, e:
     workbook.save('.\\data\\stockBasicToday.xls')
     normalEnd = False
