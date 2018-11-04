@@ -8,7 +8,7 @@ import time
 import matplotlib.pyplot as plt
 import stockTools as sT
 
-code = "300157"
+code = "600104"
 YEARSTART = 2008  #统计起始时间
 YEAREND = 2018  #统计结束时间
 
@@ -98,7 +98,7 @@ if m<5:#1季报没有出来，使用上一年的数据
     PEList[YEAREND - YEARSTART] = round(closePrice / EPS, 2)
     YEARList[YEAREND - YEARSTART] = YEAREND
     PriceList[YEAREND - YEARSTART] = closePrice * netProfits / EPS
-elif m<10:#2季报没有出来
+elif m<9:#2季报没有出来
     sqlString = 'select eps from stockprofit_'
     sqlString += '%s' %(y)
     sqlString += '_1 where code='
@@ -136,7 +136,7 @@ elif m<10:#2季报没有出来
                 print y-1, u"年1季度eps数据缺失！"
                 exit(1)
         EPS = eps_Q4_LastYear + eps_Q1 - eps_Q1_LastYear
-elif m<12:#3季报没有出来
+elif m<11:#3季报没有出来
     sqlString = 'select eps from stockprofit_'
     sqlString += '%s' %(y)
     sqlString += '_2 where code='
@@ -174,6 +174,44 @@ elif m<12:#3季报没有出来
                 print y-1, u"年2季度eps数据缺失！"
                 exit(1)
         EPS = eps_Q4_LastYear + eps_Q2 - eps_Q2_LastYear
+else:#3季报出来了
+    sqlString = 'select eps from stockprofit_'
+    sqlString += '%s' %(y)
+    sqlString += '_3 where code='
+    sqlString += code
+    ret = conn.execute(sqlString)
+    if ret is not None:
+        result = ret.first()
+        if result is not None:
+            eps_Q3 = result.eps
+        else:
+            print y,u"年3季度eps数据缺失！"
+            exit(1)
+    sqlString = 'select eps from stockprofit_'
+    sqlString += '%s' %(y-1)
+    sqlString += '_4 where code='
+    sqlString += code
+    ret = conn.execute(sqlString)
+    if ret is not None:
+        result = ret.first()
+        if result is not None:
+            eps_Q4_LastYear = result.eps
+        else:
+            print y,u"年4季度eps数据缺失！"
+            exit(1)
+        sqlString = 'select eps from stockprofit_'
+        sqlString += '%s' % (y - 1)
+        sqlString += '_3 where code='
+        sqlString += code
+        ret = conn.execute(sqlString)
+        if ret is not None:
+            result = ret.first()
+            if result is not None:
+                eps_Q3_LastYear = result.eps
+            else:
+                print y-1, u"年3季度eps数据缺失！"
+                exit(1)
+        EPS = eps_Q3 + eps_Q4_LastYear - eps_Q3_LastYear
 PEList[YEAREND - YEARSTART] = round(closePrice / EPS,2)
 YEARList[YEAREND - YEARSTART] = YEAREND
 PriceList[YEAREND - YEARSTART] = closePrice * nStockTotal

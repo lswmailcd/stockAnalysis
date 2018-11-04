@@ -158,6 +158,54 @@ def getMarketType( code ):
     if code[:3] == "002": return "sz_zxb"
     if code[:3] == "300": return "sz_cyb"
 
+def decodeEastMoneyNum(numCode):
+    n = -1
+    if( numCode=="E268" ):
+        n = 0
+    elif( numCode=="EEC5" ):
+        n=1
+    elif( numCode=="ECEA" ):
+        n=2
+    elif( numCode=="EA5D" ):
+        n=3
+    elif( numCode=="F78F" ):
+        n=4
+    elif( numCode=="EBED" ):
+        n=5
+    elif( numCode=="F2FF" ):
+        n=6
+    elif( numCode=="F4CD" ):
+        n=7
+    elif( numCode=="F2F8" ):
+        n=8
+    elif( numCode=="E4E5" ):
+        n=9
+
+    return n
+
+def getEastMoneyData( strData ):
+    str = strData.split(":")
+    strList = str[1][1:-2].split(";")
+    n = 0.0
+    stageInt = True
+    w = 10.0
+    for s in strList:
+        dPos = 3
+        if  s[0]==".": #小数
+            stageInt = False #进入小数处理
+            dPos += 1
+            w = 0.1
+
+        if stageInt:
+            n *= w
+            n += decodeEastMoneyNum(s[dPos:])
+        else:
+            n += decodeEastMoneyNum(s[dPos:]) * w
+            w *= 0.1
+
+    return n
+
+
 def checkStockReport(code, startYear, endYear):
     """
 
@@ -191,9 +239,9 @@ def checkStockReport(code, startYear, endYear):
                 continue
             if bNeedWebData:
                 if not bAccessWebData:
-                    url = "http://data.eastmoney.com/bbsj/stock"
+                    url = "http://data.eastmoney.com/bbsj/yjbb/" #http://data.eastmoney.com/bbsj/yjbb/600887.html
                     url += code
-                    url += "/yjbb.html"
+                    url += ".html"
                     print "读取东方财富年报数据......"
                     data = urllib.urlopen(url).read()
                     bAccessWebData = True
@@ -201,7 +249,7 @@ def checkStockReport(code, startYear, endYear):
                     time.sleep(2)
                 bs = bs4.BeautifulSoup(data,"lxml")
                 body = bs.find('body')
-                report = body.find_all('script')[9]
+                report = body.find_all('script')[13]
                 reportString = report.string
                 iPosStart = reportString.find('defjson:')
                 report = reportString[iPosStart:]
@@ -212,12 +260,12 @@ def checkStockReport(code, startYear, endYear):
                 strDate = getDateString(year, 12, 30)
                 for k in range(len(rpList)):
                     if rpList[k].find(strDate[:7])!=-1:
-                        eps = float(rpList[k+1][11:])
-                        net_profits = float(rpList[k+6][18:])/10**4
-                        profits_yoy = rpList[k+7][8:]
-                        bvps = rpList[k+10][6:]
-                        roe = rpList[k+9][14:]
-                        epcf = rpList[k+11][11:]
+                        eps = getEastMoneyData(rpList[k+5])
+                        net_profits = getEastMoneyData(rpList[k+10])/10000.0
+                        profits_yoy = getEastMoneyData(rpList[k+11])
+                        bvps = getEastMoneyData(rpList[k+14])
+                        roe = getEastMoneyData(rpList[k+13])
+                        epcf = getEastMoneyData(rpList[k+15])
                         sqlString = "select eps from stockreport_"
                         sqlString += "%s" % (year-1)
                         sqlString += "_4 "
@@ -244,15 +292,15 @@ def checkStockReport(code, startYear, endYear):
                         if foundLastYearEPS:
                             sqlString += "%s" %(100*round((eps-epsLastYear)/epsLastYear,4))
                             sqlString += ","
-                        sqlString += bvps
+                        sqlString += "%s" %(bvps)
                         sqlString += ","
-                        sqlString += roe
+                        sqlString += "%s" %(roe)
                         sqlString += ","
-                        sqlString += epcf
+                        sqlString += "%s" %(epcf)
                         sqlString += ","
                         sqlString += "%s" %(net_profits)
                         sqlString += ","
-                        sqlString += profits_yoy
+                        sqlString += "%s" %(profits_yoy)
                         sqlString += ")"
                         conn.execute(sqlString)
                         print "已增加",code,name,"数据至",year,"年stockreport数据库"
