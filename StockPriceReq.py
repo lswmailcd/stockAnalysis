@@ -16,7 +16,8 @@ def getClosePrice(d):
     return ustr[d:d1]
 
 #分月统计各类股票和基金的累积净值
-date = "2018-08-11"#time.strftime('%Y-%m-%d',time.localtime(time.time()))#"2018-05-31"#
+date = time.strftime('%Y-%m-%d',time.localtime(time.time()))#"2018-05-31"#
+y,m,d=sT.splitDateString(date)
 #注意：此程序不要使用MYSQL数据进行查询股票的定义，会使查询股票顺序无法控制！！！！！！！！！！
 data = xlrd.open_workbook('.\\data\\data.xls')
 table = data.sheets()[0]
@@ -63,11 +64,12 @@ for i in range(count):
             print code[i], name[i], u"没有今日数据!"
             foundData = 0
     if foundData==1:
-        print code[i], name[i], closePrice
+        print code[i], name[i], closePrice, sT.getDateString(y,m,actualDay)
 
     worksheet.write(i, 0, code[i])
     worksheet.write(i, 1, name[i])
     worksheet.write(i, 2, closePrice)
+    worksheet.write(i, 3, sT.getDateString(y,m,actualDay))
 
 #        url = "http://market.finance.sina.com.cn/downxls.php?date="
 #        url += date
