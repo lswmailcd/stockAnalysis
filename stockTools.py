@@ -114,7 +114,7 @@ def getStockType(code):
         return ""
     return ret.first().stockType
 
-def  getClosePriceForward(code, dORy, month=0, day=0):#根据输入分开输入的年月日获取此日或此日前该月最近的一个交易日的收盘价
+def  getClosePriceForward(code, dORy, month=0, day=0, autp=None):#根据输入分开输入的年月日获取此日或此日前该月最近的一个交易日的收盘价
     foundData = False
     if month==0:#输入的日期在dORy中，以字符串形式输入
         y,m,d = splitDateString(dORy)
@@ -122,7 +122,7 @@ def  getClosePriceForward(code, dORy, month=0, day=0):#根据输入分开输入�
         y=dORy; m=month; d=day
     while foundData==False and validDate(m,d):
         date = getDateString(y, m, d)
-        data = ts.get_k_data(code, start=date, end=date, autype=None)
+        data = ts.get_k_data(code, start=date, end=date, autype=autp)
         if data.empty == False:
             foundData = True
         else:
@@ -133,7 +133,7 @@ def  getClosePriceForward(code, dORy, month=0, day=0):#根据输入分开输入�
         return foundData,-1,d
 
 
-def  getClosePrice(code, dORy, month=0, day=0): #获取此日或此日后该月最近的一个交易日的收盘价
+def  getClosePrice(code, dORy, month=0, day=0, autp=None): #获取此日或此日后该月最近的一个交易日的收盘价
     foundData = False
     if month==0:#输入的日期在dORy中，以字符串形式输入
         y,m,d = splitDateString(dORy)
@@ -141,15 +141,21 @@ def  getClosePrice(code, dORy, month=0, day=0): #获取此日或此日后该月�
         y=dORy; m=month; d=day
     while foundData==False and validDate(m,d):
         date = getDateString(y, m, d)
-        data = ts.get_k_data(code, start=date, end=date, autype=None)
+        data = ts.get_k_data(code, start=date, end=date, autype=autp)
         if data.empty == False:
             foundData = True
         else:
             d += 1
+            if not validDate(m, d):
+                m += 1
+                if m<13:
+                    d = 1
+                else:
+                    break
     if foundData == True:
-        return foundData, data.values[0, 2], d
+        return foundData, data.values[0, 2], m, d
     else:
-        return foundData,-1,d
+        return foundData, -1, m, d
 
 def getMarketType( code ):
     if code[:3] in ("600","601") : return "sh_main"
@@ -359,50 +365,52 @@ def checkDistrib(code, startYear, endYear):
                     time.sleep(5)
                     bAccessDataFinished = True
                 bs = bs4.BeautifulSoup(data, "lxml")
-                table = bs.find_all('table')
-                tableDividen = table[12]
-                dividenHistory = tableDividen.find_all('tr')
-                for idx in range(3, len(dividenHistory)):
-                    dividenDetail = dividenHistory[idx].find_all('td')
-                    yearWeb = unicode(dividenDetail[0].string)
-                    yearWeb = yearWeb[0:4]
-                    if str(year + 1) == yearWeb:  # 网上的时间是实际分红时间要晚一年
-                        sg = unicode(dividenDetail[1].string)
-                        zg = unicode(dividenDetail[2].string)
-                        px = unicode(dividenDetail[3].string)
-                        dividenDate = unicode(dividenDetail[6].string)
-                        if (u"0" != sg or u"0" != zg or u"0" != px) and dividenDate != '--':
-                            sqlString = "update stockreport_"
-                            sqlString += "%s" % (year)
-                            sqlString += "_4 "
-                            sqlString += "set "
-                            sqlString += "dividenTime='"
-                            sqlString += dividenDate.encode('utf8')
-                            sqlString += "'"
-                            sqlString += ",distrib='10"
-                            if px != u"0":
-                                sqlString += "派"
-                                sqlString += px.encode('utf8')
-                            if zg != u"0":
-                                sqlString += "转"
-                                sqlString += zg.encode('utf8')
-                            if sg != u"0":
-                                sqlString += "送"
-                                sqlString += sg.encode('utf8')
-                            sqlString += "' where code="
-                            sqlString += code.encode('utf8')
-                            ret = conn.execute(sqlString)
-                        # else:
-                        # sqlString = "update stockreport_"
-                        # sqlString += "%s" % (year)
-                        # sqlString += "_4 "
-                        # sqlString += "set "
-                        # sqlString += "dividenTime=null,distrib=null "
-                        # sqlString += "where code="
-                        # sqlString += code[i].encode('utf8')
-                        # ret = conn.execute(sqlString)
-                        print year, "10派", px, "转", zg, "送", sg, "，", "分红日期：", dividenDate.encode('utf8')
+                div = bs.find("div")
+                table = div.find_all("table")[13]
+                tbody = table.find_all("tbody")[0]
+                tds = tbody.find_all("td")
+                for i in range(0, len(tds)):
+                    if(tds[i].string==u"实施"):
+                        y,m,d = splitDateString(tds[i + 2].string)
+                        if y<startYear: break
+                        if year + 1 == y: # 网上的时间是实际分红时间要晚一年
+                            sg = unicode(tds[i - 3].string)
+                            zg = unicode(tds[i - 2].string)
+                            px = unicode(tds[i - 1].string)
+                            dividenDate = unicode(tds[i + 2].string)
+                            if (u"0" != sg or u"0" != zg or u"0" != px) and dividenDate != '--':
+                                sqlString = "update stockreport_"
+                                sqlString += "%s" % (year)
+                                sqlString += "_4 "
+                                sqlString += "set "
+                                sqlString += "dividenTime='"
+                                sqlString += dividenDate.encode('utf8')
+                                sqlString += "'"
+                                sqlString += ",distrib='10"
+                                if px != u"0":
+                                    sqlString += "派"
+                                    sqlString += px.encode('utf8')
+                                if zg != u"0":
+                                    sqlString += "转"
+                                    sqlString += zg.encode('utf8')
+                                if sg != u"0":
+                                    sqlString += "送"
+                                    sqlString += sg.encode('utf8')
+                                sqlString += "' where code="
+                                sqlString += code.encode('utf8')
+                                ret = conn.execute(sqlString)
+                            # else:
+                            # sqlString = "update stockreport_"
+                            # sqlString += "%s" % (year)
+                            # sqlString += "_4 "
+                            # sqlString += "set "
+                            # sqlString += "dividenTime=null,distrib=null "
+                            # sqlString += "where code="
+                            # sqlString += code[i].encode('utf8')
+                            # ret = conn.execute(sqlString)
+                            print year, "10派", px, "转", zg, "送", sg, "，", "分红登记日期：", dividenDate.encode('utf8')
     except Exception,e:
         print e
+
         exit(1)
     return True

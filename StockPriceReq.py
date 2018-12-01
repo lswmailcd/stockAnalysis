@@ -16,7 +16,7 @@ def getClosePrice(d):
     return ustr[d:d1]
 
 #分月统计各类股票和基金的累积净值
-date = time.strftime('%Y-%m-%d',time.localtime(time.time()))#"2018-05-31"#
+date = "2006-12-31"#time.strftime('%Y-%m-%d',time.localtime(time.time()))#"2018-05-31"#
 y,m,d=sT.splitDateString(date)
 actualDay = d
 #注意：此程序不要使用MYSQL数据进行查询股票的定义，会使查询股票顺序无法控制！！！！！！！！！！
@@ -53,21 +53,21 @@ for i in range(count):
             try:
                 closePrice = float(bs.find_all("td")[2].get_text())
             except Exception, e:
-                print dateToSearch,code[i], name[i],u"没有今日数据!"
+                print code[i], name[i], u"没有今日数据!", dateToSearch
                 y,m,d = sT.splitDateString(dateToSearch)
                 dateToSearch = sT.getDateString(y,m,d-1)
                 actualDay = d - 1
                 foundData=0
     elif market[i]!="fund":
-        found,closePrice,actualDay = sT.getClosePriceForward( code[i],date )
+        found,closePrice,actualDay = sT.getClosePriceForward( code[i],date, autp=None )
         if found==True:
             foundData = 1
         else:
-            print code[i], name[i], u"没有今日数据!"
             foundData = 0
     if foundData==1:
         print code[i], name[i], closePrice, sT.getDateString(y,m,actualDay)
 
+    #如果中间有既不是股票也不是基金的行，i值也会+1，就相当于在excel中插入不是股票和基金的空行
     worksheet.write(i, 0, code[i])
     worksheet.write(i, 1, name[i])
     worksheet.write(i, 2, closePrice)
