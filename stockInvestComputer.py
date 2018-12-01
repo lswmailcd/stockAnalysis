@@ -7,12 +7,12 @@ import stockTools as sT
 import xlrd
 import xlwt
 
-STARTYEAR = 2011   #投资起始年
+STARTYEAR = 2005   #投资起始年
 STARTMONTH = 12 #投资起始月份
 buyDay = 30      #投资起始日期
-ENDYEAR = 2012  #投资结束年
-ENDMONTH = 12  #投资结束月份
-saleDay = 31  #投资结束日期
+ENDYEAR = 2006  #投资结束年
+ENDMONTH = 10  #投资结束月份
+saleDay = 13  #投资结束日期
 REPORTYEARLAST = 2017 #最新年报年份
 
 nStockInvest = 100     #购买的股数
@@ -38,26 +38,29 @@ name = np.array(a, dtype=np.unicode)
 count  = 0
 for i in range(nrows):
     if table.cell(i + 1, 0).value!="":
-        code[count] = table.cell(i + 1, 0).value
-        name[count] = sT.getStockNameByCode(code[count]).decode('utf8')
-        if code[i] == "" : continue
+        code[i] = table.cell(i + 1, 0).value
+        if code[i] == "" or code[i]=='0.0': continue
+        name[i] = sT.getStockNameByCode(code[i]).decode('utf8')
         print code[i], name[i]
         print "checking reports..."
-        #found, STARTYEAR = sT.checkStockReport(code[count], STARTYEAR, ENDYEAR-1)
-        #if found == False: exit(1)
+        found, STARTYEAR = sT.checkStockReport(code[count], STARTYEAR, ENDYEAR-1)
+        if found == False: exit(1)
         print "checking distrib..."
-        #if sT.checkDistrib(code[count], STARTYEAR-1, ENDYEAR-1) == False: exit(1)
-        sname, yearToMarket = sT.getStockBasics(code[count])
+        if sT.checkDistrib(code[count], STARTYEAR-1, ENDYEAR-1) == False: exit(1)
+        sname, yearToMarket = sT.getStockBasics(code[i])
         if yearToMarket == 0:
-            print code[count], name[count], u"上市时间不详!"
+            print code[i], name[i], u"上市时间不详!"
             exit(1)
         print "checking DONE!"
-        count += 1
+
 
 
 engine = create_engine('mysql://root:0609@127.0.0.1:3306/stockdatabase?charset=utf8', encoding='utf-8')
 conn = engine.connect()
-for i in range(count):
+for i in range(nrows):
+    if code[i] == "" or code[i]=='0.0':
+        worksheet.write(i + 1, 0, "")
+        continue
     foundData = False
     foundData,closePrice,actualbuyDay=sT.getClosePriceForward(code[i], STARTYEAR , STARTMONTH, buyDay)
     if foundData:
