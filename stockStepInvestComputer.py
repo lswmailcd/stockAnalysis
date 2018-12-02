@@ -1,5 +1,6 @@
 #coding:utf8
 
+import os
 from sqlalchemy import create_engine
 import numpy as np
 import tushare as ts
@@ -8,9 +9,9 @@ import xlrd
 import xlwt
 import time
 
-STARTYEAR = 2010   #定投起始年
+STARTYEAR = 2012  #定投起始年
 STARTMONTH = 1  #定投起始月份
-ENDYEAR = 2013   #定投结束年
+ENDYEAR = 2016   #定投结束年
 ENDMONTH = 12 #定投结束月份
 TRADEDAY = 20 #每月中的定投日期
 REPORTYEARLAST = 2017 #最新年报年份
@@ -18,6 +19,13 @@ REPORTYEARLAST = 2017 #最新年报年份
 moneyLimit = 6000  #每月定投金额上限，实际金额根据买的股数取整
 
 print u"计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月---",ENDYEAR,u"年",ENDMONTH,u"月"
+print u"***请确保已经使用stockDataChecker.py对数据进行检查***"
+str = raw_input("不检查继续请按'回车',如需检查请按'c',退出请按'q': ")
+if str=="q" : exit(0)
+if str=="c" :
+    dirName = os.path.dirname(os.path.realpath(__file__))
+    os.system('C:\Users\lsw\Anaconda3\envs\conda27\python ' + dirName + '\\stockDataChecker.py 2008 2017')
+
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('StepInvestResult')
 ListColumnName = [u'代码',u'名称',u'投资时长（年）',u'投资收益率',u'投资年化复合收益率',u'最大回撤时的收益率',\
@@ -38,12 +46,6 @@ for i in range(nrows):
     if table.cell(i + 1, 0).value!="":
         code[count] = table.cell(i + 1, 0).value
         name[count] = sT.getStockNameByCode(code[count]).decode('utf8')
-        print code[i], name[i]
-        print "checking reports..."
-        found, STARTYEAR = sT.checkStockReport(code[count], STARTYEAR, ENDYEAR-1)
-        if found == False: exit(1)
-        print "checking distrib..."
-        if sT.checkDistrib(code[count], STARTYEAR-1, ENDYEAR-1) == False: exit(1)
         sname, yearToMarket = sT.getStockBasics(code[count])
         if yearToMarket == 0:
             print code[count], name[count], u"上市时间不详!"

@@ -1,5 +1,6 @@
 #coding:utf8
 
+import os
 from sqlalchemy import create_engine
 import numpy as np
 import tushare as ts
@@ -18,6 +19,13 @@ REPORTYEARLAST = 2017 #最新年报年份
 nStockInvest = 100     #购买的股数
 
 print u"计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月---",ENDYEAR,u"年",ENDMONTH,u"月"
+print u"***请确保已经使用stockDataChecker.py对数据进行检查***"
+str = raw_input("不检查继续请按'回车',如需检查请按'c',退出请按'q': ")
+if str=="q" : exit(0)
+if str=="c" :
+    dirName = os.path.dirname(os.path.realpath(__file__))
+    os.system('C:\Users\lsw\Anaconda3\envs\conda27\python ' + dirName + '\\stockDataChecker.py 2008 2017')
+
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('InvestResult')
 # ListColumnName = [u'代码',u'名称',u'投资时长（年）',u'投资收益率',u'投资年化复合收益率',u'最大回撤时的收益率',\
@@ -41,19 +49,10 @@ for i in range(nrows):
         code[i] = table.cell(i + 1, 0).value
         if code[i] == "" or code[i]=='0.0': continue
         name[i] = sT.getStockNameByCode(code[i]).decode('utf8')
-        print code[i], name[i]
-        print "checking reports..."
-        found, STARTYEAR = sT.checkStockReport(code[count], STARTYEAR, ENDYEAR-1)
-        if found == False: exit(1)
-        print "checking distrib..."
-        if sT.checkDistrib(code[count], STARTYEAR-1, ENDYEAR-1) == False: exit(1)
         sname, yearToMarket = sT.getStockBasics(code[i])
         if yearToMarket == 0:
             print code[i], name[i], u"上市时间不详!"
             exit(1)
-        print "checking DONE!"
-
-
 
 engine = create_engine('mysql://root:0609@127.0.0.1:3306/stockdatabase?charset=utf8', encoding='utf-8')
 conn = engine.connect()
@@ -90,7 +89,7 @@ for i in range(nrows):
             exit(1)
         resultDistrib = ret.first()
         if resultDistrib is None or resultDistrib.distrib is None:
-            print "WARNING:", code[i], name[i], distribYear, u"年，数据库年报分红数据获取失败！此年可能无分红！"
+            print "WARNING:", code[i], name[i], distribYear, u"年分红不详，数据库年报分红数据获取失败！此年可能无分红！"
             m = -1 #无分红，则分红月m的值置为-1
         else:
             try:
