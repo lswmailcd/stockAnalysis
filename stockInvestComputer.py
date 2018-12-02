@@ -8,12 +8,12 @@ import stockTools as sT
 import xlrd
 import xlwt
 
-STARTYEAR = 2005   #投资起始年
+STARTYEAR = 2011   #投资起始年
 STARTMONTH = 12 #投资起始月份
 buyDay = 30      #投资起始日期
-ENDYEAR = 2006  #投资结束年
-ENDMONTH = 10  #投资结束月份
-saleDay = 13  #投资结束日期
+ENDYEAR = 2017  #投资结束年
+ENDMONTH = 1  #投资结束月份
+saleDay = 3  #投资结束日期
 REPORTYEARLAST = 2017 #最新年报年份
 
 nStockInvest = 100     #购买的股数
@@ -68,7 +68,6 @@ for i in range(nrows):
         print "ERROR:",code[i],name[i],sT.getDateString(STARTYEAR,STARTMONTH,actualbuyDay),"未找到该股交易信息"
         continue
     ndividend = 0.0  # 总分红
-    nStockTotal = 0  # 总股数
     nStockTotal = nStockInvest  # 最终获得股数，初始为购买的股数
     lostMoneyMax = 0
     lostMoneyMaxCaption = nCapitalInvest
@@ -113,6 +112,7 @@ for i in range(nrows):
                     # 分红计算
                     ndividend += nStockTotal * r
                     # 送转增加股本计算
+                    #print "增加股本", nStockTotal * s
                     nStockTotal += nStockTotal * s
                     print year, "年，每10股分红：", 10 * r, "送转股数：", 10 * s
             #     lost = nStockTotal * closePrice + ndividend - nCapitalInvest

@@ -115,7 +115,7 @@ for i in range(count):
         #if year==STARTYEAR: step=1
         bDistrib = False
         for month in range(1,endMonth,1):# month in (4,9,10,12)
-            foundData,closePrice,actualDay=sT.getClosePrice(code[i], year, month, TRADEDAY)
+            foundData,closePrice,actualMonth, actualDay=sT.getClosePrice(code[i], year, month, TRADEDAY)
             #print closePrice,sT.getDateString(year,month,actualDay)
             if foundData==False:
                 print "WARNING:",year, month, u"获取连网股价失败！可能此月股票停牌，暂停定投！"
@@ -153,17 +153,17 @@ for i in range(count):
     else:
         year = ENDYEAR
         month = ENDMONTH+1
-    foundData,closePrice,day=sT.getClosePrice(code[i],year, month, 1)
+    foundData,closePrice,actualMonth, day=sT.getClosePrice(code[i],year, month, 1)
     if foundData==True:
         nCapitalTotal = nStockTotal*closePrice+ndividend
         income = nCapitalTotal-nCapitalInvest
         incomeRate = income/nCapitalInvest
-        investPeriod = round(year-1-STARTYEAR+(12-STARTMONTH+1+month)/12.0,2)
+        investPeriod = round(year-1-STARTYEAR+(12-STARTMONTH+1+actualMonth)/12.0,2)
         dictColumnValues[u'代码'] = code[i]
         dictColumnValues[u'名称'] = name[i]
         dictColumnValues[u'投资时长（年）'] = investPeriod
         dictColumnValues[u'投资起始时间'] = sT.getDateString(STARTYEAR,STARTMONTH,1)
-        dictColumnValues[u'卖出股份时间'] = sT.getDateString(year,month,day)
+        dictColumnValues[u'卖出股份时间'] = sT.getDateString(year,actualMonth,day)
         dictColumnValues[u'投资总成本'] = nCapitalInvest
         dictColumnValues[u'投资总市值'] = nCapitalTotal
         dictColumnValues[u'投资总收益'] = income
