@@ -8,12 +8,13 @@ import stockTools as sT
 import xlrd
 import xlwt
 
-STARTYEAR = 2011   #投资起始年
+STARTYEAR = 2017   #投资起始年
 STARTMONTH = 12 #投资起始月份
-buyDay = 30      #投资起始日期
-ENDYEAR = 2017  #投资结束年
-ENDMONTH = 1  #投资结束月份
-saleDay = 3  #投资结束日期
+buyDay = 29      #投资起始日期
+ENDYEAR = 2018  #投资结束年
+ENDMONTH = 12  #投资结束月份
+saleDay = 28  #投资结束日期
+checkDay = 31  #回撤检查日
 REPORTYEARLAST = 2017 #最新年报年份
 
 nStockInvest = 100     #购买的股数
@@ -28,12 +29,9 @@ if str=="c" :
 
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('InvestResult')
-# ListColumnName = [u'代码',u'名称',u'投资时长（年）',u'投资收益率',u'投资年化复合收益率',u'最大回撤时的收益率',\
-#                   u'最大回撤出现的时间',u'投资起始时间',u'卖出股份时间',u'投资总成本',u'投资总市值',u'投资总收益',\
-#                   u'分红',u'平均年收益',u'总股本',u'初始股本',u'最大回撤']
-ListColumnName = [u'代码',u'名称',u'投资时长（年）',u'投资收益率',u'投资年化复合收益率',\
-                  u'投资起始时间',u'卖出股份时间',u'投资总成本',u'投资总市值',u'投资总收益',\
-                  u'分红',u'平均年收益',u'总股本',u'初始股本']
+ListColumnName = [u'代码',u'名称',u'投资时长（年）',u'投资收益率',u'投资年化复合收益率',u'最大回撤时的收益率',\
+                  u'最大回撤出现的时间',u'投资起始时间',u'卖出股份时间',u'投资总成本',u'投资总市值',u'投资总收益',\
+                  u'分红',u'平均年收益',u'总股本',u'初始股本',u'最大回撤']
 for idx in range(len(ListColumnName)):
     worksheet.write(0, idx, ListColumnName[idx])
 
@@ -76,6 +74,7 @@ for i in range(nrows):
     print code[i], name[i]
     for year in range(STARTYEAR,ENDYEAR+1):
         distribYear = year-1
+        bDividen = True
         try:
             sqlString = "select distrib from stockreport_"
             sqlString += "%s" % (distribYear)
@@ -86,10 +85,11 @@ for i in range(nrows):
             print "ERROR: ", code[i], name[i], "connect database failure!"
             print e
             exit(1)
+        nStockTotalBeforeDividen = nStockTotal
         resultDistrib = ret.first()
         if resultDistrib is None or resultDistrib.distrib is None:
             print "WARNING:", code[i], name[i], distribYear, u"年分红不详，数据库年报分红数据获取失败！此年可能无分红！"
-            m = -1 #无分红，则分红月m的值置为-1
+            bDividen = False #无分红
         else:
             try:
                 sqlString = "select dividenTime from stockreport_"
@@ -103,7 +103,7 @@ for i in range(nrows):
                 exit(1)
             resultDividenDate = ret.first()
             if resultDividenDate.dividenTime is None:
-                m = -1
+                bDividen = False
             elif( sT.getDateString(STARTYEAR, STARTMONTH, buyDay) <= resultDividenDate.dividenTime ) \
                 and ( sT.getDateString(ENDYEAR, ENDMONTH, saleDay) > resultDividenDate.dividenTime ):
                     print resultDividenDate.dividenTime, "计算分红"
@@ -115,11 +115,26 @@ for i in range(nrows):
                     #print "增加股本", nStockTotal * s
                     nStockTotal += nStockTotal * s
                     print year, "年，每10股分红：", 10 * r, "送转股数：", 10 * s
-            #     lost = nStockTotal * closePrice + ndividend - nCapitalInvest
-            # if lostMoneyMax > lost:#由于计算时只计算检查日时的最大回撤，可能有比检查日回撤更大的时候，尤其是最后卖出时。
-            #     lostMoneyMax = lost
-            #     lostMoneyMaxCaption = nCapitalInvest
-            #     lostMoneyMaxTime = sT.getDateString(year, month, actualDay)
+        #计算回撤
+        if year==STARTYEAR:
+            startMonth = STARTMONTH
+        else:
+            startMonth = 1
+        if year==ENDYEAR:
+            endMonth = ENDMONTH+1
+        else:
+            endMonth = 13
+        for m in range(startMonth,endMonth):
+            foundData, price, d = sT.getClosePriceForward( code[i], year, m, checkDay )
+            if foundData:
+                if bDividen and (sT.getDateString(year, m, checkDay) <= resultDividenDate.dividenTime ):
+                    lost = nStockTotalBeforeDividen * price + ndividend - nCapitalInvest
+                else:
+                    lost = nStockTotal * price + ndividend - nCapitalInvest
+                if lostMoneyMax > lost:#由于计算时只计算检查日时的最大回撤，可能有比检查日回撤更大的时候，尤其是最后卖出时。
+                    lostMoneyMax = lost
+                    lostMoneyMaxCaption = nCapitalInvest
+                    lostMoneyMaxTime = sT.getDateString(year, m, d)
 
     foundData,closePrice,saleMonth, actualsaleDay=sT.getClosePrice(code[i], ENDYEAR, ENDMONTH, saleDay)
     if foundData==True:
@@ -141,12 +156,12 @@ for i in range(nrows):
         dictColumnValues[u'投资年化复合收益率'] = round(((incomeRate+1)**(1.0/investPeriod)-1),4)
         dictColumnValues[u'总股本'] = nStockTotal
         dictColumnValues[u'初始股本'] = nStockInvest
-        #dictColumnValues[u'最大回撤'] = lostMoneyMax
-        # dictColumnValues[u'最大回撤时的收益率'] = round(lostMoneyMax/lostMoneyMaxCaption,4)
-        # dictColumnValues[u'最大回撤出现的时间'] = lostMoneyMaxTime
+        dictColumnValues[u'最大回撤'] = lostMoneyMax
+        dictColumnValues[u'最大回撤时的收益率'] = round(lostMoneyMax/lostMoneyMaxCaption,4)
+        dictColumnValues[u'最大回撤出现的时间'] = lostMoneyMaxTime
         print u'时长：',dictColumnValues[u'投资时长（年）'],u'年,'\
-              u'投资收益率:',"%.2f%%" %(dictColumnValues[u'投资收益率']*100)#,\
-              #u',最大回撤时的收益率:',"%.2f%%" %(dictColumnValues[u'最大回撤时的收益率']*100)
+              u'投资收益率:',"%.2f%%" %(dictColumnValues[u'投资收益率']*100),\
+              u',最大回撤时的收益率:',"%.2f%%" %(dictColumnValues[u'最大回撤时的收益率']*100)
         for idx in range(len(ListColumnName)):
             worksheet.write(i+1, idx, dictColumnValues[ListColumnName[idx]])
     else:
