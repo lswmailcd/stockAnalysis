@@ -95,7 +95,7 @@ def getDistrib(distrib):#返回每股分红金额和转送股数
 
 def getStockNameByCode(code):
     conn = createDBConnection()
-    sqlString = "select name from stockbasics_20180428 where code="
+    sqlString = "select name from stockbasics_20190118 where code="
     sqlString += code
     ret = conn.execute(sqlString)
     if ret.rowcount == 0:
@@ -255,7 +255,7 @@ def checkStockReport(code, startYear, endYear):
                     time.sleep(2)
                 bs = bs4.BeautifulSoup(data,"lxml")
                 body = bs.find('body')
-                report = body.find_all('script')[13]
+                report = body.find_all('script')[12]
                 reportString = report.string
                 iPosStart = reportString.find('defjson:')
                 report = reportString[iPosStart:]
@@ -318,7 +318,7 @@ def checkStockReport(code, startYear, endYear):
 
 def getStockBasics(code):
     try:
-        sqlString = "select name, timetomarket from stockbasics_20180428 "
+        sqlString = "select name, timetomarket from stockbasics_20190118 "
         sqlString += "where code="
         sqlString += code
         conn = createDBConnection()

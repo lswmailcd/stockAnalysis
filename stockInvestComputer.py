@@ -8,12 +8,12 @@ import stockTools as sT
 import xlrd
 import xlwt
 
-STARTYEAR = 2017   #投资起始年
+STARTYEAR = 2011   #投资起始年
 STARTMONTH = 12 #投资起始月份
-buyDay = 29      #投资起始日期
-ENDYEAR = 2018  #投资结束年
+buyDay = 30      #投资起始日期
+ENDYEAR = 2012  #投资结束年
 ENDMONTH = 12  #投资结束月份
-saleDay = 28  #投资结束日期
+saleDay = 31  #投资结束日期
 checkDay = 31  #回撤检查日
 REPORTYEARLAST = 2017 #最新年报年份
 
@@ -25,7 +25,7 @@ str = raw_input("不检查继续请按'回车',如需检查请按'c',退出请�
 if str=="q" : exit(0)
 if str=="c" :
     dirName = os.path.dirname(os.path.realpath(__file__))
-    os.system('C:\Users\lsw\Anaconda3\envs\conda27\python ' + dirName + '\\stockDataChecker.py 2008 2017')
+    os.system('C:\Users\lsw\Anaconda3\envs\conda27\python ' + dirName + '\\stockDataChecker.py 2008 2017 stockList.xls')
 
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('InvestResult')

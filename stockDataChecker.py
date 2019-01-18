@@ -11,11 +11,11 @@ import xlrd
 import xlwt
 import stockTools as sT
 
-def process(STARTYEAR, ENDYEAR):
+def process(STARTYEAR, ENDYEAR, FileName):
     print "*******************stockDataChecker开始检查......*******************"
     print "Checking year from", STARTYEAR, "to",ENDYEAR
-    print "Reading stock info from .\\data\\StockList.xls"
-    data = xlrd.open_workbook('.\\data\\StockList.xls')
+    print "Reading stock info from .\\data\\"+FileName
+    data = xlrd.open_workbook('.\\data\\'+FileName)
     print "Reading finished!"
     table = data.sheets()[0]
     nrows = table.nrows-1
@@ -29,10 +29,10 @@ def process(STARTYEAR, ENDYEAR):
             name[i] = sT.getStockNameByCode(code[i]).decode('utf8')
             print code[i], name[i]
             print "checking reports..."
-            found, STARTYEAR = sT.checkStockReport(code[i], STARTYEAR, ENDYEAR-1)
+            found, STARTYEAR = sT.checkStockReport(code[i], STARTYEAR, ENDYEAR)
             if found == False: exit(1)
             print "checking distrib..."
-            if sT.checkDistrib(code[i], STARTYEAR-1, ENDYEAR-1) == False: exit(1)
+            if sT.checkDistrib(code[i], STARTYEAR, ENDYEAR) == False: exit(1)
             sname, yearToMarket = sT.getStockBasics(code[i])
             if yearToMarket == 0:
                 print code[i], name[i], u"上市时间不详!"
@@ -42,11 +42,11 @@ def process(STARTYEAR, ENDYEAR):
     print "*******************stockDataChecker检查完成！*******************"
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 4:
         print 'ERROR: The cmd format is stockDataChecker.py startYear endYear'
         sys.exit(0)
     os.path.realpath(__file__)
-    process(int(sys.argv[1]), int(sys.argv[2]))
+    process(int(sys.argv[1]), int(sys.argv[2]), sys.argv[3])
 
 
 
