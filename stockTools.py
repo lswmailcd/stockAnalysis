@@ -1,4 +1,4 @@
-#coding:utf8
+#coding:utf-8
 
 from sqlalchemy import create_engine
 import tushare as ts
@@ -6,6 +6,7 @@ import time
 import urllib
 import bs4
 import stockGlobalSpace as sG
+import logRecoder as log
 
 def createDBConnection():
     try:
@@ -166,25 +167,25 @@ def getMarketType( code ):
 
 def decodeEastMoneyNum(numCode):
     n = -1
-    if( numCode=="E268" ):
+    if( numCode=="ECEA" ):
         n = 0
-    elif( numCode=="EEC5" ):
-        n=1
-    elif( numCode=="ECEA" ):
-        n=2
-    elif( numCode=="EA5D" ):
-        n=3
-    elif( numCode=="F78F" ):
-        n=4
-    elif( numCode=="EBED" ):
-        n=5
     elif( numCode=="F2FF" ):
-        n=6
-    elif( numCode=="F4CD" ):
-        n=7
+        n=1
+    elif( numCode=="ECE9" ):
+        n=2
+    elif( numCode=="E426" ):
+        n=3
     elif( numCode=="F2F8" ):
+        n=4
+    elif( numCode=="F137" ):
+        n=5
+    elif( numCode=="E273" ):
+        n=6
+    elif( numCode=="EBC0" ):
+        n=7
+    elif( numCode=="E268" ):
         n=8
-    elif( numCode=="E4E5" ):
+    elif( numCode=="E793" ):
         n=9
 
     return n
@@ -211,8 +212,107 @@ def getEastMoneyData( strData ):
 
     return n
 
-
 def checkStockReport(code, startYear, endYear):
+    """
+
+    :rtype: object
+    """
+    try:
+        name, yearToMarket = getStockBasics(code)
+        if yearToMarket==0 : exit(1)
+        print code, name, yearToMarket,"年上市！"
+        if yearToMarket>endYear:
+            print code, name, yearToMarket,"股票上市时间比结束查询时间晚，请重新输入查询结束时间!"
+            return False
+        if yearToMarket>startYear:
+            print code, name,"股票上市时间比起始查询时间晚,以上市年份为最早检查年份!"
+            startYear = yearToMarket
+        bNeedWebData = False
+        bAccessWebData = False
+        for year in range(startYear, endYear + 1):
+            sqlString = "select code from stockreport_"
+            sqlString += "%s" %(year)
+            sqlString += "_4 "
+            sqlString += "where code="
+            sqlString += code
+            conn = createDBConnection()
+            ret = conn.execute(sqlString)
+            result = ret.first()
+            if result is None:
+                print  code, name, year, "年，stockreport数据库中无此股票！"
+                bNeedWebData = True
+            else:
+                continue
+            if bNeedWebData:
+                if not bAccessWebData:
+                    url = "http://money.finance.sina.com.cn/corp/go.php/vFD_FinancialGuideLine/stockid/" #http://data.eastmoney.com/bbsj/yjbb/600887.html
+                    url += code
+                    url += "/ctrl/"
+                    url += "%s" %(year)
+                    url += "/displaytype/4.phtml"
+                    print "读取新浪财经年报数据......"
+                    data = urllib.urlopen(url).read()
+                    print "新浪财经年报数据读取完毕!"
+                    time.sleep(2)
+                bs = bs4.BeautifulSoup(data,"lxml")
+                body = bs.find('tbody')
+                epsbody = body.find_all('tr')[3]
+                eps = float(epsbody.find_all('td')[1].get_text())
+                netprofitbody = body.find_all('tr')[32]
+                net_profits = float(netprofitbody.find_all('td')[1].get_text())/10000.0
+                profits_yoybody = body.find_all('tr')[35]
+                profits_yoy = float(profits_yoybody.find_all('td')[1].get_text())
+                bvpsbody = body.find_all('tr')[7]
+                bvps = float(bvpsbody.find_all('td')[1].get_text())
+                roebody = body.find_all('tr')[30]
+                roe = float(roebody.find_all('td')[1].get_text())
+                #epcf
+                sqlString = "select eps from stockreport_"
+                sqlString += "%s" % (year-1)
+                sqlString += "_4 "
+                sqlString += "where code="
+                sqlString += code
+                ret = conn.execute(sqlString)
+                result = ret.first()
+                foundLastYearEPS = False
+                if result is not None:
+                    foundLastYearEPS = True
+                    epsLastYear = float(result.eps)
+                    sqlString = "insert into stockreport_"
+                    sqlString += "%s" %(year)
+                    if foundLastYearEPS:
+                        sqlString += "_4(code,name,eps,eps_yoy,bvps,roe,net_profits,profits_yoy) values('"
+                    else:
+                        sqlString += "_4(code,name,eps,bvps,roe,net_profits,profits_yoy) values('"
+                    sqlString += code
+                    sqlString += "','"
+                    sqlString += name.decode('utf8')
+                    sqlString += "',"
+                    sqlString += "%s" %(eps)
+                    sqlString += ","
+                    if foundLastYearEPS:
+                        sqlString += "%s" %(100*round((eps-epsLastYear)/epsLastYear,4))
+                        sqlString += ","
+                    sqlString += "%s" %(bvps)
+                    sqlString += ","
+                    sqlString += "%s" %(roe)
+                    sqlString += ","
+                    #sqlString += "%s" %(epcf)
+                    #sqlString += ","
+                    sqlString += "%s" %(net_profits)
+                    sqlString += ","
+                    sqlString += "%s" %(profits_yoy)
+                    sqlString += ")"
+                    conn.execute(sqlString)
+                    log.writeUtfLog(sqlString.encode('utf8'))
+                    print "已增加",code,name,"数据至",year,"年stockreport数据库"
+    except Exception,e:
+        print e
+        exit(1)
+    return True, startYear
+
+
+def checkStockReportEastMoney(code, startYear, endYear):#EastMoney
     """
 
     :rtype: object
@@ -309,6 +409,7 @@ def checkStockReport(code, startYear, endYear):
                         sqlString += "%s" %(profits_yoy)
                         sqlString += ")"
                         conn.execute(sqlString)
+                        log.writeUtfLog(sqlString.encode('utf8'))
                         print "已增加",code,name,"数据至",year,"年stockreport数据库"
                         break
     except Exception,e:
@@ -399,6 +500,7 @@ def checkDistrib(code, startYear, endYear):
                                 sqlString += "' where code="
                                 sqlString += code.encode('utf8')
                                 ret = conn.execute(sqlString)
+                                log.writeUtfLog(sqlString)
                             # else:
                             # sqlString = "update stockreport_"
                             # sqlString += "%s" % (year)
@@ -411,6 +513,5 @@ def checkDistrib(code, startYear, endYear):
                             print year, "10派", px, "转", zg, "送", sg, "，", "分红登记日期：", dividenDate.encode('utf8')
     except Exception,e:
         print e
-
         exit(1)
     return True

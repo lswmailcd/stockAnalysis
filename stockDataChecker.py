@@ -10,9 +10,12 @@ import time
 import xlrd
 import xlwt
 import stockTools as sT
+import logRecoder as log
 
 def process(STARTYEAR, ENDYEAR, FileName):
-    print "*******************stockDataChecker开始检查......*******************"
+    str = "*******************stockDataChecker开始检查......*******************"
+    print  str
+    log.writeUtfLog(str)
     print "Checking year from", STARTYEAR, "to",ENDYEAR
     print "Reading stock info from .\\data\\"+FileName
     data = xlrd.open_workbook('.\\data\\'+FileName)
@@ -39,7 +42,9 @@ def process(STARTYEAR, ENDYEAR, FileName):
                 exit(1)
             print "checking DONE!"
 
-    print "*******************stockDataChecker检查完成！*******************"
+    str = "*******************stockDataChecker检查完成！*******************"
+    print str
+    log.writeUtfLog(str)
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:
