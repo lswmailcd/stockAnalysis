@@ -36,7 +36,7 @@ def process(STARTYEAR, ENDYEAR, FileName):
             if found == False: exit(1)
             print "checking distrib..."
             if sT.checkDistrib(code[i], STARTYEAR, ENDYEAR) == False: exit(1)
-            sname, yearToMarket = sT.getStockBasics(code[i])
+            sname, yearToMarket,_,_ = sT.getStockBasics(code[i])
             if yearToMarket == 0:
                 print code[i], name[i], u"上市时间不详!"
                 exit(1)

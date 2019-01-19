@@ -1,4 +1,4 @@
-#coding:utf8
+#coding:utf-8
 
 import os
 from sqlalchemy import create_engine
@@ -9,8 +9,9 @@ import xlrd
 import xlwt
 import stockDataChecker as ck
 
-date="2019-01-03"
-dividenYear = 2017
+date="2016-07-29"
+dividenYear = 2015
+moneyInvest = 10000.0
 
 print u"***请确保已经使用stockDataChecker.py对数据进行检查***"
 str = raw_input("不检查继续请按'回车',如需检查请按'c',退出请按'q': ")
@@ -27,27 +28,29 @@ nrows = table.nrows-1
 a = np.zeros([nrows])
 code = np.array(a, dtype=np.unicode)
 name = np.array(a, dtype=np.unicode)
+weight = np.array(a, dtype=np.float)
 count  = 0
 for i in range(nrows):
     if table.cell(i + 1, 0).value!="":
         code[i] = table.cell(i + 1, 0).value
         if code[i] == "" or code[i]=='0.0': continue
         name[i] = sT.getStockNameByCode(code[i]).decode('utf8')
-        sname, yearToMarket = sT.getStockBasics(code[i])
+        sname, yearToMarket,_,_ = sT.getStockBasics(code[i])
         if yearToMarket == 0:
             print code[i], name[i], u"上市时间不详!"
             exit(1)
+        weight[i] = table.cell(i + 1, 2).value/100
 
-engine = create_engine('mysql://root:0609@127.0.0.1:3306/stockdatabase?charset=utf8', encoding='utf-8')
-conn = engine.connect()
-priceTotal = 0.0
+conn = sT.createDBConnection()
+nStock = 0.0
 dividenTotal = 0.0
 for i in range(nrows):
     if code[i] == "" or code[i]=='0.0':
-        exit(1)
-    found, price, _, _ = sT.getClosePrice(code[i], date)
+        continue
+    found, price, m, d = sT.getClosePriceForward(code[i], date)
     if found:
-        priceTotal += price
+        nStock = moneyInvest*weight[i]/price
+        print code[i], name[i], "nStock=",nStock, "Price=",price
     else:
         print code[i], name[i], "价格获取失败！"
 
@@ -70,8 +73,7 @@ for i in range(nrows):
     else:
         # 计算分红送转
         r, s = sT.getDistrib(resultDistrib.distrib)
-        dividenTotal += r
-        #print code[i], name[i], r
+        dividenTotal += r*nStock
+        print code[i], name[i], "distrib=",r
 
-print dividenTotal, priceTotal
-print dividenTotal/priceTotal
+print u"总计股息：","%.2f" %(dividenTotal), u"股息率:","%.2f%%" %(dividenTotal/moneyInvest*100.0)

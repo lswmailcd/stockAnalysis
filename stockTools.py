@@ -22,9 +22,20 @@ def createDBConnection():
         exit(1)
 
 def  validDate(month, day):
-    if (day>0 and (day<32 and month in (1,3,5,7,8,10,12)) or (day<31 and month in (2,4,6,9,11)) or (month==2 and day<29)):
-        return True
+    if day>0:
+        if (day<32 and month in (1,3,5,7,8,10,12)) or (day<31 and month in (2,4,6,9,11)) or (month==2 and day<29):
+            return True
     return False
+
+def getValidLastDay(month):
+    if month > 0:
+        if month in (1, 3, 5, 7, 8, 10, 12):
+            return 31
+        elif month in (4, 6, 9, 11):
+            return 30
+        else:
+            return 28
+    return -1
 
 def getQuarter(m):
     if validDate(m,15)==False:
@@ -96,7 +107,7 @@ def getDistrib(distrib):#返回每股分红金额和转送股数
 
 def getStockNameByCode(code):
     conn = createDBConnection()
-    sqlString = "select name from stockbasics_20190118 where code="
+    sqlString = "select name from stockbasics where code="
     sqlString += code
     ret = conn.execute(sqlString)
     if ret.rowcount == 0:
@@ -116,11 +127,13 @@ def getStockType(code):
     return ret.first().stockType
 
 def  getClosePriceForward(code, dORy, month=0, day=0, autp=None):#根据输入分开输入的年月日获取此日或此日前该月最近的一个交易日的收盘价
-    foundData = False
     if month==0:#输入的日期在dORy中，以字符串形式输入
         y,m,d = splitDateString(dORy)
     else:
         y=dORy; m=month; d=day
+    name, my, mm, md = getStockBasics(code)
+    foundData =False
+    if getDateString(my,mm,md)>getDateString(y,m,d): return foundData,-1, m, d
     while foundData==False and validDate(m,d):
         date = getDateString(y, m, d)
         data = ts.get_k_data(code, start=date, end=date, autype=autp)
@@ -128,11 +141,18 @@ def  getClosePriceForward(code, dORy, month=0, day=0, autp=None):#根据输入�
             foundData = True
         else:
             d -= 1
+            if not validDate(m, d):
+                m -= 1
+                if m>0:
+                    d = getValidLastDay(m)
+                    if d<0:
+                        break
+                else:
+                    break
     if foundData == True:
-        return foundData, data.values[0, 2], d
+        return foundData, data.values[0, 2], m, d
     else:
-        return foundData,-1,d
-
+        return foundData,-1, m, d
 
 def  getClosePrice(code, dORy, month=0, day=0, autp=None): #获取此日或此日后该月最近的一个交易日的收盘价
     foundData = False
@@ -218,7 +238,7 @@ def checkStockReport(code, startYear, endYear):
     :rtype: object
     """
     try:
-        name, yearToMarket = getStockBasics(code)
+        name, yearToMarket,_,_ = getStockBasics(code)
         if yearToMarket==0 : exit(1)
         print code, name, yearToMarket,"年上市！"
         if yearToMarket>endYear:
@@ -318,7 +338,7 @@ def checkStockReportEastMoney(code, startYear, endYear):#EastMoney
     :rtype: object
     """
     try:
-        name, yearToMarket = getStockBasics(code)
+        name, yearToMarket,_,_ = getStockBasics(code)
         if yearToMarket==0 : exit(1)
         print code, name, yearToMarket,"年上市！"
         if yearToMarket>endYear:
@@ -419,7 +439,7 @@ def checkStockReportEastMoney(code, startYear, endYear):#EastMoney
 
 def getStockBasics(code):
     try:
-        sqlString = "select name, timetomarket from stockbasics_20190118 "
+        sqlString = "select name, timetomarket from stockbasics "
         sqlString += "where code="
         sqlString += code
         conn = createDBConnection()
@@ -434,7 +454,10 @@ def getStockBasics(code):
     elif result.timetomarket == 0:
         print  code, result.name,"股票上市时间数据为空！"
         return  result.name, 0
-    return  result.name, int(result.timetomarket / 1E4)
+    y = int(result.timetomarket / 1E4)
+    m = int( (result.timetomarket-y*1E4) / 1E2)
+    d = int(result.timetomarket-y*1E4-m*1E2)
+    return  result.name, y, m, d
 
 def checkDistrib(code, startYear, endYear):
     try:
