@@ -8,15 +8,17 @@ import time
 import matplotlib.pyplot as plt
 import stockTools as sT
 
-code = "600104"
+code = "603027"
 YEARSTART = 2008  #统计起始时间
 YEAREND = 2018  #统计结束时间
 
 print "checking reports..."
 found, YEARSTART = sT.checkStockReport(code,YEARSTART,YEAREND-1)
 if found==False : exit(1)
-name, yearToMarket = sT.getStockBasics(code)
-if yearToMarket==0:
+print "checking distrib..."
+if sT.checkDistrib(code, YEARSTART, YEAREND-1) == False: exit(1)
+name, yearToMarket, _, _ = sT.getStockBasics(code)
+if yearToMarket == 0:
     print code, name, u"上市时间不详!"
     exit(1)
 print "checking DONE!"
@@ -75,7 +77,7 @@ date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
 found = False
 
 while not found:
-    found,closePrice,day = sT.getClosePriceForward(code, date)
+    found,closePrice,tp,day = sT.getClosePriceForward(code, date)
     if not found:
         y, m, d = sT.splitDateString(date)
         m=m-1 ; d=31
