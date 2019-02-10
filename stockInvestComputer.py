@@ -8,13 +8,13 @@ import stockTools as sT
 import xlrd
 import xlwt
 
-STARTYEAR = 2011   #投资起始年
+STARTYEAR = 2018 #投资起始年
 STARTMONTH = 12 #投资起始月份
-buyDay = 30      #投资起始日期
-ENDYEAR = 2012  #投资结束年
-ENDMONTH = 12  #投资结束月份
+buyDay = 28      #投资起始日期
+ENDYEAR = 2019  #投资结束年
+ENDMONTH = 1  #投资结束月份
 saleDay = 31  #投资结束日期
-checkDay = 31  #回撤检查日
+checkDay = 15  #回撤检查日
 REPORTYEARLAST = 2017 #最新年报年份
 
 nStockInvest = 100     #购买的股数
@@ -47,7 +47,7 @@ for i in range(nrows):
         code[i] = table.cell(i + 1, 0).value
         if code[i] == "" or code[i]=='0.0': continue
         name[i] = sT.getStockNameByCode(code[i]).decode('utf8')
-        sname, yearToMarket = sT.getStockBasics(code[i])
+        sname, yearToMarket,_ ,_ = sT.getStockBasics(code[i])
         if yearToMarket == 0:
             print code[i], name[i], u"上市时间不详!"
             exit(1)
@@ -59,7 +59,7 @@ for i in range(nrows):
         worksheet.write(i + 1, 0, "")
         continue
     foundData = False
-    foundData,closePrice,actualbuyDay=sT.getClosePriceForward(code[i], STARTYEAR , STARTMONTH, buyDay)
+    foundData,closePrice,tm, actualbuyDay=sT.getClosePriceForward(code[i], STARTYEAR , STARTMONTH, buyDay)
     if foundData:
         nCapitalInvest = closePrice*nStockInvest
     else:
@@ -125,7 +125,7 @@ for i in range(nrows):
         else:
             endMonth = 13
         for m in range(startMonth,endMonth):
-            foundData, price, d = sT.getClosePriceForward( code[i], year, m, checkDay )
+            foundData, price, tm, d = sT.getClosePriceForward( code[i], year, m, checkDay )
             if foundData:
                 if bDividen and (sT.getDateString(year, m, checkDay) <= resultDividenDate.dividenTime ):
                     lost = nStockTotalBeforeDividen * price + ndividend - nCapitalInvest
@@ -137,6 +137,7 @@ for i in range(nrows):
                     lostMoneyMaxTime = sT.getDateString(year, m, d)
 
     foundData,closePrice,saleMonth, actualsaleDay=sT.getClosePrice(code[i], ENDYEAR, ENDMONTH, saleDay)
+    #year = ENDYEAR
     if foundData==True:
         nCapitalTotal = nStockTotal*closePrice+ndividend
         income = nCapitalTotal-nCapitalInvest

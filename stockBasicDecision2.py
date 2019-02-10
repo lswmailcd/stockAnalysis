@@ -10,13 +10,6 @@ import time
 import pandas as pd
 from sqlalchemy import create_engine
 
-def getClosePrice(d):
-    d=-1
-    for i in range(6):
-        d = ustr.find("\t",d+1)
-    d1=ustr.find("\t",d+1)
-    return ustr[d:d1]
-
 discountRate = 0.0422
 date = time.strftime('%Y-%m-%d',time.localtime(time.time()))#"2017-11-13"
 date = "2011-12-30"
