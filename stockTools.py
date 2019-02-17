@@ -178,6 +178,24 @@ def  getClosePrice(code, dORy, month=0, day=0, autp=None): #获取此日或此�
     else:
         return foundData, -1, m, d
 
+def getStockCount(code, year, month):
+    sqlString = "select gb from asset_debt_"
+    sqlString += "%s" % (year)
+    sqlString += "_%s where code=" %(month)
+    sqlString += code
+    try:
+        conn = createDBConnection()
+        ret = conn.execute(sqlString)
+    except Exception, e:
+        print e
+        print code, year, '年',month,"月，获取股本数据,数据库访问失败！"
+    result = ret.first()
+    if result is None or result.gb is None:
+        print code, year, "年",month, "月，资产负债表数据获取失败！"
+        return 0.0
+    else:
+        return result.gb
+
 def getMarketType( code ):
     if code[:3] in ("600","601") : return "sh_main"
     if code[:3] in ("000","001") : return "sz_main"
@@ -232,6 +250,165 @@ def getEastMoneyData( strData ):
 
     return n
 
+def checkStockAssetDebt(code, startYear, endYear):
+    try:
+        name, yearToMarket,_,_ = getStockBasics(code)
+        if yearToMarket==0 : exit(1)
+        print code, name, yearToMarket,"年上市！"
+        if yearToMarket>endYear:
+            print code, name, yearToMarket,"股票上市时间比结束查询时间晚，请重新输入查询结束时间!"
+            return False
+        if yearToMarket>startYear:
+            print code, name,"股票上市时间比起始查询时间晚,以上市年份为最早检查年份!"
+            startYear = yearToMarket
+        for year in range(startYear, endYear + 1):
+            bTableExit=[True, True, True, True] #数据库中资产负债表是否已存在，初始值为True存在
+            bDataExit=[True, True, True, True] #资产负债表中的数据是否已存在，初始值为True存在
+            for Qt in range(1,5):
+                sqlString = "select code from asset_debt_"
+                sqlString += "%s" %(year)
+                sqlString += "_%s " %(Qt)
+                sqlString += "where code="
+                sqlString += code
+                conn = createDBConnection()
+                try:
+                    ret = conn.execute(sqlString)
+                except Exception, e:
+                    bTableExit[Qt-1]=False
+                    print  code, name, year, "年", Qt, "季度，asset_debt数据表不存在！"
+                    continue
+                result = ret.first()
+                if result is None:
+                    bDataExit[Qt-1] = False
+                    print  code, name, year, "年", Qt, "季度，asset_debt数据表中无此股票！"
+                else:
+                    continue
+            if bDataExit.count(False)>0:
+                url = "http://money.finance.sina.com.cn/corp/go.php/vFD_BalanceSheet/stockid/"  # http://data.eastmoney.com/bbsj/yjbb/600887.html
+                url += code
+                url += "/ctrl/"
+                url += "%s" % (year)
+                url += "/displaytype/4.phtml"
+                print "读取新浪财经资产负债表数据......"
+                data = urllib.urlopen(url).read()
+                print "新浪财经资产负债表数据读取完毕!"
+                time.sleep(2)
+                bs = bs4.BeautifulSoup(data, "lxml")
+                body = bs.find('tbody')
+                datebody = body.find_all('tr')[0]
+                year,month,day = splitDateString(datebody.find_all('td')[1].get_text())
+                Qt = 5
+                if month == 3: Qt = 2
+                elif month == 6: Qt = 3
+                elif month == 9: Qt = 4
+                yszkbody = body.find_all('tr')[7]
+                yszk = []
+                for i in range(1,Qt):
+                    yszkStr = yszkbody.find_all('td')[i].get_text()
+                    if yszkStr == '--':
+                        yszk.append(0.0)
+                    else:
+                        yszk.append(float(yszkStr.replace(',','')))
+                yszk2body = body.find_all('tr')[11]
+                yszk2 = []
+                for i in range(1, Qt):
+                    yszk2Str = yszk2body.find_all('td')[i].get_text()
+                    if yszk2Str == '--':
+                        yszk2.append(0.0)
+                    else:
+                        yszk2.append(float(yszk2Str.replace(',','')))
+                chbody = body.find_all('tr')[13]
+                ch = []
+                for i in range(1, Qt):
+                    chStr = chbody.find_all('td')[i].get_text()
+                    if chStr == '--':
+                        ch.append(0.0)
+                    else:
+                        ch.append(float(chStr.replace(',','')))
+                ldzcbody = body.find_all('tr')[19]
+                ldzc = []
+                for i in range(1, Qt):
+                    ldzcStr = ldzcbody.find_all('td')[i].get_text()
+                    if ldzcStr == '--':
+                        ldzc.append(0.0)
+                    else:
+                        ldzc.append(float(ldzcStr.replace(',','')))
+                gdzcbody = body.find_all('tr')[40]
+                gdzc = []
+                for i in range(1, Qt):
+                    gdzcStr = gdzcbody.find_all('td')[i].get_text()
+                    if gdzcStr == '--':
+                        gdzc.append(0.0)
+                    else:
+                        gdzc.append(float(gdzcStr.replace(',','')))
+                ldfzbody = body.find_all('tr')[59]
+                ldfz = []
+                for i in range(1, Qt):
+                    ldfzStr = ldfzbody.find_all('td')[i].get_text()
+                    if ldfzStr == '--':
+                        ldfz.append(0.0)
+                    else:
+                        ldfz.append(float(ldfzStr.replace(',','')))
+                gdfzbody = body.find_all('tr')[70]
+                gdfz = []
+                for i in range(1, Qt):
+                    gdfzStr = gdfzbody.find_all('td')[i].get_text()
+                    if gdfzStr == '--':
+                        gdfz.append(0.0)
+                    else:
+                        gdfz.append(float(gdfzStr.replace(',','')))
+                gbbody = body.find_all('tr')[73]
+                gb = []
+                for i in range(1, Qt):
+                    gbStr = gbbody.find_all('td')[i].get_text()
+                    if gbStr == '--':
+                        gb.append(0.0)
+                    else:
+                        gb.append(float(gbStr.replace(',','')))
+                gdqybody = body.find_all('tr')[83]
+                gdqy = []
+                for i in range(1, Qt):
+                    gdqyStr = gdqybody.find_all('td')[i].get_text()
+                    if gdqyStr == '--':
+                        gdqy.append(0.0)
+                    else:
+                        gdqy.append(float(gdqyStr.replace(',','')))
+                #将获取的数据插入数据表asset_debt
+                for i in range(1,Qt):
+                    if bDataExit[i-1]==False:#数据有缺失时，由前代码的逻辑必然数据表存在
+                        sqlString = "insert into asset_debt_"
+                        sqlString += "%s" % (year)
+                        sqlString += "_%s" % (i)
+                        sqlString += "(code,name,yszk,yszk2,ch,ldzc,gdzc,ldfz,gdfz,gb,gdqy) values('"
+                        sqlString += code
+                        sqlString += "','"
+                        sqlString += name.decode('utf8')
+                        sqlString += "',"
+                        sqlString += "%s" % (yszk[Qt-1-i])
+                        sqlString += ","
+                        sqlString += "%s" % (yszk2[Qt-1-i])
+                        sqlString += ","
+                        sqlString += "%s" % (ch[Qt-1-i])
+                        sqlString += ","
+                        sqlString += "%s" % (ldzc[Qt-1-i])
+                        sqlString += ","
+                        sqlString += "%s" % (gdzc[Qt-1-i])
+                        sqlString += ","
+                        sqlString += "%s" % (ldfz[Qt-1-i])
+                        sqlString += ","
+                        sqlString += "%s" % (gdfz[Qt-1-i])
+                        sqlString += ","
+                        sqlString += "%s" % (gb[Qt-1-i])
+                        sqlString += ","
+                        sqlString += "%s" % (gdqy[Qt-1-i])
+                        sqlString += ")"
+                        conn.execute(sqlString)
+                        log.writeUtfLog(sqlString.encode('utf8'))
+                        print "已增加", code, name, "数据至", year, "年",i,"季度asset_debt数据表"
+    except Exception,e:
+        print e
+        exit(1)
+
 def checkStockReport(code, startYear, endYear):
     """
 
@@ -247,85 +424,111 @@ def checkStockReport(code, startYear, endYear):
         if yearToMarket>startYear:
             print code, name,"股票上市时间比起始查询时间晚,以上市年份为最早检查年份!"
             startYear = yearToMarket
-        bNeedWebData = False
-        bAccessWebData = False
         for year in range(startYear, endYear + 1):
-            sqlString = "select code from stockreport_"
-            sqlString += "%s" %(year)
-            sqlString += "_4 "
-            sqlString += "where code="
-            sqlString += code
-            conn = createDBConnection()
-            ret = conn.execute(sqlString)
-            result = ret.first()
-            if result is None:
-                print  code, name, year, "年，stockreport数据库中无此股票！"
-                bNeedWebData = True
-            else:
-                continue
-            if bNeedWebData:
-                if not bAccessWebData:
-                    url = "http://money.finance.sina.com.cn/corp/go.php/vFD_FinancialGuideLine/stockid/" #http://data.eastmoney.com/bbsj/yjbb/600887.html
-                    url += code
-                    url += "/ctrl/"
-                    url += "%s" %(year)
-                    url += "/displaytype/4.phtml"
-                    print "读取新浪财经年报数据......"
-                    data = urllib.urlopen(url).read()
-                    print "新浪财经年报数据读取完毕!"
-                    time.sleep(2)
-                bs = bs4.BeautifulSoup(data,"lxml")
-                body = bs.find('tbody')
-                epsbody = body.find_all('tr')[3]
-                eps = float(epsbody.find_all('td')[1].get_text())
-                netprofitbody = body.find_all('tr')[32]
-                net_profits = float(netprofitbody.find_all('td')[1].get_text())/10000.0
-                profits_yoybody = body.find_all('tr')[35]
-                profits_yoy = float(profits_yoybody.find_all('td')[1].get_text())
-                bvpsbody = body.find_all('tr')[7]
-                bvps = float(bvpsbody.find_all('td')[1].get_text())
-                roebody = body.find_all('tr')[30]
-                roe = float(roebody.find_all('td')[1].get_text())
-                #epcf
-                sqlString = "select eps from stockreport_"
-                sqlString += "%s" % (year-1)
-                sqlString += "_4 "
+            bTableExit=[True, True, True, True] #数据库中业绩报表是否已存在，初始值为True存在
+            bDataExit=[True, True, True, True] #业绩报表中的数据是否已存在，初始值为True存在
+            for Qt in range(1, 5):
+                sqlString = "select code from stockreport_"
+                sqlString += "%s" %(year)
+                sqlString += "_%s " % (Qt)
                 sqlString += "where code="
                 sqlString += code
-                ret = conn.execute(sqlString)
+                conn = createDBConnection()
+                try:
+                    ret = conn.execute(sqlString)
+                except Exception, e:
+                    bTableExit[Qt-1]=False
+                    print  code, name, year, "年", Qt, "季度，stockreport数据表不存在！"
+                    continue
                 result = ret.first()
-                foundLastYearEPS = False
-                if result is not None:
-                    foundLastYearEPS = True
-                    epsLastYear = float(result.eps)
-                    sqlString = "insert into stockreport_"
-                    sqlString += "%s" %(year)
-                    if foundLastYearEPS:
-                        sqlString += "_4(code,name,eps,eps_yoy,bvps,roe,net_profits,profits_yoy) values('"
+                if result is None:
+                    bDataExit[Qt-1] = False
+                    print  code, name, year, "年", Qt, "季度，stockreport数据表中无此股票！"
+                    bNeedWebData = True
+                else:
+                    continue
+            if bDataExit.count(False) > 0:
+                url = "http://money.finance.sina.com.cn/corp/go.php/vFD_FinancialGuideLine/stockid/" #http://data.eastmoney.com/bbsj/yjbb/600887.html
+                url += code
+                url += "/ctrl/"
+                url += "%s" %(year)
+                url += "/displaytype/4.phtml"
+                print "读取新浪财经财务指标......"
+                data = urllib.urlopen(url).read()
+                print "新浪财经财务指标读取完毕!"
+                time.sleep(2)
+                bs = bs4.BeautifulSoup(data,"lxml")
+                body = bs.find('tbody')
+                datebody = body.find_all('tr')[0]
+                year,month,day = splitDateString(datebody.find_all('td')[1].get_text())
+                Qt = 5
+                if month == 3: Qt = 2
+                elif month == 6: Qt = 3
+                elif month == 9: Qt = 4
+                epsbody = body.find_all('tr')[3]
+                eps = []
+                for i in range(1,Qt):
+                    epStr = epsbody.find_all('td')[i].get_text()
+                    if epStr == '--':
+                        eps.append(0.0)
                     else:
-                        sqlString += "_4(code,name,eps,bvps,roe,net_profits,profits_yoy) values('"
-                    sqlString += code
-                    sqlString += "','"
-                    sqlString += name.decode('utf8')
-                    sqlString += "',"
-                    sqlString += "%s" %(eps)
-                    sqlString += ","
-                    if foundLastYearEPS:
-                        sqlString += "%s" %(100*round((eps-epsLastYear)/epsLastYear,4))
+                        eps.append(float(epStr))
+                netprofitbody = body.find_all('tr')[32]
+                net_profits = []
+                for i in range(1,Qt):
+                    net_profitStr = netprofitbody.find_all('td')[i].get_text()
+                    if net_profitStr == '--':
+                        net_profits.append(0.0)
+                    else:
+                        net_profits.append(float(net_profitStr)/10000.0)
+                profits_yoybody = body.find_all('tr')[35]
+                profits_yoy = []
+                for i in range(1,Qt):
+                    profits_yoyStr = profits_yoybody.find_all('td')[i].get_text()
+                    if profits_yoyStr == '--':
+                        profits_yoy.append(0.0)
+                    else:
+                        profits_yoy.append(float(profits_yoyStr))
+                bvpsbody = body.find_all('tr')[7]
+                bvps = []
+                for i in range(1,Qt):
+                    bvpStr = bvpsbody.find_all('td')[i].get_text()
+                    if bvpStr == '--':
+                        bvps.append(0.0)
+                    else:
+                        bvps.append(float(bvpStr))
+                roebody = body.find_all('tr')[30]
+                roe = []
+                for i in range(1,Qt):
+                    roeStr = roebody.find_all('td')[i].get_text()
+                    if roeStr == '--':
+                        roe.append(0.0)
+                    else:
+                        roe.append(float(roeStr))
+                #将获取的数据插入数据表stock_report
+                for i in range(1,Qt):
+                    if bDataExit[i-1]==False:#数据有缺失时，由前代码的逻辑必然数据表存在
+                        sqlString = "insert into stockreport_"
+                        sqlString += "%s" % (year)
+                        sqlString += "_%s" % (i)
+                        sqlString += "(code,name,eps,bvps,roe,net_profits,profits_yoy) values('"
+                        sqlString += code
+                        sqlString += "','"
+                        sqlString += name.decode('utf8')
+                        sqlString += "',"
+                        sqlString += "%s" % (eps[Qt-1-i])
                         sqlString += ","
-                    sqlString += "%s" %(bvps)
-                    sqlString += ","
-                    sqlString += "%s" %(roe)
-                    sqlString += ","
-                    #sqlString += "%s" %(epcf)
-                    #sqlString += ","
-                    sqlString += "%s" %(net_profits)
-                    sqlString += ","
-                    sqlString += "%s" %(profits_yoy)
-                    sqlString += ")"
-                    conn.execute(sqlString)
-                    log.writeUtfLog(sqlString.encode('utf8'))
-                    print "已增加",code,name,"数据至",year,"年stockreport数据库"
+                        sqlString += "%s" % (bvps[Qt-1-i])
+                        sqlString += ","
+                        sqlString += "%s" % (roe[Qt-1-i])
+                        sqlString += ","
+                        sqlString += "%s" % (net_profits[Qt-1-i])
+                        sqlString += ","
+                        sqlString += "%s" % (profits_yoy[Qt-1-i])
+                        sqlString += ")"
+                        conn.execute(sqlString)
+                        log.writeUtfLog(sqlString.encode('utf8'))
+                        print "已增加", code, name, "数据至", year, "年",i, "季度，stockreport数据表"
     except Exception,e:
         print e
         exit(1)

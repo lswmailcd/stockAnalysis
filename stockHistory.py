@@ -8,7 +8,7 @@ import time
 import matplotlib.pyplot as plt
 import stockTools as sT
 
-code = "600887"
+code = "000858"
 YEARSTART = 2008  #统计起始时间
 date = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
 y, m, d = sT.splitDateString(date)
@@ -17,9 +17,16 @@ if m<5: #y-1年的年报还没有出来
 else:
     YEAREND = y-1
 
+name, yearToMarket, _, _ = sT.getStockBasics(code)
+if yearToMarket == 0:
+    print code, name, u"上市时间不详!"
+    exit(1)
+if yearToMarket>=YEARSTART: YEARSTART = yearToMarket+1
 str = raw_input("不检查历史数据继续请按'回车',如需检查请按'c',退出请按'q': ")
 if str=="q" : exit(0)
 if str=="c" :
+    print "checking asset_debt..."
+    if sT.checkStockAssetDebt(code, YEARSTART, y-1) == False: exit(1)
     print "checking reports..."
     found, YEARSTART = sT.checkStockReport(code, YEARSTART, YEAREND)
     if found==False : exit(1)
@@ -27,10 +34,6 @@ if str=="c" :
     if sT.checkDistrib(code, YEARSTART, YEAREND) == False: exit(1)
     print "checking DONE!"
 
-name, yearToMarket, _, _ = sT.getStockBasics(code)
-if yearToMarket == 0:
-    print code, name, u"上市时间不详!"
-    exit(1)
 YEARList = [0]*(y-YEARSTART+1)
 PEList = [0]*(y-YEARSTART+1)
 PriceList = [0]*(y-YEARSTART+1)
@@ -70,7 +73,7 @@ for year in range(YEARSTART, YEAREND+1):
                 netProfits = result.net_profits
                 if not abs(EPS)<0.001:
                     PEList[year - YEARSTART] = closePrice / EPS
-                    PriceList[year - YEARSTART] = closePrice * netProfits/EPS #得到当年总市值
+                    PriceList[year - YEARSTART] = closePrice * sT.getStockCount(code, year, 4) #得到当年总市值
                 else:
                     print code,name,year,u"年EPS为0"
                 #if BPS is not None:
@@ -81,32 +84,11 @@ for year in range(YEARSTART, YEAREND+1):
                 break
 
 #获得该年报没有出来前的动态PE
-nStockTotal = netProfits/EPS #得到上年总股本，netProfits净利润为扣非后的净利润，因此可能与新浪财经数据不一致
 date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
-found = False
-
-while not found:
-    found,closePrice,tp,day = sT.getClosePriceForward(code, date)
-    if not found:
-        y, m, d = sT.splitDateString(date)
-        m=m-1 ; d=31
-        if not sT.validDate(m,d): d=d-1
-        date = sT.getDateString(y, m, d)
-#检查是否进行了分红送配
-sqlString = "select distrib,dividenTime from stockreport_"
-sqlString += "%s" % (YEAREND-1)
-sqlString += "_4 where code="
-sqlString += code
-ret = conn.execute(sqlString)
-result = ret.first()
-if result.dividenTime is not None and result.dividenTime<date:#此时已经进行了分红送配
-    money,s = sT.getDistrib(result.distrib)
-    nStockTotal += nStockTotal*s
-    EPS = EPS/(1+s)
 #计算动态PE
 y, m, d = sT.splitDateString(date)
 if m<5:#y-1年的年报没有出来，使用滚动EPS计算y-1和y年的PETTM
-    sqlString = 'select eps from stockprofit_'
+    sqlString = 'select eps from stockreport_'
     sqlString += '%s' % (y-1)
     sqlString += '_3 where code='
     sqlString += code
@@ -119,7 +101,7 @@ if m<5:#y-1年的年报没有出来，使用滚动EPS计算y-1和y年的PETTM
         else:
             print y-1, u"年3季度eps数据缺失！"
             exit(1)
-    sqlString = 'select eps from stockprofit_'
+    sqlString = 'select eps from stockreport_'
     sqlString += '%s' % (y-2)
     sqlString += '_4 where code='
     sqlString += code
@@ -132,7 +114,7 @@ if m<5:#y-1年的年报没有出来，使用滚动EPS计算y-1和y年的PETTM
         else:
             print y-2, u"年4季度eps数据缺失！"
             exit(1)
-        sqlString = 'select eps from stockprofit_'
+        sqlString = 'select eps from stockreport_'
         sqlString += '%s' % (y-2)
         sqlString += '_3 where code='
         sqlString += code
@@ -150,9 +132,10 @@ if m<5:#y-1年的年报没有出来，使用滚动EPS计算y-1和y年的PETTM
         f, closePrice,_,_ = sT.getClosePriceForward(code, y-1,12,31)
         PEList[y-1 - YEARSTART] = round(closePrice / EPS, 2)
         YEARList[y-1 - YEARSTART] = y-1
+        nStockTotal = sT.getStockCount(code, y-1, 3)
         PriceList[y-1 - YEARSTART] = closePrice * nStockTotal
 elif m<9:#y年的2季报没有出来
-    sqlString = 'select eps from stockprofit_'
+    sqlString = 'select eps from stockreport_'
     sqlString += '%s' %(y)
     sqlString += '_1 where code='
     sqlString += code
@@ -165,7 +148,7 @@ elif m<9:#y年的2季报没有出来
         else:
             print y,u"年1季度eps数据缺失！"
             exit(1)
-    sqlString = 'select eps from stockprofit_'
+    sqlString = 'select eps from stockreport_'
     sqlString += '%s' %(y-1)
     sqlString += '_4 where code='
     sqlString += code
@@ -178,7 +161,7 @@ elif m<9:#y年的2季报没有出来
         else:
             print y-1,u"年4季度eps数据缺失！"
             exit(1)
-        sqlString = 'select eps from stockprofit_'
+        sqlString = 'select eps from stockreport_'
         sqlString += '%s' % (y - 1)
         sqlString += '_1 where code='
         sqlString += code
@@ -192,8 +175,11 @@ elif m<9:#y年的2季报没有出来
                 print y-1, u"年1季度eps数据缺失！"
                 exit(1)
             EPS = eps_Q4_LastYear + eps_Q1 - eps_Q1_LastYear
+            f, closePrice, _, _ = sT.getClosePriceForward(code, y - 1, 12, 31)
+            nStockTotal = sT.getStockCount(code, y, 1)
+            PriceList[y - 1 - YEARSTART] = closePrice * sT.getStockCount(code, y-1, 4)
 elif m<11:#3季报没有出来
-    sqlString = 'select eps from stockprofit_'
+    sqlString = 'select eps from stockreport_'
     sqlString += '%s' %(y)
     sqlString += '_2 where code='
     sqlString += code
@@ -206,7 +192,7 @@ elif m<11:#3季报没有出来
         else:
             print y,u"年2季度eps数据缺失！"
             exit(1)
-    sqlString = 'select eps from stockprofit_'
+    sqlString = 'select eps from stockreport_'
     sqlString += '%s' %(y-1)
     sqlString += '_4 where code='
     sqlString += code
@@ -219,7 +205,7 @@ elif m<11:#3季报没有出来
         else:
             print y,u"年4季度eps数据缺失！"
             exit(1)
-        sqlString = 'select eps from stockprofit_'
+        sqlString = 'select eps from stockreport_'
         sqlString += '%s' % (y - 1)
         sqlString += '_2 where code='
         sqlString += code
@@ -233,8 +219,11 @@ elif m<11:#3季报没有出来
                 print y-1, u"年2季度eps数据缺失！"
                 exit(1)
         EPS = eps_Q4_LastYear + eps_Q2 - eps_Q2_LastYear
+        f, closePrice, _, _ = sT.getClosePriceForward(code, y - 1, 12, 31)
+        nStockTotal = sT.getStockCount(code, y, 2)
+        PriceList[y - 1 - YEARSTART] = closePrice * sT.getStockCount(code, y - 1, 4)
 else :#3季报出来了
-    sqlString = 'select eps from stockprofit_'
+    sqlString = 'select eps from stockreport_'
     sqlString += '%s' %(y)
     sqlString += '_3 where code='
     sqlString += code
@@ -247,7 +236,7 @@ else :#3季报出来了
         else:
             print y,u"年3季度eps数据缺失！"
             exit(1)
-    sqlString = 'select eps from stockprofit_'
+    sqlString = 'select eps from stockreport_'
     sqlString += '%s' %(y-1)
     sqlString += '_4 where code='
     sqlString += code
@@ -260,7 +249,7 @@ else :#3季报出来了
         else:
             print y-1,u"年4季度eps数据缺失！"
             exit(1)
-        sqlString = 'select eps from stockprofit_'
+        sqlString = 'select eps from stockreport_'
         sqlString += '%s' % (y - 1)
         sqlString += '_3 where code='
         sqlString += code
@@ -274,6 +263,9 @@ else :#3季报出来了
                 print y-1, u"年3季度eps数据缺失！"
                 exit(1)
         EPS = eps_Q3 + eps_Q4_LastYear - eps_Q3_LastYear
+        f, closePrice, _, _ = sT.getClosePriceForward(code, y - 1, 12, 31)
+        nStockTotal = sT.getStockCount(code, y, 3)
+        PriceList[y - 1 - YEARSTART] = closePrice * sT.getStockCount(code, y - 1, 4)
 #记录第y年的数据
 f, closePrice,_,_  = sT.getClosePriceForward(code, date)
 PEList[y - YEARSTART] = round(closePrice / EPS,2)
