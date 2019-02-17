@@ -11,7 +11,7 @@ import time
 
 STARTYEAR = 2012  #定投起始年
 STARTMONTH = 1  #定投起始月份
-ENDYEAR = 2016   #定投结束年
+ENDYEAR = 2014   #定投结束年
 ENDMONTH = 12 #定投结束月份
 TRADEDAY = 20 #每月中的定投日期
 REPORTYEARLAST = 2017 #最新年报年份
@@ -24,7 +24,7 @@ str = raw_input("不检查继续请按'回车',如需检查请按'c',退出请�
 if str=="q" : exit(0)
 if str=="c" :
     dirName = os.path.dirname(os.path.realpath(__file__))
-    os.system('C:\Users\lsw\Anaconda3\envs\conda27\python ' + dirName + '\\stockDataChecker.py 2008 2017')
+    os.system('C:\Users\lsw\Anaconda3\envs\conda27\python ' + dirName + '\\stockDataChecker.py 2008 2017 StockList.xls')
 
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('StepInvestResult')
@@ -46,11 +46,10 @@ for i in range(nrows):
     if table.cell(i + 1, 0).value!="":
         code[count] = table.cell(i + 1, 0).value
         name[count] = sT.getStockNameByCode(code[count]).decode('utf8')
-        sname, yearToMarket = sT.getStockBasics(code[count])
+        sname, yearToMarket,_,_ = sT.getStockBasics(code[count])
         if yearToMarket == 0:
             print code[count], name[count], u"上市时间不详!"
             exit(1)
-        print "checking DONE!"
         count += 1
 
 engine = create_engine('mysql://root:0609@127.0.0.1:3306/stockdatabase?charset=utf8', encoding='utf-8')

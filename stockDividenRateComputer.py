@@ -9,8 +9,8 @@ import xlrd
 import xlwt
 import stockDataChecker as ck
 
-date="2016-07-29"
-dividenYear = 2015
+date="2019-01-25"
+dividenYear = 2017
 moneyInvest = 10000.0
 
 print u"***请确保已经使用stockDataChecker.py对数据进行检查***"
@@ -18,11 +18,11 @@ str = raw_input("不检查继续请按'回车',如需检查请按'c',退出请�
 if str=="q" : exit(0)
 if str=="c" :
     dirName = os.path.dirname(os.path.realpath(__file__))
-    ck.process(2008, 2017, "sh50.xls" )
-    #os.system('C:\Users\lsw\Anaconda3\envs\conda27\python ' + dirName + '\\stockDataChecker.py 2008 2017 sh50.xls')
+    #ck.process(2008, 2017, "sh50.xls" )
+    os.system('C:\Users\lsw\Anaconda3\envs\conda27\python ' + dirName + '\\stockDataChecker.py 2008 2017 highdividen.xls')
 
 year, month, day =sT.splitDateString(date)
-data = xlrd.open_workbook('.\\data\\sh50.xls')
+data = xlrd.open_workbook('.\\data\\highdividen.xls')
 table = data.sheets()[0]
 nrows = table.nrows-1
 a = np.zeros([nrows])
@@ -39,7 +39,7 @@ for i in range(nrows):
         if yearToMarket == 0:
             print code[i], name[i], u"上市时间不详!"
             exit(1)
-        weight[i] = table.cell(i + 1, 2).value/100
+        weight[i] = table.cell(i + 1, 2).value/100.0
 
 conn = sT.createDBConnection()
 nStock = 0.0
@@ -74,6 +74,6 @@ for i in range(nrows):
         # 计算分红送转
         r, s = sT.getDistrib(resultDistrib.distrib)
         dividenTotal += r*nStock
-        print code[i], name[i], "distrib=",r
+        print code[i], name[i], "distrib=",r,"股息率: %.2f%%" %(r/price*100.0)
 
 print u"总计股息：","%.2f" %(dividenTotal), u"股息率:","%.2f%%" %(dividenTotal/moneyInvest*100.0)

@@ -8,30 +8,39 @@ import time
 import matplotlib.pyplot as plt
 import stockTools as sT
 
-code = "603027"
+code = "600887"
 YEARSTART = 2008  #统计起始时间
-YEAREND = 2018  #统计结束时间
+date = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
+y, m, d = sT.splitDateString(date)
+if m<5: #y-1年的年报还没有出来
+    YEAREND = y-2
+else:
+    YEAREND = y-1
 
-print "checking reports..."
-found, YEARSTART = sT.checkStockReport(code,YEARSTART,YEAREND-1)
-if found==False : exit(1)
-print "checking distrib..."
-if sT.checkDistrib(code, YEARSTART, YEAREND-1) == False: exit(1)
+str = raw_input("不检查历史数据继续请按'回车',如需检查请按'c',退出请按'q': ")
+if str=="q" : exit(0)
+if str=="c" :
+    print "checking reports..."
+    found, YEARSTART = sT.checkStockReport(code, YEARSTART, YEAREND)
+    if found==False : exit(1)
+    print "checking distrib..."
+    if sT.checkDistrib(code, YEARSTART, YEAREND) == False: exit(1)
+    print "checking DONE!"
+
 name, yearToMarket, _, _ = sT.getStockBasics(code)
 if yearToMarket == 0:
     print code, name, u"上市时间不详!"
     exit(1)
-print "checking DONE!"
-YEARList = [0]*(YEAREND-YEARSTART+1)
-PEList = [0]*(YEAREND-YEARSTART+1)
-PriceList = [0]*(YEAREND-YEARSTART+1)
+YEARList = [0]*(y-YEARSTART+1)
+PEList = [0]*(y-YEARSTART+1)
+PriceList = [0]*(y-YEARSTART+1)
 #DividenList = [0]*(YEAREND-YEARSTART+1)
 #PBList = [0]*(YEAREND-YEARSTART+1)
 EPS=0.0
 #BPS=0.0
 closePrice=0.0
 netProfits=0.0
-for year in range(YEARSTART, YEAREND):
+for year in range(YEARSTART, YEAREND+1):
     YEARList[year - YEARSTART] = year
     sqlString = "select eps,net_profits,bvps from stockreport_"
     sqlString += "%s" %(year)
@@ -71,8 +80,8 @@ for year in range(YEARSTART, YEAREND):
                 #print year, closePrice, result.eps, PEList[year - YEARSTART]
                 break
 
-#获得2018动态PE
-nStockTotal = netProfits/EPS #得到上年总股本
+#获得该年报没有出来前的动态PE
+nStockTotal = netProfits/EPS #得到上年总股本，netProfits净利润为扣非后的净利润，因此可能与新浪财经数据不一致
 date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
 found = False
 
@@ -96,11 +105,53 @@ if result.dividenTime is not None and result.dividenTime<date:#此时已经进�
     EPS = EPS/(1+s)
 #计算动态PE
 y, m, d = sT.splitDateString(date)
-if m<5:#1季报没有出来，使用上一年的数据
-    PEList[YEAREND - YEARSTART] = round(closePrice / EPS, 2)
-    YEARList[YEAREND - YEARSTART] = YEAREND
-    PriceList[YEAREND - YEARSTART] = closePrice * netProfits / EPS
-elif m<9:#2季报没有出来
+if m<5:#y-1年的年报没有出来，使用滚动EPS计算y-1和y年的PETTM
+    sqlString = 'select eps from stockprofit_'
+    sqlString += '%s' % (y-1)
+    sqlString += '_3 where code='
+    sqlString += code
+    ret = conn.execute(sqlString)
+    if ret is not None:
+        result = ret.first()
+        if result is not None:
+            eps_Q3 = result.eps
+            print y-1, 'Q3', eps_Q3
+        else:
+            print y-1, u"年3季度eps数据缺失！"
+            exit(1)
+    sqlString = 'select eps from stockprofit_'
+    sqlString += '%s' % (y-2)
+    sqlString += '_4 where code='
+    sqlString += code
+    ret = conn.execute(sqlString)
+    if ret is not None:
+        result = ret.first()
+        if result is not None:
+            eps_Q4_LastYear = result.eps
+            print y-2, 'Q4', eps_Q4_LastYear
+        else:
+            print y-2, u"年4季度eps数据缺失！"
+            exit(1)
+        sqlString = 'select eps from stockprofit_'
+        sqlString += '%s' % (y-2)
+        sqlString += '_3 where code='
+        sqlString += code
+        ret = conn.execute(sqlString)
+        if ret is not None:
+            result = ret.first()
+            if result is not None:
+                eps_Q3_LastYear = result.eps
+                print y-2, 'Q3', eps_Q3_LastYear
+            else:
+                print y-2, u"年3季度eps数据缺失！"
+                exit(1)
+        EPS = eps_Q3 + eps_Q4_LastYear - eps_Q3_LastYear
+        #记录y-1年的数据
+        f, closePrice,_,_ = sT.getClosePriceForward(code, y-1,12,31)
+        PEList[y-1 - YEARSTART] = round(closePrice / EPS, 2)
+        YEARList[y-1 - YEARSTART] = y-1
+        PriceList[y-1 - YEARSTART] = closePrice * nStockTotal
+elif m<9:#y年的2季报没有出来
     sqlString = 'select eps from stockprofit_'
     sqlString += '%s' %(y)
     sqlString += '_1 where code='
@@ -110,6 +161,7 @@ elif m<9:#2季报没有出来
         result = ret.first()
         if result is not None:
             eps_Q1 = result.eps
+            print y,'Q1', eps_Q1
         else:
             print y,u"年1季度eps数据缺失！"
             exit(1)
@@ -122,6 +174,7 @@ elif m<9:#2季报没有出来
         result = ret.first()
         if result is not None:
             eps_Q4_LastYear = result.eps
+            print y-1, 'Q4', eps_Q4_LastYear
         else:
             print y-1,u"年4季度eps数据缺失！"
             exit(1)
@@ -134,10 +187,11 @@ elif m<9:#2季报没有出来
             result = ret.first()
             if result is not None:
                 eps_Q1_LastYear = result.eps
+                print y-1, 'Q1', eps_Q1_LastYear
             else:
                 print y-1, u"年1季度eps数据缺失！"
                 exit(1)
-        EPS = eps_Q4_LastYear + eps_Q1 - eps_Q1_LastYear
+            EPS = eps_Q4_LastYear + eps_Q1 - eps_Q1_LastYear
 elif m<11:#3季报没有出来
     sqlString = 'select eps from stockprofit_'
     sqlString += '%s' %(y)
@@ -148,6 +202,7 @@ elif m<11:#3季报没有出来
         result = ret.first()
         if result is not None:
             eps_Q2 = result.eps
+            print y, 'Q2', eps_Q2
         else:
             print y,u"年2季度eps数据缺失！"
             exit(1)
@@ -160,6 +215,7 @@ elif m<11:#3季报没有出来
         result = ret.first()
         if result is not None:
             eps_Q4_LastYear = result.eps
+            print YEAREND-1, 'Q4', eps_Q4_LastYear
         else:
             print y,u"年4季度eps数据缺失！"
             exit(1)
@@ -172,11 +228,12 @@ elif m<11:#3季报没有出来
             result = ret.first()
             if result is not None:
                 eps_Q2_LastYear = result.eps
+                print y - 1, 'Q2', eps_Q2_LastYear
             else:
                 print y-1, u"年2季度eps数据缺失！"
                 exit(1)
         EPS = eps_Q4_LastYear + eps_Q2 - eps_Q2_LastYear
-else:#3季报出来了
+else :#3季报出来了
     sqlString = 'select eps from stockprofit_'
     sqlString += '%s' %(y)
     sqlString += '_3 where code='
@@ -186,6 +243,7 @@ else:#3季报出来了
         result = ret.first()
         if result is not None:
             eps_Q3 = result.eps
+            print y, 'Q3', eps_Q3
         else:
             print y,u"年3季度eps数据缺失！"
             exit(1)
@@ -198,8 +256,9 @@ else:#3季报出来了
         result = ret.first()
         if result is not None:
             eps_Q4_LastYear = result.eps
+            print y-1, 'Q4', eps_Q4_LastYear
         else:
-            print y,u"年4季度eps数据缺失！"
+            print y-1,u"年4季度eps数据缺失！"
             exit(1)
         sqlString = 'select eps from stockprofit_'
         sqlString += '%s' % (y - 1)
@@ -210,21 +269,24 @@ else:#3季报出来了
             result = ret.first()
             if result is not None:
                 eps_Q3_LastYear = result.eps
+                print y - 1, 'Q3', eps_Q3_LastYear
             else:
                 print y-1, u"年3季度eps数据缺失！"
                 exit(1)
         EPS = eps_Q3 + eps_Q4_LastYear - eps_Q3_LastYear
-PEList[YEAREND - YEARSTART] = round(closePrice / EPS,2)
-YEARList[YEAREND - YEARSTART] = YEAREND
-PriceList[YEAREND - YEARSTART] = closePrice * nStockTotal
+#记录第y年的数据
+f, closePrice,_,_  = sT.getClosePriceForward(code, date)
+PEList[y - YEARSTART] = round(closePrice / EPS,2)
+YEARList[y - YEARSTART] = y
+PriceList[y - YEARSTART] = closePrice * nStockTotal
 #PBList[YEAREND - YEARSTART] = closePrice/BPS
 #print YEAREND, closePrice, EPS, PEList[YEAREND - YEARSTART]
-for i in range(YEAREND - YEARSTART+1):
+for i in range(y - YEARSTART + 1):
     PriceList[i] = PriceList[i]/10**4
 
 fig = plt.figure()
-ax1 = fig.add_subplot(2,1,1,xlim=(YEARSTART-1, YEAREND+1), ylim=(-4, 4))
-ax2 = fig.add_subplot(2,1,2,xlim=(YEARSTART-1, YEAREND+1), ylim=(-4, 4))
+ax1 = fig.add_subplot(2,1,1,xlim=(YEARSTART-1, y+1), ylim=(-4, 4))
+ax2 = fig.add_subplot(2,1,2,xlim=(YEARSTART-1, y+1), ylim=(-4, 4))
 #ax3 = fig.add_subplot(3,1,3,xlim=(YEARSTART-1, YEAREND+1), ylim=(-4, 4))
 Graph.drawColumnChat( ax1, YEARList, PriceList, name.decode('utf8'), u'', u'总市值(亿元)', 20, 0.5,True)
 Graph.drawColumnChat( ax2, YEARList, PEList, u'', u'', u'PE_TTM', 20, 0.5)
