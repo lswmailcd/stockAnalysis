@@ -7,6 +7,7 @@ import xlwt
 import tushare as ts
 import time
 import stockTools as sT
+
 #注意：此程序不要使用MYSQL数据进行查询，会使查询顺序无法控制！！！！！！！！！！
 def getClosePrice(d):
     d=-1
@@ -16,9 +17,8 @@ def getClosePrice(d):
     return ustr[d:d1]
 
 #分月统计各类股票和基金的累积净值
-date = "2006-12-31"#time.strftime('%Y-%m-%d',time.localtime(time.time()))#"2018-05-31"#
+date = time.strftime('%Y-%m-%d',time.localtime(time.time()))#"2018-05-31"#
 y,m,d=sT.splitDateString(date)
-actualDay = d
 #注意：此程序不要使用MYSQL数据进行查询股票的定义，会使查询股票顺序无法控制！！！！！！！！！！
 data = xlrd.open_workbook('.\\data\\data.xls')
 table = data.sheets()[0]
@@ -38,8 +38,8 @@ worksheet = workbook.add_sheet('dataResult')
 for i in range(count):
     foundData = 0
     if code[i] == u'': continue
+    dateToSearch = date
     if market[i]=="fund":
-        dateToSearch = date
         while foundData == 0:
             url = "http://fund.eastmoney.com/f10/F10DataApi.aspx?type=lsjz&code=" + code[i]
             url = url + "&page=1&per=20&sdate="
@@ -49,29 +49,28 @@ for i in range(count):
             url = url + "&rt=0.19110643402290917"
             data = urllib.urlopen(url).read()
             bs = bs4.BeautifulSoup(data, "html.parser")
-            foundData = 1
             try:
                 closePrice = float(bs.find_all("td")[2].get_text())
+                foundData = 1
             except Exception, e:
                 print code[i], name[i], u"没有今日数据!", dateToSearch
                 y,m,d = sT.splitDateString(dateToSearch)
                 dateToSearch = sT.getDateString(y,m,d-1)
-                actualDay = d - 1
-                foundData=0
     elif market[i]!="fund":
-        found,closePrice,actualDay = sT.getClosePriceForward( code[i],date, autp=None )
+        found,closePrice,am,actualDay = sT.getClosePriceForward( code[i],date, autp=None )
+        dateToSearch = sT.getDateString(y, am, actualDay)
         if found==True:
             foundData = 1
         else:
             foundData = 0
     if foundData==1:
-        print code[i], name[i], closePrice, sT.getDateString(y,m,actualDay)
+        print code[i], name[i], closePrice, dateToSearch
 
     #如果中间有既不是股票也不是基金的行，i值也会+1，就相当于在excel中插入不是股票和基金的空行
     worksheet.write(i, 0, code[i])
     worksheet.write(i, 1, name[i])
     worksheet.write(i, 2, closePrice)
-    worksheet.write(i, 3, sT.getDateString(y,m,actualDay))
+    worksheet.write(i, 3, dateToSearch)
 
 #        url = "http://market.finance.sina.com.cn/downxls.php?date="
 #        url += date

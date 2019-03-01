@@ -8,7 +8,7 @@ import time
 import matplotlib.pyplot as plt
 import stockTools as sT
 
-code = "000858"
+code = "600887"
 YEARSTART = 2008  #统计起始时间
 date = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
 y, m, d = sT.splitDateString(date)
@@ -28,7 +28,7 @@ if str=="c" :
     print "checking asset_debt..."
     if sT.checkStockAssetDebt(code, YEARSTART, y-1) == False: exit(1)
     print "checking reports..."
-    found, YEARSTART = sT.checkStockReport(code, YEARSTART, YEAREND)
+    found, YEARSTART = sT.checkStockReport(code, YEARSTART, y-1)
     if found==False : exit(1)
     print "checking distrib..."
     if sT.checkDistrib(code, YEARSTART, YEAREND) == False: exit(1)

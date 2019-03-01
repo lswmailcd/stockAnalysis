@@ -12,7 +12,7 @@ from sqlalchemy import create_engine
 import stockTools as st
 
 discountRate = 0.045
-date = "2019-01-31"#time.strftime('%Y-%m-%d',time.localtime(time.time()))#"2017-11-13"
+date = "2005-12-30"#time.strftime('%Y-%m-%d',time.localtime(time.time()))#"2017-11-13"
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('stockBasicToday')
 worksheet.write(0, 0, u"代码")
@@ -39,34 +39,43 @@ try:
         start = True
         found, price, _, _ = st.getClosePrice(code[i], date )
         if found:
-            sqlString = 'select eps from stockprofit_2018_3 where code=' + code[i]
+            sqlString = 'select eps from stockprofit_2005_4 where code=' + code[i]
             ret = conn.execute(sqlString)
             if ret.rowcount!=0:
-                epsLatest = ret.first().eps
-                if epsLatest <=0:
+                eps = ret.first().eps
+                if eps <=0:
                     continue
             else:
                 pe = -1000
                 continue
-            sqlString = 'select eps from stockprofit_2017_4 where code=' + code[i]
-            ret = conn.execute(sqlString)
-            if ret.rowcount!=0:
-                epsSub1 = ret.first().eps
-                if epsSub1 <=0:
-                    continue
-            else:
-                pe = -1000
-                continue
-            sqlString = 'select eps from stockprofit_2017_3 where code=' + code[i]
-            ret = conn.execute(sqlString)
-            if ret.rowcount!=0:
-                epsSub2 = ret.first().eps
-                if epsSub2 <=0:
-                    continue
-            else:
-                pe = -1000
-                continue
-            eps = epsLatest + epsSub1 - epsSub2
+            # sqlString = 'select eps from stockprofit_2018_3 where code=' + code[i]
+            # ret = conn.execute(sqlString)
+            # if ret.rowcount!=0:
+            #     epsLatest = ret.first().eps
+            #     if epsLatest <=0:
+            #         continue
+            # else:
+            #     pe = -1000
+            #     continue
+            # sqlString = 'select eps from stockprofit_2017_4 where code=' + code[i]
+            # ret = conn.execute(sqlString)
+            # if ret.rowcount!=0:
+            #     epsSub1 = ret.first().eps
+            #     if epsSub1 <=0:
+            #         continue
+            # else:
+            #     pe = -1000
+            #     continue
+            # sqlString = 'select eps from stockprofit_2017_3 where code=' + code[i]
+            # ret = conn.execute(sqlString)
+            # if ret.rowcount!=0:
+            #     epsSub2 = ret.first().eps
+            #     if epsSub2 <=0:
+            #         continue
+            # else:
+            #     pe = -1000
+            #     continue
+            # eps = epsLatest + epsSub1 - epsSub2
             pe = price/eps
             if pe > 0:
                 stockNumValid += 1
