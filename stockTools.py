@@ -154,7 +154,21 @@ def  getClosePriceForward(code, dORy, month=0, day=0, autp=None):#根据输入�
     else:
         return foundData,-1, m, d
 
-def  getClosePrice(code, dORy, month=0, day=0, autp=None): #获取此日或此日后该月最近的一个交易日的收盘价
+def getClosePrice(code, dORy, month=0, day=0, autp=None):
+    if month==0:#输入的日期在dORy中，以字符串形式输入
+        y,m,d = splitDateString(dORy)
+    else:
+        y=dORy; m=month; d=day
+    if validDate(m,d):
+        date = getDateString(y, m, d)
+        data = ts.get_k_data(code, start=date, end=date, autype=autp)
+        if data.empty == False:
+            return True, data.values[0, 2]
+
+    return False, -1
+
+
+def  getClosePriceBackward(code, dORy, month=0, day=0, autp=None): #获取此日或此日后该月最近的一个交易日的收盘价
     foundData = False
     if month==0:#输入的日期在dORy中，以字符串形式输入
         y,m,d = splitDateString(dORy)
