@@ -8,11 +8,11 @@ import stockTools as sT
 import xlrd
 import xlwt
 
-STARTYEAR = 2018 #投资起始年
-STARTMONTH = 12 #投资起始月份
-buyDay = 28      #投资起始日期
-ENDYEAR = 2019  #投资结束年
-ENDMONTH = 1  #投资结束月份
+STARTYEAR = 2008 #投资起始年
+STARTMONTH = 10#投资起始月份
+buyDay = 31    #投资起始日期
+ENDYEAR = 2009  #投资结束年
+ENDMONTH = 7  #投资结束月份
 saleDay = 31  #投资结束日期
 checkDay = 15  #回撤检查日
 REPORTYEARLAST = 2017 #最新年报年份
@@ -136,7 +136,7 @@ for i in range(nrows):
                     lostMoneyMaxCaption = nCapitalInvest
                     lostMoneyMaxTime = sT.getDateString(year, m, d)
 
-    foundData,closePrice,saleMonth, actualsaleDay=sT.getClosePrice(code[i], ENDYEAR, ENDMONTH, saleDay)
+    foundData,closePrice,saleMonth, actualsaleDay=sT.getClosePriceBackward(code[i], ENDYEAR, ENDMONTH, saleDay)
     #year = ENDYEAR
     if foundData==True:
         nCapitalTotal = nStockTotal*closePrice+ndividend
