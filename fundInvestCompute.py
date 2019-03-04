@@ -15,7 +15,12 @@ ENDYEAR = 2009  #投资结束年
 ENDMONTH = 7  #投资结束月份
 saleDay = 31  #投资结束日
 
-print u"WARNING:请注意基金历史拆分情况，可能需要修改etfdata.xls中count列信息！！！"
+print u"WARNING:请注意基金历史分红情况，默认以现金分红为准！"
+str = raw_input("默认现金分红进行计算请按'回车',如需以红利再投进行计算请按'c',退出请按'q': ")
+if str=="q" : exit(0)
+stype = "1" #现金分红
+if str=="c" :
+    stype = "2" #红利再投
 print u"计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月---",ENDYEAR,u"年",ENDMONTH,u"月"
 startDate = sT.getDateString(STARTYEAR, STARTMONTH, buyDay)
 saleDate = sT.getDateString(ENDYEAR, ENDMONTH, saleDay)
@@ -45,7 +50,7 @@ for i in range(count):
     url = url + startDate
     url = url + "&etime="
     url = url + saleDate
-    url = url + "&stype=" + "1" + "&sgfl=" + "0" + "&shfl=" + "0" + "&sg=" + "10000" + "&lx=1"
+    url = url + "&stype=" + stype + "&sgfl=" + "0" + "&shfl=" + "0" + "&sg=" + "10000" + "&lx=1"
     data = urllib.urlopen(url).read()
     infoStr = data.split(':')
     if infoStr[0]=='var Result={"error"':
