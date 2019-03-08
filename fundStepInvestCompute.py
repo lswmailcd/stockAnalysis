@@ -8,38 +8,36 @@ import tushare as ts
 import time
 import stockTools as sT
 
-STARTYEAR = 2018   #投资起始年
+STARTYEAR = 2010   #投资起始年
 STARTMONTH = 1 #投资起始月份
 startDay = 1      #投资起始日期
-ENDYEAR = 2019  #投资结束年
-ENDMONTH = 3  #投资结束月份
-endDay = 3  #投资结束日
+ENDYEAR = 2014  #投资结束年
+ENDMONTH = 1  #投资结束月份
+endDay = 2  #投资结束日
 buyDay = 20  #定投日
 
 print u"WARNING:请注意基金历史分红情况，默认以现金分红为准！"
 str = raw_input("默认现金分红进行计算请按'回车',如需以红利再投进行计算请按'c',退出请按'q': ")
 if str=="q" : exit(0)
-stype = "1" #现金分红
+stype = "2" #现金分红
 if str=="c" :
-    stype = "2" #红利再投
+    stype = "1" #红利再投
 print u"计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", startDay,u"日\
 ---",ENDYEAR,u"年",ENDMONTH,u"月", endDay,u"日"
 startDate = sT.getDateString(STARTYEAR, STARTMONTH, buyDay)
 saleDate = sT.getDateString(ENDYEAR, ENDMONTH, endDay)
-data = xlrd.open_workbook('.\\data\\etfdata.xls')
+data = xlrd.open_workbook('.\\data\\fundata.xls')
 table = data.sheets()[0]
 nrows = table.nrows-1
 a = np.zeros([nrows])
 code = np.array(a, dtype=np.unicode)
 name = np.array(a, dtype=np.unicode)
-discount = np.array(a, dtype=np.float)
 count  = 0
 for i in range(nrows):
     if table.cell(i + 1, 0).value!="":
         code[i] = table.cell(i + 1, 0).value
         if code[i] == "" or code[i]=='0.0': continue
         name[i] = table.cell(i + 1, 1).value
-        discount[i] = table.cell(i + 1, 2).value
         count = count+1
 
 workbook = xlwt.Workbook(encoding = 'ascii')
@@ -48,8 +46,8 @@ for i in range(count):
     foundData = 0
     if code[i] == u'' : continue
     url = "http://fund.eastmoney.com/data/FundInvestCaculator_AIPDatas.aspx?fcode=" + code[i]
-    url = url + "&sdate=" + startDate + "&edate" + saleDate + "&shdate" + saleDate
-    url = url + "&round" + "1" + "&dtr" + "%s" %(buyDay) + "&p=" + "0" + "&je=" + "10000"
+    url = url + "&sdate=" + startDate + "&edate=" + saleDate + "&shdate=" + saleDate
+    url = url + "&round=" + "1" + "&dtr=" + "%s" %(buyDay) + "&p=" + "0" + "&je=" + "10000"
     url = url + "&stype=" + stype + "&needfirst=" + "2" + "&jsoncallback=FundDTSY.result"
     data = urllib.urlopen(url).read()
     time.sleep(1)

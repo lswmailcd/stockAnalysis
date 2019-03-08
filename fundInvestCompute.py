@@ -25,20 +25,18 @@ print u"计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", buyDay,u"日\
 ---",ENDYEAR,u"年",ENDMONTH,u"月", saleDay,u"日"
 startDate = sT.getDateString(STARTYEAR, STARTMONTH, buyDay)
 saleDate = sT.getDateString(ENDYEAR, ENDMONTH, saleDay)
-data = xlrd.open_workbook('.\\data\\etfdata.xls')
+data = xlrd.open_workbook('.\\data\\fundata.xls')
 table = data.sheets()[0]
 nrows = table.nrows-1
 a = np.zeros([nrows])
 code = np.array(a, dtype=np.unicode)
 name = np.array(a, dtype=np.unicode)
-discount = np.array(a, dtype=np.float)
 count  = 0
 for i in range(nrows):
     if table.cell(i + 1, 0).value!="":
         code[i] = table.cell(i + 1, 0).value
         if code[i] == "" or code[i]=='0.0': continue
         name[i] = table.cell(i + 1, 1).value
-        discount[i] = table.cell(i + 1, 2).value
         count = count+1
 
 workbook = xlwt.Workbook(encoding = 'ascii')
