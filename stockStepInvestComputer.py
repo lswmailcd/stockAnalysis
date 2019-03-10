@@ -9,10 +9,10 @@ import xlrd
 import xlwt
 import time
 
-STARTYEAR = 2012  #定投起始年
-STARTMONTH = 1  #定投起始月份
-ENDYEAR = 2014   #定投结束年
-ENDMONTH = 12 #定投结束月份
+STARTYEAR = 2016  #定投起始年
+STARTMONTH = 2  #定投起始月份
+ENDYEAR = 2018   #定投结束年
+ENDMONTH = 1 #定投结束月份
 TRADEDAY = 20 #每月中的定投日期
 REPORTYEARLAST = 2017 #最新年报年份
 
@@ -75,30 +75,30 @@ for i in range(count):
             sqlString += "_4 where code="
             sqlString += code[i]
             ret = conn.execute(sqlString)
-        except Exception, e:
-            print "ERROR: ", code[i], name[i], "connect database failure!"
-            print e
-            exit(1)
-        resultDistrib = ret.first()
-        if resultDistrib is None or resultDistrib.distrib is None:
-            print "WARNING:", code[i], name[i], distribYear, u"年，数据库年报分红数据获取失败！此年可能无分红！"
-            m = -1 #无分红，则分红月m的值置为-1
-        else:
-            try:
-                sqlString = "select dividenTime from stockreport_"
-                sqlString += "%s" % (distribYear)
-                sqlString += "_4 where code="
-                sqlString += code[i]
-                ret = conn.execute(sqlString)
-            except Exception, e:
-                print "ERROR: ", code[i], name[i], "connect database failure!"
-                print e
-                exit(1)
-            resultDividenDate = ret.first()
-            if resultDividenDate.dividenTime is None:
-                m = -1
+            resultDistrib = ret.first()
+            if resultDistrib is None or resultDistrib.distrib is None:
+                print "WARNING:", code[i], name[i], distribYear, u"年，数据库年报分红数据获取失败！此年可能无分红！"
+                m = -1  # 无分红，则分红月m的值置为-1
             else:
-                y, m, d = sT.splitDateString(resultDividenDate.dividenTime)
+                try:
+                    sqlString = "select dividenTime from stockreport_"
+                    sqlString += "%s" % (distribYear)
+                    sqlString += "_4 where code="
+                    sqlString += code[i]
+                    ret = conn.execute(sqlString)
+                    resultDividenDate = ret.first()
+                    if resultDividenDate.dividenTime is None:
+                        m = -1
+                    else:
+                        y, m, d = sT.splitDateString(resultDividenDate.dividenTime)
+                except Exception, e:
+                    print "ERROR: ", code[i], name[i], "connect database failure!"
+                    print e
+                    exit(1)
+        except Exception, e:
+            print "WARNING: ", code[i], name[i], distribYear,"年stockreport数据表不存在！"
+            m=-1
+
         #逐月定投计算
         nStockThisYear = 0
         nCapitalThisYear = 0.0
@@ -113,8 +113,8 @@ for i in range(count):
         #step = 1
         #if year==STARTYEAR: step=1
         bDistrib = False
-        for month in range(1,endMonth,1):# month in (4,9,10,12)
-            foundData,closePrice,actualMonth, actualDay=sT.getClosePrice(code[i], year, month, TRADEDAY)
+        for month in range(startMonth,endMonth,1):# month in (4,9,10,12)
+            foundData,closePrice,actualMonth, actualDay=sT.getClosePriceBackward(code[i], year, month, TRADEDAY)
             #print closePrice,sT.getDateString(year,month,actualDay)
             if foundData==False:
                 print "WARNING:",year, month, u"获取连网股价失败！可能此月股票停牌，暂停定投！"
@@ -152,7 +152,7 @@ for i in range(count):
     else:
         year = ENDYEAR
         month = ENDMONTH+1
-    foundData,closePrice,actualMonth, day=sT.getClosePrice(code[i],year, month, 1)
+    foundData,closePrice,actualMonth, day=sT.getClosePriceBackward(code[i],year, month, 1)
     if foundData==True:
         nCapitalTotal = nStockTotal*closePrice+ndividend
         income = nCapitalTotal-nCapitalInvest
