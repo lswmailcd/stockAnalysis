@@ -19,7 +19,7 @@ REPORTYEARLAST = 2017 #最新年报年份
 
 nStockInvest = 100     #购买的股数
 
-print u"计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月---",ENDYEAR,u"年",ENDMONTH,u"月"
+print u"一次性投资计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月---",ENDYEAR,u"年",ENDMONTH,u"月"
 print u"***请确保已经使用stockDataChecker.py对数据进行检查***"
 str = raw_input("不检查继续请按'回车',如需检查请按'c',退出请按'q': ")
 if str=="q" : exit(0)

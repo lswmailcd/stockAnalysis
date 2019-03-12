@@ -10,15 +10,15 @@ import xlwt
 import time
 
 STARTYEAR = 2016  #定投起始年
-STARTMONTH = 2  #定投起始月份
+STARTMONTH = 1  #定投起始月份
 ENDYEAR = 2018   #定投结束年
-ENDMONTH = 1 #定投结束月份
+ENDMONTH = 12 #定投结束月份
 TRADEDAY = 20 #每月中的定投日期
 REPORTYEARLAST = 2017 #最新年报年份
 
 moneyLimit = 6000  #每月定投金额上限，实际金额根据买的股数取整
 
-print u"计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月---",ENDYEAR,u"年",ENDMONTH,u"月"
+print u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月---",ENDYEAR,u"年",ENDMONTH,u"月"
 print u"***请确保已经使用stockDataChecker.py对数据进行检查***"
 str = raw_input("不检查继续请按'回车',如需检查请按'c',退出请按'q': ")
 if str=="q" : exit(0)
