@@ -277,11 +277,9 @@ for i in range(y - YEARSTART + 1):
     PriceList[i] = PriceList[i]/10**4
 
 fig = plt.figure()
-ax1 = fig.add_subplot(2,1,1,xlim=(YEARSTART-1, y+1), ylim=(-4, 4))
-ax2 = fig.add_subplot(2,1,2,xlim=(YEARSTART-1, y+1), ylim=(-4, 4))
-#ax3 = fig.add_subplot(3,1,3,xlim=(YEARSTART-1, YEAREND+1), ylim=(-4, 4))
+ax1 = fig.add_subplot(2,1,1)
+ax2 = fig.add_subplot(2,1,2)
 Graph.drawColumnChat( ax1, YEARList, PriceList, name.decode('utf8'), u'', u'总市值(亿元)', 20, 0.5,True)
 Graph.drawColumnChat( ax2, YEARList, PEList, u'', u'', u'PE_TTM', 20, 0.5)
-#Graph.drawColumnChat( ax3, YEARList, PBList, u'', u'', u'PB', 20, 0.5)
 print code,name,u"历史图绘制完成"
 plt.show()

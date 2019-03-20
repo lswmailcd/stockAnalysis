@@ -10,7 +10,7 @@ import stockTools as sT
 import Graph
 import matplotlib.pyplot as plt
 
-code = "050111"
+code = "110028"
 STARTYEAR = 2013  #投资起始年
 date = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
 y,m,d = sT.splitDateString(date)
@@ -43,11 +43,17 @@ for year in range(STARTYEAR,y+1):
         exit(1)
     rateList = data.split(":")[4].split(",")[0].split('"')
     profitList.append(float(rateList[1])/100.0)
-    print year, profitList[-1]
+    print year, "%.2f%%" %(profitList[-1]*100.0)
     worksheet.write(0, year-STARTYEAR+1, year)
     worksheet.write(1, year-STARTYEAR+1, profitList[-1])
 workbook.save('.\\data\\dataResult.xls')
 print "Invest result has been wrotten to dataResult.xls"
+
+fig = plt.figure()
+ax1 = fig.add_subplot(1,1,1)
+Graph.drawColumnChat( ax1, YEARList, profitList, code.decode('utf8'), u'', u'收益率', 20, 0.5, bPercent=True)
+plt.show()
+
 
 
 
