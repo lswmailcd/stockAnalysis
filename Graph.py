@@ -4,7 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pylab import mpl
 
-def  drawColumnChat( ax, XList, YList, title, xLableName, yLableName, fontSize, barWidth, bIntDisp=False, bPercent=False ):
+def  drawColumnChat( ax, XList, YList, XtickLableList, YtickLableList, title, xLableName, yLableName, \
+                     fontSize, barWidth, bIntDisp=False, bPercent=False ):
     mpl.rcParams['font.sans-serif'] = ['SimHei']  # 指定默认字体
     mpl.rcParams['axes.unicode_minus'] = False  # 解决保存图像是负号'-'显示为方块的问题
     fs = fontSize
@@ -12,10 +13,13 @@ def  drawColumnChat( ax, XList, YList, title, xLableName, yLableName, fontSize, 
     ax.set_title(title, fontsize=fs)
     ax.set_xlabel(xLableName, fontsize=fs)
     ax.set_ylabel(yLableName, fontsize=fs)
-    ax.set_xticks(XList)
-    ax.set_xticklabels(XList, fontsize=fs)
+    if XList is not None: ax.set_xticks(XList)
+    ax.set_xticklabels(XtickLableList, fontsize=fs)
     ax.axhline(color='black')
-    rects1 = ax.bar(XList,YList, barWidth, color='b')
+    if XList is not None:
+        rects1 = ax.bar(XList,YList, barWidth, color='b')
+    else:
+        rects1 = ax.bar(XtickLableList, YList, barWidth, color='b')
     autolabel(rects1, ax, fontSize,bIntDisp,bPercent)
     for ax in plt.gcf().axes:
         for yticklabel in ax.get_yticklabels():

@@ -24,10 +24,6 @@ if str=="c" :
 print code, u"  计算时间段为：",STARTYEAR,u"年","---",y,u"年",m,u"月"
 YEARList = [0]*(y-STARTYEAR+1)
 profitList = []
-workbook = xlwt.Workbook(encoding = 'ascii')
-worksheet = workbook.add_sheet('dataResult')
-worksheet.write(0, 0, u"年份")
-worksheet.write(1, 0, u"收益")
 for year in range(STARTYEAR,y+1):
     YEARList[year - STARTYEAR] = year
     startDate = sT.getDateString(year-1, 12, 31)
@@ -44,10 +40,6 @@ for year in range(STARTYEAR,y+1):
     rateList = data.split(":")[4].split(",")[0].split('"')
     profitList.append(float(rateList[1])/100.0)
     print year, "%.2f%%" %(profitList[-1]*100.0)
-    worksheet.write(0, year-STARTYEAR+1, year)
-    worksheet.write(1, year-STARTYEAR+1, profitList[-1])
-workbook.save('.\\data\\dataResult.xls')
-print "Invest result has been wrotten to dataResult.xls"
 
 fig = plt.figure()
 ax1 = fig.add_subplot(1,1,1)

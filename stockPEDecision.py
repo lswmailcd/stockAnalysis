@@ -7,12 +7,12 @@ import Graph
 
 peLowLimit = 0
 peHighLimit = 100
-n=-2
+n=-1
 #dateDict = dict([(n-1,'20071031'), (n,'20081231'),(n+1,'20140630'), (n+2,'20150529'), (n+3,'20160229'), (n+4,'20171222'), (n+5,'20180126'), (n+6,'20180619')])
 #colorDict = dict([(n-1,'y'),(n,'c'),(n+1,'b'), (n+2,'r'), (n+3,'g'), (n+4,'k'), (n+5,'r'), (n+6,'k')])
-dateDict = dict([(n+2,'20051230'),(n+3,'20081031'),(n+4,'20121130'), (n+5,'20140130'),(n+6,'20160229'), \
-                 (n+7,'20181228'), (n+8,'20190131'), (n+9,'20190301'), \
-                 (n+10, '20180131'),(n+11, '20150529'),(n+12, '20090731'),(n+13, '20071031') ])
+dateDict = dict([(n+1,'20051230'),(n+2,'20081031'),(n+3,'20121130'), (n+4,'20140130'),(n+5,'20160229'), \
+                  (n + 6, '20181018'),(n+7,'20181228'), (n+8,'20190131'), (n+9,'20190301'), \
+                  (n+10, '20180131'),(n+11, '20150529'),(n+12, '20090731'),(n+13, '20071031'),(n+14,'20190321') ])
 #colorDict = dict([(n,'b'),(n+1,'g'),  (n+2,'c'), (n+3,'k'), (n+4,'y'), (n+5,'b'), (n+6,'r'), (n+7,'k'), (n+8,'k'), (n+9,'k')])
 
 engine = create_engine('mysql://root:0609@127.0.0.1:3306/stockdatabase?charset=utf8', encoding='utf-8')
@@ -87,11 +87,11 @@ for key in dateDict:
     print "date:", dateDict[key], "stockNum:", stockValidNum, "mean:", u, "median:", med, "std:", sig, "mProfit:", avgProfit, "medProfit:", medProfit
 
 fig = plt.figure()
-ax1 = fig.add_subplot(2,1,1,xlim=(-1, len(dateList)), ylim=(-4, 4))
-ax2 = fig.add_subplot(2,1,2,xlim=(-1, len(dateList)), ylim=(-4, 4))
+ax1 = fig.add_subplot(2,1,1)
+ax2 = fig.add_subplot(2,1,2)
 #ax3 = fig.add_subplot(3,1,3,xlim=(YEARSTART-1, YEAREND+1), ylim=(-4, 4))
-Graph.drawColumnChat( ax1, dateList, peMeanList, u'市场PE历史图(各时期股票相同)', u'', u'PE mean', 12, 0.5)
-Graph.drawColumnChat( ax2, dateList, peMedianList, u'', u'', u'PE median', 12, 0.5)
+Graph.drawColumnChat( ax1, None, peMeanList, dateList, peMeanList, u'市场PE历史图(各时期股票相同)', u'', u'PE mean', 15, 0.5)
+Graph.drawColumnChat( ax2, None, peMedianList, dateList, peMedianList, u'', u'', u'PE median', 15, 0.5)
 #Graph.drawColumnChat( ax3, YEARList, PBList, u'', u'', u'PB', 20, 0.5)
 print u"市场PE历史图绘制完成"
 plt.show()
