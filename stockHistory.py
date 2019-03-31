@@ -8,17 +8,12 @@ import time
 import matplotlib.pyplot as plt
 import stockTools as sT
 
-code = "603288"
+code = "600887"
 YEARSTART = 2008  #统计起始时间
 LASTYEAR = 2018 #当前时间的上一年
 
 date = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
 y, m, d = sT.splitDateString(date)
-if m<5: #y-1年的年报还没有出来
-    YEAREND = y-2
-else:
-    YEAREND = y-1
-
 name, yearToMarket, _, _ = sT.getStockBasics(code)
 if yearToMarket == 0:
     print code, name, u"上市时间不详!"
@@ -28,12 +23,12 @@ str = raw_input("不检查历史数据继续请按'回车',如需检查请按'c'
 if str=="q" : exit(0)
 if str=="c" :
     print "checking asset_debt..."
-    if sT.checkStockAssetDebt(code, YEARSTART, y-1) == False: exit(1)
+    if sT.checkStockAssetDebt(code, YEARSTART, y) == False: exit(1)
     print "checking reports..."
-    found, YEARSTART = sT.checkStockReport(code, YEARSTART, y-1)
+    found, YEARSTART = sT.checkStockReport(code, YEARSTART, y)
     if found==False : exit(1)
     print "checking distrib..."
-    if sT.checkDistrib(code, YEARSTART, YEAREND) == False: exit(1)
+    if sT.checkDistrib(code, YEARSTART, LASTYEAR) == False: exit(1)
     print "checking DONE!"
 
 YEARList = [0]*(y-YEARSTART+1)

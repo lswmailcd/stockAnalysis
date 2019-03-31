@@ -192,20 +192,39 @@ def  getClosePriceBackward(code, dORy, month=0, day=0, autp=None): #获取此日
     else:
         return foundData, -1, m, d
 
-def getStockCount(code, year, month):
+def getStockEPS(code, year, quarter):
+    sqlString = "select eps from stockreport_"
+    sqlString += "%s" % (year)
+    sqlString += "_"
+    sqlString += "%s" % (quarter)
+    sqlString += " where code="
+    sqlString += code
+    try:
+        conn = createDBConnection()
+        ret = conn.execute(sqlString)
+        result = ret.first()
+    except Exception, e:
+        return False, 0
+    if result is None or result.eps is None:
+        print code, getStockNameByCode(code), year, u"年", quarter, u"季度", u"数据库中无此股票!"
+        return False, 0
+    else:
+        return True, result.eps
+
+def getStockCount(code, year, quarter):
     sqlString = "select gb from asset_debt_"
     sqlString += "%s" % (year)
-    sqlString += "_%s where code=" %(month)
+    sqlString += "_%s where code=" %(quarter)
     sqlString += code
     try:
         conn = createDBConnection()
         ret = conn.execute(sqlString)
     except Exception, e:
         print e
-        print code, year, '年',month,"月，获取股本数据,数据库访问失败！"
+        print code, year, '年',quarter,"季度，获取股本数据,数据库访问失败！"
     result = ret.first()
     if result is None or result.gb is None:
-        print code, year, "年",month, "月，资产负债表数据获取失败！"
+        print code, year, "年",quarter, "季度，资产负债表数据获取失败！"
         return 0.0
     else:
         return result.gb
@@ -309,7 +328,11 @@ def checkStockAssetDebt(code, startYear, endYear):
                 time.sleep(2)
                 bs = bs4.BeautifulSoup(data, "lxml")
                 body = bs.find('tbody')
-                datebody = body.find_all('tr')[0]
+                try:
+                    datebody = body.find_all('tr')[0]
+                except Exception, e:
+                    print  code, name, year, "年", Qt, "季度，新浪财经资产负债表数据不存在！"
+                    continue
                 year,month,day = splitDateString(datebody.find_all('td')[1].get_text())
                 Qt = 5
                 if month == 3: Qt = 2
@@ -473,7 +496,11 @@ def checkStockReport(code, startYear, endYear):
                 time.sleep(2)
                 bs = bs4.BeautifulSoup(data,"lxml")
                 body = bs.find('tbody')
-                datebody = body.find_all('tr')[0]
+                try:
+                    datebody = body.find_all('tr')[0]
+                except Exception, e:
+                    print  code, name, year, "年", Qt, "季度，新浪财经年报数据不存在！"
+                    continue
                 year,month,day = splitDateString(datebody.find_all('td')[1].get_text())
                 Qt = 5
                 if month == 3: Qt = 2
@@ -692,7 +719,7 @@ def checkDistrib(code, startYear, endYear):
             result = ret.first()
             if result is None:
                 print  code, year, "年，stockreport数据库中无此股票！"
-                exit(1)
+                continue
             elif result.distrib is None or  result.dividenTime is None:
                 name = result.name
                 print  code, name, year, "年，stockreport数据库分红数据为空或分红日期为空！"
@@ -709,7 +736,11 @@ def checkDistrib(code, startYear, endYear):
                 div = bs.find("div")
                 table = div.find_all("table")[13]
                 tbody = table.find_all("tbody")[0]
-                tds = tbody.find_all("td")
+                try:
+                    tds = tbody.find_all("td")
+                except Exception, e:
+                    print  code, name, year, "年，新浪财经分红数据不存在！"
+                    continue
                 for i in range(0, len(tds)):
                     if(tds[i].string==u"实施"):
                         y,m,d = splitDateString(tds[i + 2].string)
