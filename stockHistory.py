@@ -8,11 +8,10 @@ import time
 import matplotlib.pyplot as plt
 import stockTools as sT
 
-code = "603027"
+code = "600519"
 YEARSTART = 2008  #统计起始时间
-DATA2WATCH = "2019-06-05" #指定观察时间点
+DATA2WATCH =[] #["2017-01-09","2017-07-18","2017-10-12","2018-02-23","2018-06-05","2018-09-17"] #指定观察时间点
 
-y1, m1, d1 = sT.splitDateString(DATA2WATCH)
 date = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
 y, m, d = sT.splitDateString(date)
 LASTYEAR = y-1
@@ -91,16 +90,19 @@ for year in range(YEARSTART, y+1):
     PEList.append(closePrice / EPS)
     PriceList.append(closePrice * totalStock)  # 得到当年总市值
     print year,"年，EPSTTM=",EPS
-    if y1==year:
-        foundData, EPSTTM = sT.getStockEPSTTM(code, y1, sT.getQuarter(m1))
-        if foundData:
-            foundData, closePrice, m1T, d1T = sT.getClosePriceForward(code, DATA2WATCH)
-            totalStock = sT.getStockCount(code, y1, sT.getQuarter(m1))
-        if foundData:
-            YEARList.append(y1)
-            PriceList.append(closePrice * totalStock)
-            PEList.append(closePrice / EPSTTM)
-            print DATA2WATCH, "PETTM=", closePrice / EPSTTM,"priceTotal=",closePrice * totalStock/10**4
+
+    for dt in DATA2WATCH:
+        y1,m1,d1=sT.splitDateString(dt)
+        if y1==year:
+            foundData, EPSTTM = sT.getStockEPSTTM(code, y1, sT.getQuarter(m1))
+            if foundData:
+                foundData, closePrice, m1T, d1T = sT.getClosePriceForward(code, dt)
+                totalStock = sT.getStockCount(code, y1, sT.getQuarter(m1))
+            if foundData:
+                YEARList.append(y1)
+                PriceList.append(closePrice * totalStock)
+                PEList.append(closePrice / EPSTTM)
+                print dt, "PETTM=", closePrice / EPSTTM,"priceTotal=",round(closePrice * totalStock/10**4,0)
 
 for i in range(len(PriceList)):
     PriceList[i] = PriceList[i]/10**4
