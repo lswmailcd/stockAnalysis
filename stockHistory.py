@@ -8,12 +8,14 @@ import time
 import matplotlib.pyplot as plt
 import stockTools as sT
 
-code = "600887"
+code = "603027"
 YEARSTART = 2008  #统计起始时间
-LASTYEAR = 2018 #当前时间的上一年
+DATA2WATCH = "2019-06-05" #指定观察时间点
 
+y1, m1, d1 = sT.splitDateString(DATA2WATCH)
 date = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
 y, m, d = sT.splitDateString(date)
+LASTYEAR = y-1
 name, yearToMarket, _, _ = sT.getStockBasics(code)
 if yearToMarket == 0:
     print code, name, u"上市时间不详!"
@@ -31,20 +33,21 @@ if str=="c" :
     if sT.checkDistrib(code, YEARSTART, LASTYEAR) == False: exit(1)
     print "checking DONE!"
 
-YEARList = [0]*(y-YEARSTART+1)
-PEList = [0]*(y-YEARSTART+1)
-PriceList = [0]*(y-YEARSTART+1)
+YEARList = []
+PEList = []
+PriceList = []
 EPS=0.0
 totalStock = 0.0
 closePrice=0.0
 netProfits=0.0
 foundData = False
+str = ""
 for year in range(YEARSTART, y+1):
-    YEARList[year - YEARSTART] = year
+    YEARList.append(year)
     foundData, EPS = sT.getStockEPS(code, year, 4)
     totalStock = sT.getStockCount(code, year, 4)  # 得到总市值
     if not foundData:
-        print code, name, year, u"年", 4, u"季度", u"数据库中无此股票!epsTTM = 当年3季报eps+去年4季报eps-去年3季报eps"
+        str = "%s" %(code) + name + "%s" %(year) + "年4季度,数据库中无此股票EPS!epsTTM = 当年3季报eps+去年4季报eps-去年3季报eps"
         #epsTTM = 当年3季报eps+去年4季报eps-去年3季报eps
         foundData_Q3, EPS_Q3 = sT.getStockEPS(code, year, 3)
         foundData_LQ4, EPS_LQ4 = sT.getStockEPS(code, year-1, 4)
@@ -52,7 +55,7 @@ for year in range(YEARSTART, y+1):
         EPS = EPS_Q3 + EPS_LQ4 - EPS_LQ3
         totalStock = sT.getStockCount(code, year, 3)  # 得到总市值
         if not foundData_Q3:
-            print code, name, year, u"年", 3, u"季度", u"数据库中无此股票!epsTTM = 当年2季报eps+去年4季报eps-去年2季报eps"
+            str = "%s" % (code) + name + "%s" % (year) + "年3季度,数据库中无此股票EPS!epsTTM = 当年2季报eps+去年4季报eps-去年2季报eps"
             # epsTTM = 当年2季报eps+去年4季报eps-去年2季报eps
             foundData_Q2, EPS_Q2 = sT.getStockEPS(code, year, 2)
             foundData_LQ4, EPS_LQ4 = sT.getStockEPS(code, year - 1, 4)
@@ -60,7 +63,7 @@ for year in range(YEARSTART, y+1):
             EPS = EPS_Q2 + EPS_LQ4 - EPS_LQ2
             totalStock = sT.getStockCount(code, year, 2)  # 得到总市值
             if not foundData_Q2:
-                print code, name, year, u"年", 2, u"季度", u"数据库中无此股票!epsTTM = 当年1季报eps+去年4季报eps-去年1季报eps"
+                str = "%s" % (code) + name + "%s" % (year) + "年2季度,数据库中无此股票EPS!epsTTM = 当年1季报eps+去年4季报eps-去年1季报eps"
                 # epsTTM = 当年1季报eps+去年4季报eps-去年1季报eps
                 foundData_Q1, EPS_Q1 = sT.getStockEPS(code, year, 1)
                 foundData_LQ4, EPS_LQ4 = sT.getStockEPS(code, year - 1, 4)
@@ -68,27 +71,38 @@ for year in range(YEARSTART, y+1):
                 EPS = EPS_Q1 + EPS_LQ4 - EPS_LQ1
                 totalStock = sT.getStockCount(code, year, 1)  # 得到总市值
                 if not foundData_Q1:
-                    print code, name, year, u"年", 1, u"季度", u"数据库中无此股票!eps = 去年4季报（去年年报）"
+                    str = "%s" % (code) + name + "%s" % (year) + "年1季度,数据库中无此股票EPS!eps = 去年4季报（去年年报）"
                     # eps = 去年4季报（去年年报）
                     foundData, EPS = sT.getStockEPS(code, year-1, 4)
                     totalStock = sT.getStockCount(code, year-1, 4)  # 得到总市值
                     if not foundData:
-                        print code, name, year-1, u"年", 4, u"季度", u"数据库中无此股票!采用去年3季报eps+前年4季报eps-前年3季报eps"
+                        str = "%s," % (code) + name + "%s," % (year-1) + "年4季度, 数据库中无此股票EPS!采用去年3季报eps+前年4季报eps-前年3季报eps"
                         # epsTTM = 去年3季报eps+前年4季报eps-前年3季报eps
                         foundData_LQ3, EPS_LQ3 = sT.getStockEPS(code, year-1, 3)
                         foundData_LLQ4, EPS_LLQ4 = sT.getStockEPS(code, year - 2, 4)
                         foundData_LLQ3, EPS_LLQ3 = sT.getStockEPS(code, year - 2, 3)
                         EPS = EPS_LQ3 + EPS_LLQ4 - EPS_LLQ3
                         totalStock = sT.getStockCount(code, year-1, 3)  # 得到总市值
-
+    print str
     if year>LASTYEAR:
         _, closePrice, _, _ = sT.getClosePriceForward(code, date )
     else:
         _, closePrice, _, _ = sT.getClosePriceForward(code, year, 12, 31)
-    PEList[year - YEARSTART] = closePrice / EPS
-    PriceList[year - YEARSTART] = closePrice * totalStock  # 得到当年总市值
+    PEList.append(closePrice / EPS)
+    PriceList.append(closePrice * totalStock)  # 得到当年总市值
+    print year,"年，EPSTTM=",EPS
+    if y1==year:
+        foundData, EPSTTM = sT.getStockEPSTTM(code, y1, sT.getQuarter(m1))
+        if foundData:
+            foundData, closePrice, m1T, d1T = sT.getClosePriceForward(code, DATA2WATCH)
+            totalStock = sT.getStockCount(code, y1, sT.getQuarter(m1))
+        if foundData:
+            YEARList.append(y1)
+            PriceList.append(closePrice * totalStock)
+            PEList.append(closePrice / EPSTTM)
+            print DATA2WATCH, "PETTM=", closePrice / EPSTTM,"priceTotal=",closePrice * totalStock/10**4
 
-for i in range(y - YEARSTART + 1):
+for i in range(len(PriceList)):
     PriceList[i] = PriceList[i]/10**4
 
 fig = plt.figure()
