@@ -126,32 +126,6 @@ def getStockType(code):
         return ""
     return ret.first().stockType
 
-def getClosePriceLastBackward(code, dORy, month=0, day=0, autp=None):
-    if month==0:#输入的日期在dORy中，以字符串形式输入
-        y,m,d = splitDateString(dORy)
-    else:
-        y=dORy; m=month; d=day
-    bFound = True
-    bProbe = True
-    largeStep = 7
-    while bFound:
-        bFound, _ = getClosePrice(code, y, m, d ,autp )
-        if bFound: bProbe=True
-        d += 1
-        if not bFound and bProbe:
-            d += largeStep
-            bProbe = False
-            bFound = True
-        if not validDate(m, d):
-            m += 1
-            d = 1
-    d -= 1
-    if not validDate(m, d):
-        m -= 1
-        d = getValidLastDay(m)
-    return getClosePriceForward(code, y, m, d ,autp )
-
-
 def  getClosePriceForward(code, dORy, month=0, day=0, autp=None):#根据输入分开输入的年月日获取此日或此日前该月最近的一个交易日的收盘价
     if month==0:#输入的日期在dORy中，以字符串形式输入
         y,m,d = splitDateString(dORy)
@@ -161,19 +135,24 @@ def  getClosePriceForward(code, dORy, month=0, day=0, autp=None):#根据输入�
     foundData =False
     tryCount = 0
     step = 1
-    largeStep = 10
+    largeStep = 20
     if getDateString(my,mm,md)>getDateString(y,m,d): return foundData,-1, m, d
     while foundData==False and validDate(m,d):
         date = getDateString(y, m, d)
+        #print date
         data = ts.get_k_data(code, start=date, end=date, autype=autp)
         if data.empty == False:
             if step is not 1:
-                return getClosePriceLastBackward(code, date)
+                d += largeStep-1
+                if not validDate(m, d):
+                    m += 1
+                    d = largeStep-1
+                return getClosePriceForward(code, y, m ,d)
             else:
                 return foundData, data.values[0, 2], m, d
         else:
             tryCount += 1
-            if(tryCount>3):
+            if(tryCount>largeStep):
                 step = largeStep
             d -= step
             if not validDate(m, d):
