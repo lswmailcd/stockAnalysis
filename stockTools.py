@@ -126,6 +126,32 @@ def getStockType(code):
         return ""
     return ret.first().stockType
 
+def getClosePriceLastBackward(code, dORy, month=0, day=0, autp=None):
+    if month==0:#输入的日期在dORy中，以字符串形式输入
+        y,m,d = splitDateString(dORy)
+    else:
+        y=dORy; m=month; d=day
+    bFound = True
+    bProbe = True
+    largeStep = 7
+    while bFound:
+        bFound, _ = getClosePrice(code, y, m, d ,autp )
+        if bFound: bProbe=True
+        d += 1
+        if not bFound and bProbe:
+            d += largeStep
+            bProbe = False
+            bFound = True
+        if not validDate(m, d):
+            m += 1
+            d = 1
+    d -= 1
+    if not validDate(m, d):
+        m -= 1
+        d = getValidLastDay(m)
+    return getClosePriceForward(code, y, m, d ,autp )
+
+
 def  getClosePriceForward(code, dORy, month=0, day=0, autp=None):#根据输入分开输入的年月日获取此日或此日前该月最近的一个交易日的收盘价
     if month==0:#输入的日期在dORy中，以字符串形式输入
         y,m,d = splitDateString(dORy)
@@ -133,14 +159,23 @@ def  getClosePriceForward(code, dORy, month=0, day=0, autp=None):#根据输入�
         y=dORy; m=month; d=day
     name, my, mm, md = getStockBasics(code)
     foundData =False
+    tryCount = 0
+    step = 1
+    largeStep = 10
     if getDateString(my,mm,md)>getDateString(y,m,d): return foundData,-1, m, d
     while foundData==False and validDate(m,d):
         date = getDateString(y, m, d)
         data = ts.get_k_data(code, start=date, end=date, autype=autp)
         if data.empty == False:
-            foundData = True
+            if step is not 1:
+                return getClosePriceLastBackward(code, date)
+            else:
+                return foundData, data.values[0, 2], m, d
         else:
-            d -= 1
+            tryCount += 1
+            if(tryCount>3):
+                step = largeStep
+            d -= step
             if not validDate(m, d):
                 m -= 1
                 if m>0:
@@ -191,6 +226,33 @@ def  getClosePriceBackward(code, dORy, month=0, day=0, autp=None): #获取此日
         return foundData, data.values[0, 2], m, d
     else:
         return foundData, -1, m, d
+
+def getStockEPSTTM(code, year, quarter):
+    if quarter == 4:
+        return getStockEPS(code,year,quarter)
+    elif quarter==3:
+        #epsTTM = 当年3季报eps+去年4季报eps-去年3季报eps
+        foundData_Q3, EPS_Q3 = getStockEPS(code, year, 3)
+        foundData_LQ4, EPS_LQ4 = getStockEPS(code, year-1, 4)
+        foundData_LQ3, EPS_LQ3 = getStockEPS(code, year-1, 3)
+        if foundData_Q3:
+            return True, EPS_Q3 + EPS_LQ4 - EPS_LQ3
+    elif quarter == 2:
+        # epsTTM = 当年2季报eps+去年4季报eps-去年2季报eps
+        foundData_Q2, EPS_Q2 = getStockEPS(code, year, 2)
+        foundData_LQ4, EPS_LQ4 = getStockEPS(code, year - 1, 4)
+        foundData_LQ2, EPS_LQ2 = getStockEPS(code, year - 1, 2)
+        if foundData_Q2:
+            return True, EPS_Q2 + EPS_LQ4 - EPS_LQ2
+    else:
+        # epsTTM = 当年1季报eps+去年4季报eps-去年1季报eps
+        foundData_Q1, EPS_Q1 = getStockEPS(code, year, 1)
+        foundData_LQ4, EPS_LQ4 = getStockEPS(code, year - 1, 4)
+        foundData_LQ1, EPS_LQ1 = getStockEPS(code, year - 1, 1)
+        if foundData_Q1:
+            return True, EPS_Q1 + EPS_LQ4 - EPS_LQ1
+
+    return False, 0
 
 def getStockEPS(code, year, quarter):
     sqlString = "select eps from stockreport_"
@@ -734,7 +796,7 @@ def checkDistrib(code, startYear, endYear):
                     bAccessDataFinished = True
                 bs = bs4.BeautifulSoup(data, "lxml")
                 div = bs.find("div")
-                table = div.find_all("table")[13]
+                table = div.find_all("table")[12]
                 tbody = table.find_all("tbody")[0]
                 try:
                     tds = tbody.find_all("td")

@@ -8,9 +8,11 @@ import time
 import matplotlib.pyplot as plt
 import stockTools as sT
 
-code = "600519"
-YEARSTART = 2008 #统计起始时间
+code = "000513"
+YEARSTART = 2008#统计起始时间
 DATA2WATCH =[]#["2014-01-24","2015-05-25","2018-01-12","2018-06-08"] #指定观察时间点
+#千禾味业["2017-01-09","2017-07-18","2017-10-12","2018-02-23","2018-06-05","2018-09-17","2019-04-01"] #指定观察时间点
+
 
 date = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
 y, m, d = sT.splitDateString(date)
@@ -35,6 +37,7 @@ if strInfo=="c" :
 YEARList = []
 PEList = []
 PriceList = []
+EPSTTMList=[]
 EPS=0.0
 totalStock = 0.0
 closePrice=0.0
@@ -42,6 +45,9 @@ netProfits=0.0
 foundData = False
 strInfo = ""
 for year in range(YEARSTART, y+1):
+    #DATA2WATCH.append(sT.getDateString(year, 4, 30))
+    #DATA2WATCH.append(sT.getDateString(year, 7, 31))
+    #DATA2WATCH.append(sT.getDateString(year, 10, 31))
     YEARList.append(year)
     foundData, EPS = sT.getStockEPS(code, year, 4)
     totalStock = sT.getStockCount(code, year, 4)  # 得到总市值
@@ -82,14 +88,16 @@ for year in range(YEARSTART, y+1):
                         foundData_LLQ3, EPS_LLQ3 = sT.getStockEPS(code, year - 2, 3)
                         EPS = EPS_LQ3 + EPS_LLQ4 - EPS_LLQ3
                         totalStock = sT.getStockCount(code, year-1, 3)  # 得到总市值
+    EPSTTMList.append(EPS)
     print strInfo
     if year>LASTYEAR:
         _, closePrice, _, _ = sT.getClosePriceForward(code, date )
     else:
-        _, closePrice, _, _ = sT.getClosePriceForward(code, year, 12, 31)
+        _, closePrice, m2, d2 = sT.getClosePriceForward(code, year, 12, 31)
+        print year,m2,d2
     PEList.append(closePrice / EPS)
     PriceList.append(closePrice * totalStock)  # 得到当年总市值
-    print year,"年，EPSTTM=",EPS
+    print year,"年，EPSTTM=",EPS,",priceTotal=",round(closePrice * totalStock/10**4,0)
 
     for dt in DATA2WATCH:
         y1,m1,d1=sT.splitDateString(dt)
@@ -103,33 +111,42 @@ for year in range(YEARSTART, y+1):
                 PriceList.append(closePrice * totalStock)
                 PEList.append(closePrice / EPSTTM)
                 print dt, "PETTM=", closePrice / EPSTTM,"priceTotal=",round(closePrice * totalStock/10**4,0)
+                EPSTTMList.append(EPSTTM)
 
 for i in range(len(PriceList)):
     PriceList[i] = PriceList[i]/10**4
 
+min = min(PEList)
+max = max(PEList)
+a = [x for x in PEList if x > min]
+a = [x for x in a if x < max]
+quantile = np.percentile(a, (20, 50, 80), interpolation='midpoint')
+print "PETTM_20%_50%_80%=", quantile
 
-quantile = np.percentile(PEList, (20, 50, 80), interpolation='midpoint')
-print quantile
-
-PETTM_MEDIAN = np.median(PEList)
+PETTM_MEDIAN = quantile[1]
 PETTM_MEDIAN2NOW = (PEList[-1]-PETTM_MEDIAN)/PEList[-1]
-print "PETTM_MEDIAN=",PETTM_MEDIAN
 
 fig = plt.figure()
 ax1 = fig.add_subplot(2,1,1)
 ax2 = fig.add_subplot(2,1,2)
+#ax3 = fig.add_subplot(3,1,3)
+fs = 18
 #fig1
-Graph.drawColumnChat( ax1, YEARList, PriceList, YEARList, PriceList, name.decode('utf8'), u'', u'总市值(亿元)', 20, 0.5,True)
+Graph.drawColumnChat( ax1, YEARList, PriceList, YEARList, PriceList, name.decode('utf8'), u'', u'总市值(亿元)', fs, 0.5,True)
 #fig2
 spct = str(round(PETTM_MEDIAN2NOW*100.0,2))
 spct = spct + u'$\%$'
-Graph.drawColumnChat( ax2, YEARList, PEList,YEARList, PEList, u'', u'', u'PE_TTM('+spct+u")", 20, 0.5)
+Graph.drawColumnChat( ax2, YEARList, PEList,YEARList, PEList, u'', u'', u'PE_TTM('+spct+u")", fs, 0.5)
 ax2.axhline(color='green',y=quantile[2])
 ax2.axhline(color='red',y=quantile[0])
 ax2.axhline(color='orange',y=quantile[1])
-ax2.text(y+1,quantile[2],'80%',fontsize=20,color='green')
-ax2.text(y+1,quantile[1],"50%",fontsize=20,color='orange')
-ax2.text(y+1,quantile[0],"20%",fontsize=20,color='red')
+xlim = ax2.get_xlim()
+fs1 = fs*0.8
+ax2.text(xlim[1]+0.01,quantile[2],'80%:'+str(round(quantile[2],2)),fontsize=fs1,color='green')
+ax2.text(xlim[1]+0.01,quantile[1],"50%:"+str(round(quantile[1],2)),fontsize=fs1,color='orange')
+ax2.text(xlim[1]+0.01,quantile[0],"20%:"+str(round(quantile[0],2)),fontsize=fs1,color='red')
+#fig3
+#Graph.drawColumnChat( ax3, YEARList, EPSTTMList,YEARList, EPSTTMList, u'', u'', u'EPS_TTM', fs, 0.5)
 
 print code,name,u"历史图绘制完成"
 plt.show()
