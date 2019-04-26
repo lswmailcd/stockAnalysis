@@ -7,6 +7,18 @@ import urllib
 import bs4
 import stockGlobalSpace as sG
 import logRecoder as log
+from stockCalender import stockCalender
+
+def createCalender():
+    try:
+        if  sG.Calender is None:
+            sG.Calender = stockCalender()
+            return sG.Calender
+        else:
+            return sG.Calender
+    except Exception,e:
+        print e
+        exit(1)
 
 def createDBConnection():
     try:
@@ -126,47 +138,76 @@ def getStockType(code):
         return ""
     return ret.first().stockType
 
-def  getClosePriceForward(code, dORy, month=0, day=0, autp=None):#根据输入分开输入的年月日获取此日或此日前该月最近的一个交易日的收盘价
+
+def  getClosePriceForward(code, dORy, month=0, day=0, autp=None):#获取当年此月或此月以前最近的收盘价
+    cld = createCalender()
     if month==0:#输入的日期在dORy中，以字符串形式输入
         y,m,d = splitDateString(dORy)
     else:
         y=dORy; m=month; d=day
     name, my, mm, md = getStockBasics(code)
-    foundData =False
-    tryCount = 0
-    step = 1
-    largeStep = 20
-    if getDateString(my,mm,md)>getDateString(y,m,d): return foundData,-1, m, d
-    while foundData==False and validDate(m,d):
-        date = getDateString(y, m, d)
-        #print date
-        data = ts.get_k_data(code, start=date, end=date, autype=autp)
-        if data.empty == False:
-            if step is not 1:
-                d += largeStep-1
-                if not validDate(m, d):
-                    m += 1
-                    d = largeStep-1
-                return getClosePriceForward(code, y, m ,d)
-            else:
-                return foundData, data.values[0, 2], m, d
-        else:
-            tryCount += 1
-            if(tryCount>largeStep):
-                step = largeStep
-            d -= step
-            if not validDate(m, d):
-                m -= 1
-                if m>0:
-                    d = getValidLastDay(m)
-                    if d<0:
-                        break
+    if not cld.validDate(y, m, d) or cld.getDateString(my,mm,md)>cld.getDateString(y,m,d): return False,-1, m, d
+
+    yw, mw, dw = cld.getWorkdayForward(y, m, d)
+    foundData, closePrice = getClosePrice(code, yw, mw, dw, autp)
+    if foundData == False: #工作日找不到数据，该月可能出现了停牌或放假
+        while not foundData:
+            _, _, dw1 = cld.getWorkdayBackward(yw, mw, 1)
+            foundData1, _ = getClosePrice(code, yw, mw, dw1)
+            _,_,dw2=cld.getWorkdayForward(yw,mw,cld.getLastDay(yw, mw))
+            foundData2, _ = getClosePrice(code, yw, mw, dw2)
+            if (not foundData1) and (not foundData2): #整月停牌,检查前一月是否停牌
+                mw -= 1
+                if mw<=0 :
+                    yw-=1
+                    mw = 12
+            elif foundData1 and not foundData2:#月初不停牌，月末停牌
+                dt = (dw1+dw)/2
+                _, _, dt = cld.getWorkdayBackward(yw, mw, dt)
+                foundData, _ = getClosePrice(code, yw, mw, dt)
+                if not foundData:
+                    while not foundData:
+                        dt -= 1
+                        foundData, closePrice = getClosePrice(code, yw, mw, dt)
                 else:
-                    break
-    if foundData == True:
-        return foundData, data.values[0, 2], m, d
+                    dt = dw
+                    foundData = False
+                    while not foundData:
+                        dt -= 1
+                        foundData, closePrice = getClosePrice(code, yw, mw, dt)
+                return foundData, closePrice, mw, dt
+            elif not foundData1 and foundData2:#月初停牌,月末不停牌
+                dt = (dw2+dw)/2
+                _, _, dt = cld.getWorkdayForward(yw, mw, dt)
+                foundData, _ = getClosePrice(code, yw, mw, dt)
+                if not foundData:
+                    while not foundData:
+                        dt += 1
+                        foundData, closePrice = getClosePrice(code, yw, mw, dt)
+                else:
+                    dt = dw
+                    foundData = False
+                    while not foundData:
+                        dt -= 1
+                        foundData, closePrice = getClosePrice(code, yw, mw, dt)
+                return foundData, closePrice, mw, dt
+            else:#月初和月末都没有停牌
+                dt = (dw1+dw)/2
+                _, _, dt = cld.getWorkdayBackward(yw, mw, dt)
+                foundData, _ = getClosePrice(code, yw, mw, dt)
+                if not foundData:
+                    while not foundData:
+                        dt -= 1
+                        foundData, closePrice = getClosePrice(code, yw, mw, dt)
+                else:
+                    dt = dw
+                    foundData = False
+                    while not foundData:
+                        dt -= 1
+                        foundData, closePrice = getClosePrice(code, yw, mw, dt)
+                return foundData, closePrice, mw, dt
     else:
-        return foundData,-1, m, d
+        return foundData, closePrice, mw, dw
 
 def getClosePrice(code, dORy, month=0, day=0, autp=None):
     if month==0:#输入的日期在dORy中，以字符串形式输入
@@ -547,12 +588,12 @@ def checkStockReport(code, startYear, endYear):
                 if month == 3: Qt = 2
                 elif month == 6: Qt = 3
                 elif month == 9: Qt = 4
-                epsbody = body.find_all('tr')[3]
+                epsbody = body.find_all('tr')[4]
                 eps = []
                 for i in range(1,Qt):
                     epStr = epsbody.find_all('td')[i].get_text()
                     if epStr == '--':
-                        eps.append(0.0)
+                        eps.append(None)
                     else:
                         eps.append(float(epStr))
                 netprofitbody = body.find_all('tr')[32]
@@ -560,7 +601,7 @@ def checkStockReport(code, startYear, endYear):
                 for i in range(1,Qt):
                     net_profitStr = netprofitbody.find_all('td')[i].get_text()
                     if net_profitStr == '--':
-                        net_profits.append(0.0)
+                        net_profits.append(None)
                     else:
                         net_profits.append(float(net_profitStr)/10000.0)
                 profits_yoybody = body.find_all('tr')[35]
@@ -568,7 +609,7 @@ def checkStockReport(code, startYear, endYear):
                 for i in range(1,Qt):
                     profits_yoyStr = profits_yoybody.find_all('td')[i].get_text()
                     if profits_yoyStr == '--':
-                        profits_yoy.append(0.0)
+                        profits_yoy.append(None)
                     else:
                         profits_yoy.append(float(profits_yoyStr))
                 bvpsbody = body.find_all('tr')[7]
@@ -576,7 +617,7 @@ def checkStockReport(code, startYear, endYear):
                 for i in range(1,Qt):
                     bvpStr = bvpsbody.find_all('td')[i].get_text()
                     if bvpStr == '--':
-                        bvps.append(0.0)
+                        bvps.append(None)
                     else:
                         bvps.append(float(bvpStr))
                 roebody = body.find_all('tr')[30]
@@ -584,7 +625,7 @@ def checkStockReport(code, startYear, endYear):
                 for i in range(1,Qt):
                     roeStr = roebody.find_all('td')[i].get_text()
                     if roeStr == '--':
-                        roe.append(0.0)
+                        roe.append(None)
                     else:
                         roe.append(float(roeStr))
                 #将获取的数据插入数据表stock_report
