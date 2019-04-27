@@ -8,10 +8,10 @@ import time
 import matplotlib.pyplot as plt
 import stockTools as sT
 
-code = "000513"
+code = "603027"
 YEARSTART = 2008#统计起始时间
 DATA2WATCH =[]#["2014-01-24","2015-05-25","2018-01-12","2018-06-08"] #指定观察时间点
-#千禾味业["2017-01-09","2017-07-18","2017-10-12","2018-02-23","2018-06-05","2018-09-17","2019-04-01"] #指定观察时间点
+#千禾味业["2017-05-31","2017-10-12","2018-02-23","2018-06-05","2018-09-17","2019-04-01"] #指定观察时间点
 
 
 date = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
@@ -94,23 +94,30 @@ for year in range(YEARSTART, y+1):
         _, closePrice, _, _ = sT.getClosePriceForward(code, date )
     else:
         _, closePrice, m2, d2 = sT.getClosePriceForward(code, year, 12, 31)
-        print year,m2,d2
     PEList.append(closePrice / EPS)
     PriceList.append(closePrice * totalStock)  # 得到当年总市值
-    print year,"年，EPSTTM=",EPS,",priceTotal=",round(closePrice * totalStock/10**4,0)
+    print sT.getDateString(year,m2,d2),",BasicPETTM=",PEList[-1],",priceTotal=",round(PriceList[-1]/10**4,0),",EPSTTM=",EPS
 
     for dt in DATA2WATCH:
         y1,m1,d1=sT.splitDateString(dt)
         if y1==year:
-            foundData, EPSTTM = sT.getStockEPSTTM(code, y1, sT.getQuarter(m1))
+            qt = sT.getQuarter(m1)
+            if qt==1:
+                foundData, EPSTTM = sT.getStockEPSTTM(code, y1-1, 4)
+            else:
+                foundData, EPSTTM = sT.getStockEPSTTM(code, y1, qt-1)
             if foundData:
                 foundData, closePrice, m1T, d1T = sT.getClosePriceForward(code, dt)
-                totalStock = sT.getStockCount(code, y1, sT.getQuarter(m1))
+                qt = sT.getQuarter(m1T)
+                if qt == 1:
+                    totalStock = sT.getStockCount(code, y1 - 1, 4)
+                else:
+                    totalStock = sT.getStockCount(code, y1, qt - 1)
             if foundData:
                 YEARList.append(y1)
                 PriceList.append(closePrice * totalStock)
                 PEList.append(closePrice / EPSTTM)
-                print dt, "PETTM=", closePrice / EPSTTM,"priceTotal=",round(closePrice * totalStock/10**4,0)
+                print dt, "BasicPETTM=", closePrice / EPSTTM,"priceTotal=",round(closePrice * totalStock/10**4,0)
                 EPSTTMList.append(EPSTTM)
 
 for i in range(len(PriceList)):
@@ -136,7 +143,7 @@ Graph.drawColumnChat( ax1, YEARList, PriceList, YEARList, PriceList, name.decode
 #fig2
 spct = str(round(PETTM_MEDIAN2NOW*100.0,2))
 spct = spct + u'$\%$'
-Graph.drawColumnChat( ax2, YEARList, PEList,YEARList, PEList, u'', u'', u'PE_TTM('+spct+u")", fs, 0.5)
+Graph.drawColumnChat( ax2, YEARList, PEList,YEARList, PEList, u'', u'', u'BasicPE_TTM('+spct+u")", fs, 0.5)
 ax2.axhline(color='green',y=quantile[2])
 ax2.axhline(color='red',y=quantile[0])
 ax2.axhline(color='orange',y=quantile[1])
