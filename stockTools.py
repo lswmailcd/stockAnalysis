@@ -23,14 +23,17 @@ def createCalender():
 def createDBConnection():
     try:
         if  sG.bConnBD==False:
+            sG.lock.acquire()
             sG.engine = create_engine('mysql://root:0609@127.0.0.1:3306/stockdatabase?charset=utf8', encoding='utf-8')
             sG.dbConnection = sG.engine.connect()
+            sG.lock.release()
             sG.bConnBD = True
             return sG.dbConnection
         else:
             return sG.dbConnection
     except Exception,e:
         print e
+        sG.lock.release()
         exit(1)
 
 def  validDate(month, day):
@@ -253,24 +256,33 @@ def getStockEPSTTM(code, year, quarter):
     elif quarter==3:
         #epsTTM = 当年3季报eps+去年4季报eps-去年3季报eps
         foundData_Q3, EPS_Q3 = getStockEPS(code, year, 3)
+        totalStockQ3 = getStockCountQuarter(code, year, 3)
         foundData_LQ4, EPS_LQ4 = getStockEPS(code, year-1, 4)
+        totalStockLQ4 = getStockCountQuarter(code, year, 4)
         foundData_LQ3, EPS_LQ3 = getStockEPS(code, year-1, 3)
+        totalStockLQ3 = getStockCountQuarter(code, year, 3)
         if foundData_Q3:
-            return True, EPS_Q3 + EPS_LQ4 - EPS_LQ3
+            return True, (EPS_Q3*totalStockQ3 + EPS_LQ4*totalStockLQ4 - EPS_LQ3*totalStockLQ3)/totalStockQ3
     elif quarter == 2:
         # epsTTM = 当年2季报eps+去年4季报eps-去年2季报eps
         foundData_Q2, EPS_Q2 = getStockEPS(code, year, 2)
+        totalStockQ2 = getStockCountQuarter(code, year, 2)
         foundData_LQ4, EPS_LQ4 = getStockEPS(code, year - 1, 4)
+        totalStockLQ4 = getStockCountQuarter(code, year - 1, 4)
         foundData_LQ2, EPS_LQ2 = getStockEPS(code, year - 1, 2)
+        totalStockLQ2 = getStockCountQuarter(code, year - 1, 2)
         if foundData_Q2:
-            return True, EPS_Q2 + EPS_LQ4 - EPS_LQ2
+            return True, (EPS_Q2*totalStockQ2 + EPS_LQ4*totalStockLQ4 - EPS_LQ2*totalStockLQ2)/totalStockQ2
     else:
         # epsTTM = 当年1季报eps+去年4季报eps-去年1季报eps
         foundData_Q1, EPS_Q1 = getStockEPS(code, year, 1)
+        totalStockQ1 = getStockCountQuarter(code, year, 1)
         foundData_LQ4, EPS_LQ4 = getStockEPS(code, year - 1, 4)
+        totalStockLQ4 = getStockCountQuarter(code, year-1, 4)
         foundData_LQ1, EPS_LQ1 = getStockEPS(code, year - 1, 1)
+        totalStockLQ1 = getStockCountQuarter(code, year-1, 1)
         if foundData_Q1:
-            return True, EPS_Q1 + EPS_LQ4 - EPS_LQ1
+            return True, (EPS_Q1*totalStockQ1 + EPS_LQ4*totalStockLQ4 - EPS_LQ1*totalStockLQ1)/totalStockQ1
 
     return False, 0
 
@@ -280,24 +292,33 @@ def getStockEPSdiscountTTM(code, year, quarter):
     elif quarter==3:
         #epsTTM = 当年3季报eps+去年4季报eps-去年3季报eps
         foundData_Q3, EPS_Q3 = getStockEPSdiscount(code, year, 3)
+        totalStockQ3 = getStockCountQuarter(code, year, 3)
         foundData_LQ4, EPS_LQ4 = getStockEPSdiscount(code, year-1, 4)
+        totalStockLQ4 = getStockCountQuarter(code, year, 4)
         foundData_LQ3, EPS_LQ3 = getStockEPSdiscount(code, year-1, 3)
+        totalStockLQ3 = getStockCountQuarter(code, year, 3)
         if foundData_Q3:
-            return True, EPS_Q3 + EPS_LQ4 - EPS_LQ3
+            return True, (EPS_Q3*totalStockQ3 + EPS_LQ4*totalStockLQ4 - EPS_LQ3*totalStockLQ3)/totalStockQ3
     elif quarter == 2:
         # epsTTM = 当年2季报eps+去年4季报eps-去年2季报eps
         foundData_Q2, EPS_Q2 = getStockEPSdiscount(code, year, 2)
         foundData_LQ4, EPS_LQ4 = getStockEPSdiscount(code, year - 1, 4)
         foundData_LQ2, EPS_LQ2 = getStockEPSdiscount(code, year - 1, 2)
+        totalStockQ2 = getStockCountQuarter(code, year, 2)
+        totalStockLQ4 = getStockCountQuarter(code, year - 1, 4)
+        totalStockLQ2 = getStockCountQuarter(code, year - 1, 2)
         if foundData_Q2:
-            return True, EPS_Q2 + EPS_LQ4 - EPS_LQ2
+            return True, (EPS_Q2*totalStockQ2 + EPS_LQ4*totalStockLQ4 - EPS_LQ2*totalStockLQ2)/totalStockQ2
     else:
         # epsTTM = 当年1季报eps+去年4季报eps-去年1季报eps
         foundData_Q1, EPS_Q1 = getStockEPSdiscount(code, year, 1)
         foundData_LQ4, EPS_LQ4 = getStockEPSdiscount(code, year - 1, 4)
         foundData_LQ1, EPS_LQ1 = getStockEPSdiscount(code, year - 1, 1)
+        totalStockQ1 = getStockCountQuarter(code, year, 1)
+        totalStockLQ4 = getStockCountQuarter(code, year-1, 4)
+        totalStockLQ1 = getStockCountQuarter(code, year-1, 1)
         if foundData_Q1:
-            return True, EPS_Q1 + EPS_LQ4 - EPS_LQ1
+            return True, (EPS_Q1*totalStockQ1 + EPS_LQ4*totalStockLQ4 - EPS_LQ1*totalStockLQ1)/totalStockQ1
 
     return False, 0
 
@@ -314,7 +335,7 @@ def getStockEPSdiscount(code, year, quarter):#获取扣非EPS
         result = ret.first()
     except Exception, e:
         return False, 0
-    if result is None or result.eps_discount is None:
+    if result is None or result.eps_discount== 0.0 or result.eps_discount==sG.sNINF:#如果有eps_discount没有找到数据，则查找扣非总利润计算扣非EPS
         sqlString = "select net_profits_discount from stockreport_sup_"
         sqlString += "%s" % (year)
         sqlString += "_"
@@ -337,7 +358,7 @@ def getStockEPSdiscount(code, year, quarter):#获取扣非EPS
         if (result is None or result.net_profits_discount is None) or (result1 is None or result1.gb is None):
             print code, getStockNameByCode(code), year, u"年", quarter, u"季度", u"数据库中无此股票DiscountEPS信息!"
             return False, sG.sNINF
-        else:
+        else:#通过扣非利润计算每股扣非，并填空eps_discount列
             EPSdiscount = result.net_profits_discount / result1.gb
             sqlString = "update stockreport_sup_"
             sqlString += "%s" % (year)
@@ -373,7 +394,8 @@ def getStockEPS(code, year, quarter):#获取基本EPS
     else:
         return True, result.eps
 
-def getStockCount(code, year, quarter):
+def getStockCountQuarter(code, year, quarter):
+    #获取股本
     sqlString = "select gb from asset_debt_"
     sqlString += "%s" % (year)
     sqlString += "_%s where code=" %(quarter)
@@ -390,6 +412,39 @@ def getStockCount(code, year, quarter):
         return 0.0
     else:
         return result.gb
+
+def getStockCount(code, dORy, month=0, day=0):
+    if month==0:#输入的日期在dORy中，以字符串形式输入
+        y,m,d = splitDateString(dORy)
+    else:
+        y=dORy; m=month; d=day
+    quarter = createCalender().getQuarter(m)
+    #查找是否存在转股
+    sqlString = "select dividentime from stockreport_"
+    sqlString += "%s_4" % (y-1)
+    sqlString += " where code="
+    sqlString += code
+    try:
+        conn = createDBConnection()
+        ret = conn.execute(sqlString)
+    except Exception, e:
+        print e
+        print code, y, "年，stockreport数据表:访问失败！"
+    result = ret.first()
+    if result is None or result.dividentime is None:
+        print code, y, "年，stockreport表:分红日期数据获取失败,此年可能无分红！"
+        return getStockCountQuarter(code, y-1, 4)
+    else:
+        _, md, _ = splitDateString(result.dividentime)
+        qtd = createCalender().getQuarter(md)
+        if getDateString(y,m,d)<result.dividentime and quarter == qtd:
+            if quarter==1:
+                y -= 1
+                quarter = 4
+            else:
+                quarter -= 1
+        #获取股本
+        return getStockCountQuarter(code, y, quarter)
 
 def getMarketType( code ):
     if code[:3] in ("600","601") : return "sh_main"

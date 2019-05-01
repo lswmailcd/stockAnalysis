@@ -47,6 +47,14 @@ class stockCalender():
         return date(y, m, d).isoweekday() #1-星期一
 
     def getWorkdayForward(self, y, m, d):
+        if m in (1,5,10) and d in(1,2,3):#五一，十一，元旦
+            if m==1:
+                m = 12
+                y -=1
+                d = 31
+            else:
+                m -= 1
+                d = 30
         wd = self.getWeekday( y, m, d )
         if wd in (6,7):
             d1 = d - (wd-5)
