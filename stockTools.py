@@ -36,53 +36,6 @@ def createDBConnection():
         sG.lock.release()
         exit(1)
 
-def  validDate(month, day):
-    if day>0:
-        if (day<32 and month in (1,3,5,7,8,10,12)) or (day<31 and month in (2,4,6,9,11)) or (month==2 and day<29):
-            return True
-    return False
-
-def getValidLastDay(month):
-    if month > 0:
-        if month in (1, 3, 5, 7, 8, 10, 12):
-            return 31
-        elif month in (4, 6, 9, 11):
-            return 30
-        else:
-            return 28
-    return -1
-
-def getQuarter(m):
-    if validDate(m,15)==False:
-        return -1
-    else:
-        if m<4:
-            return 1
-        elif m<7:
-            return 2
-        elif m<10:
-            return 3
-        else:
-            return 4
-
-def splitDateString(date):
-    year = date[:4]
-    month = date[5:7]
-    day = date[8:]
-    return int(year),int(month),int(day)
-
-def getDateString(year,month,day):
-    date = "%s" % (year)
-    date += "-"
-    if month < 10:
-        date += "0"
-    date += "%s" % (month)
-    date += "-"
-    if day < 10:
-        date += "0"
-    date += "%s" % (day)
-    return date
-
 def getDistrib(distrib):#返回每股分红金额和转送股数
     nMoney = 0.0
     nStock = 0.0
@@ -149,7 +102,7 @@ def  getClosePriceForward(code, dORy, month=0, day=0, autp=None):#获取当年�
     else:
         y=dORy; m=month; d=day
     name, my, mm, md = getStockBasics(code)
-    if not cld.validDate(y, m, d) or cld.getDateString(my,mm,md)>cld.getDateString(y,m,d): return False,-1, m, d
+    if not cld.validDate(y, m, d) or getDateString(my,mm,md)>getDateString(y,m,d): return False,-1, m, d
 
     yw, mw, dw = cld.getWorkdayForward(y, m, d)
     foundData, closePrice = getClosePrice(code, yw, mw, dw, autp)
@@ -217,7 +170,7 @@ def getClosePrice(code, dORy, month=0, day=0, autp=None):
         y,m,d = splitDateString(dORy)
     else:
         y=dORy; m=month; d=day
-    if validDate(m,d):
+    if createCalender().validDate(y,m,d):
         date = getDateString(y, m, d)
         data = ts.get_k_data(code, start=date, end=date, autype=autp)
         if data.empty == False:
@@ -229,22 +182,16 @@ def getClosePrice(code, dORy, month=0, day=0, autp=None):
 def  getClosePriceBackward(code, dORy, month=0, day=0, autp=None): #获取此日或此日后该月最近的一个交易日的收盘价
     foundData = False
     if month==0:#输入的日期在dORy中，以字符串形式输入
-        y,m,d = splitDateString(dORy)
+        y,m,d = createCalender().splitDateString(dORy)
     else:
         y=dORy; m=month; d=day
-    while foundData==False and validDate(m,d):
+    while foundData==False and createCalender().validDate(m,d):
         date = getDateString(y, m, d)
         data = ts.get_k_data(code, start=date, end=date, autype=autp)
         if data.empty == False:
             foundData = True
         else:
-            d += 1
-            if not validDate(m, d):
-                m += 1
-                if m<13:
-                    d = 1
-                else:
-                    break
+            y, m, d = createCalender().getWorkdayBackward(y, m, d)
     if foundData == True:
         return foundData, data.values[0, 2], m, d
     else:
@@ -972,23 +919,37 @@ def getStockBasics(code):
 def checkDistrib(code, startYear, endYear):
     try:
         date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
-        y,m,d = splitDateString(date)
+        y,m,d = createCalender().splitDateString(date)
         bAccessDataFinished = False
-        for year in range(startYear, endYear + 1):
-            sqlString = "select name,distrib,dividenTime from stockreport_"
-            sqlString += "%s" % (year)
-            sqlString += "_4 "
-            sqlString += "where code="
+        for year in range(endYear, startYear-1, -1):
+            table1 = "stockreport_"
+            table1 += "%s_4" % (year)
+            table2 = "stockreport_sup_"
+            table2 += "%s_4" % (year)
+            sqlString = "select "
+            sqlString += table1
+            sqlString += ".name,distrib,dividenTime from "
+            sqlString += table1
+            sqlString += " inner join "
+            sqlString += table2
+            sqlString += " on "
+            sqlString += table1
+            sqlString += ".code="
+            sqlString += table2
+            sqlString += ".code"
+            sqlString += " where "
+            sqlString += table1
+            sqlString += ".code="
             sqlString += code
             conn = createDBConnection()
             ret = conn.execute(sqlString)
             result = ret.first()
             if result is None:
-                print  code, year, "年，stockreport数据库中无此股票！"
+                print  code, year, "年，stockreport表或stockreport_sup表中无此股票！"
                 continue
-            elif result.distrib is None or  result.dividenTime is None:
+            elif result.distrib is None or result.dividenTime is None:
                 name = result.name
-                print  code, name, year, "年，stockreport数据库分红数据为空或分红日期为空！"
+                print  code, name, year, "年，stockreport表分红数据为空或stockreport_sup表分红日期为空！"
                 if bAccessDataFinished == False:
                     url = "http://vip.stock.finance.sina.com.cn/corp/go.php/vISSUE_ShareBonus/stockid/"
                     url += code
@@ -1011,20 +972,17 @@ def checkDistrib(code, startYear, endYear):
                     if(tds[i].string==u"实施"):
                         y,m,d = splitDateString(tds[i + 2].string)
                         if y<startYear: break
-                        if year + 1 == y: # 网上的时间是实际分红时间要晚一年
+                        if year + 1 == y: # 网上的时间比实际分红时间要晚一年
                             sg = unicode(tds[i - 3].string)
                             zg = unicode(tds[i - 2].string)
                             px = unicode(tds[i - 1].string)
                             dividenDate = unicode(tds[i + 2].string)
-                            if (u"0" != sg or u"0" != zg or u"0" != px) and dividenDate != '--':
+                            if (u"0" != sg or u"0" != zg or u"0" != px):
                                 sqlString = "update stockreport_"
                                 sqlString += "%s" % (year)
                                 sqlString += "_4 "
                                 sqlString += "set "
-                                sqlString += "dividenTime='"
-                                sqlString += dividenDate.encode('utf8')
-                                sqlString += "'"
-                                sqlString += ",distrib='10"
+                                sqlString += "distrib='10"
                                 if px != u"0":
                                     sqlString += "派"
                                     sqlString += px.encode('utf8')
@@ -1038,17 +996,38 @@ def checkDistrib(code, startYear, endYear):
                                 sqlString += code.encode('utf8')
                                 ret = conn.execute(sqlString)
                                 log.writeUtfLog(sqlString)
-                            # else:
-                            # sqlString = "update stockreport_"
-                            # sqlString += "%s" % (year)
-                            # sqlString += "_4 "
-                            # sqlString += "set "
-                            # sqlString += "dividenTime=null,distrib=null "
-                            # sqlString += "where code="
-                            # sqlString += code[i].encode('utf8')
-                            # ret = conn.execute(sqlString)
+                            if  dividenDate != '--':
+                                sqlString = "update stockreport_sup_"
+                                sqlString += "%s" % (year)
+                                sqlString += "_4 "
+                                sqlString += "set "
+                                sqlString += "dividentime='"
+                                sqlString += dividenDate.encode('utf8')
+                                sqlString += "'"
+                                sqlString += "where code="
+                                sqlString += code.encode('utf8')
+                                ret = conn.execute(sqlString)
+                                log.writeUtfLog(sqlString)
                             print year, "10派", px, "转", zg, "送", sg, "，", "分红登记日期：", dividenDate.encode('utf8')
     except Exception,e:
         print e
         exit(1)
     return True
+
+def splitDateString(date):
+    year = date[:4]
+    month = date[5:7]
+    day = date[8:]
+    return int(year), int(month), int(day)
+
+def getDateString(year, month, day):
+    date = "%s" % (year)
+    date += "-"
+    if month < 10:
+        date += "0"
+    date += "%s" % (month)
+    date += "-"
+    if day < 10:
+        date += "0"
+    date += "%s" % (day)
+    return date

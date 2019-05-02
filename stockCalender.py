@@ -47,7 +47,7 @@ class stockCalender():
         return date(y, m, d).isoweekday() #1-星期一
 
     def getWorkdayForward(self, y, m, d):
-        if m in (1,5,10) and d in(1,2,3):#五一，十一，元旦
+        if m in (1,5) and d in(1,2,3) or m==10 and (d>0 and d<8):#五一，十一，元旦
             if m==1:
                 m = 12
                 y -=1
@@ -71,6 +71,8 @@ class stockCalender():
             return y,m,d
 
     def getWorkdayBackward(self, y, m, d):
+        if m in (1,5) and d in(1,2,3): d = 4 #五一，元旦
+        if  m==10 and (d>0 and d<8): d = 8 #十一
         wd = self.getWeekday(y, m, d)
         if wd in (6,7):
             d1 = d + (8-wd)
@@ -85,20 +87,36 @@ class stockCalender():
         else:
             return y,m,d
 
-    def splitDateString(self, date):
-        year = date[:4]
-        month = date[5:7]
-        day = date[8:]
-        return int(year), int(month), int(day)
+    def getPrevDay(self, y, m, d):#获得当前日期的前一天
+        if d-1 == 0:
+            if m-1 == 0:
+                y -= 1
+                m = 12
+            else:
+                m -= 1
+            d = self.getLastDay(y, m)
+        else:
+            d -= 1
+        return y, m, d
 
-    def getDateString(self, year, month, day):
-        date = "%s" % (year)
-        date += "-"
-        if month < 10:
-            date += "0"
-        date += "%s" % (month)
-        date += "-"
-        if day < 10:
-            date += "0"
-        date += "%s" % (day)
-        return date
+    def getNextDay(self, y, m, d):  # 获得当前日期的后一天
+        if d+1 > self.getLastDay(y, m):
+            if m+1 > 12 :
+                y += 1
+                m = 1
+            else:
+                m += 1
+            d = 1
+        else:
+            d += 1
+        return y, m, d
+
+    def getPrevWorkday(self, y, m, d):#获得当前日期的前一个工作日
+        y, m, d = self.getPrevDay(y, m, d)
+        return self.getWorkdayForward(y, m, d)
+
+    def getNextWorkday(self, y, m, d):#获得当前日期的后一个工作日
+        y, m, d = self.getNextDay(y, m, d)
+        return self.getWorkdayBackward(y, m, d)
+
+
