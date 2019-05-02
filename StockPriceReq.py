@@ -54,8 +54,9 @@ for i in range(count):
                 foundData = 1
             except Exception, e:
                 print code[i], name[i], u"没有今日数据!", dateToSearch
-                y,m,d = sT.splitDateString(dateToSearch)
-                dateToSearch = sT.getDateString(y,m,d-1)
+                y, m, d = sT.splitDateString(dateToSearch)
+                y, m, d = sT.createCalender().getPrevWorkday(y, m, d)
+                dateToSearch = sT.getDateString(y, m, d)
     elif market[i]!="fund":
         found,closePrice,am,actualDay = sT.getClosePriceForward( code[i],date, autp=None )
         dateToSearch = sT.getDateString(y, am, actualDay)
