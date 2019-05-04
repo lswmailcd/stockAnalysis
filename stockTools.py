@@ -172,10 +172,34 @@ def getClosePrice(code, dORy, month=0, day=0, autp=None):
         y=dORy; m=month; d=day
     if createCalender().validDate(y,m,d):
         date = getDateString(y, m, d)
-        data = ts.get_k_data(code, start=date, end=date, autype=autp)
-        if data.empty == False:
-            return True, data.values[0, 2]
-
+        conn = createDBConnection()
+        sqlString = "select closeprice from stockprice where code="
+        sqlString += code
+        sqlString += " and date='"
+        sqlString += date.encode('utf8')
+        sqlString += "'"
+        try:
+            ret = conn.execute(sqlString)
+            result = ret.first()
+        except Exception, e:
+            print e
+        if result is not None and result.closeprice is not None:
+            return True, result.closeprice
+        else:
+            data = ts.get_k_data(code, start=date, end=date, autype=autp)
+            if data.empty == False:
+                closeprice = data.values[0, 2]
+                sqlString = "insert into stockprice(code,closeprice,date) values("
+                sqlString += code
+                sqlString += ",%s,'" %(closeprice)
+                sqlString += date.encode('utf8')
+                sqlString += "')"
+                try:
+                    ret = conn.execute(sqlString)
+                    log.writeUtfLog(sqlString)
+                except Exception, e:
+                    print e
+                return True, closeprice
     return False, -1
 
 
@@ -187,13 +211,11 @@ def  getClosePriceBackward(code, dORy, month=0, day=0, autp=None): #获取此日
         y=dORy; m=month; d=day
     while foundData==False and createCalender().validDate(m,d):
         date = getDateString(y, m, d)
-        data = ts.get_k_data(code, start=date, end=date, autype=autp)
-        if data.empty == False:
-            foundData = True
-        else:
+        foundData, closeprice = getClosePrice(code, date )
+        if not foundData:
             y, m, d = createCalender().getWorkdayBackward(y, m, d)
     if foundData == True:
-        return foundData, data.values[0, 2], m, d
+        return foundData, closeprice, m, d
     else:
         return foundData, -1, m, d
 
@@ -919,7 +941,7 @@ def getStockBasics(code):
 def checkDistrib(code, startYear, endYear):
     try:
         date = time.strftime('%Y-%m-%d', time.localtime(time.time()))
-        y,m,d = createCalender().splitDateString(date)
+        y,m,d = splitDateString(date)
         bAccessDataFinished = False
         for year in range(endYear, startYear-1, -1):
             table1 = "stockreport_"
