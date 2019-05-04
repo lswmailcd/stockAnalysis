@@ -2,27 +2,85 @@
 from sqlalchemy import create_engine
 import tushare as ts
 import xlrd
+import stockTools as sT
+import logRecoder as log
 
-engine = create_engine('mysql://root:0609@127.0.0.1:3306/stockdatabase?charset=utf8', encoding='utf-8')
-conn = engine.connect()
+def  deleteDupRow(tablename):#删除重复行并在主键code建立索引
+    con = sT.createDBConnection()
+    try:
+        sqlString = 'alter table '
+        sqlString += tablename
+        sqlString += ' modify column code char(6)'
+        con.execute(sqlString)
+        log.writeUtfLog(sqlString.encode('utf8'))
+
+        sqlString = 'alter table '
+        sqlString += tablename
+        sqlString += ' add column id int(11) PRIMARY KEY AUTO_INCREMENT'
+        con.execute(sqlString)
+        log.writeUtfLog(sqlString.encode('utf8'))
+
+        sqlString = 'select code, id from '
+        sqlString += tablename
+        sqlString += ' WHERE id IN (SELECT id FROM (SELECT MAX(id) AS id, COUNT(code) AS ucount FROM '
+        sqlString += tablename
+        sqlString += ' GROUP BY code HAVING ucount>1 ORDER BY ucount DESC) AS tab)'
+        ret = con.execute(sqlString)
+        print ret.fetchall()
+
+
+        sqlString = 'delete from '
+        sqlString += tablename
+        sqlString += ' WHERE id IN (SELECT id FROM (SELECT MAX(id) AS id, COUNT(code) AS ucount FROM '
+        sqlString += tablename
+        sqlString += ' GROUP BY code HAVING ucount>1 ORDER BY ucount DESC) AS tab)'
+        con.execute(sqlString)
+        log.writeUtfLog(sqlString.encode('utf8'))
+
+        sqlString = 'alter table '
+        sqlString += tablename
+        sqlString += ' DROP column id'
+        con.execute(sqlString)
+        log.writeUtfLog(sqlString.encode('utf8'))
+
+        sqlString = 'alter table '
+        sqlString += tablename
+        sqlString += ' add PRIMARY KEY (code)'
+        con.execute(sqlString)
+        log.writeUtfLog(sqlString.encode('utf8'))
+    except Exception, e:
+        print e
+
+conn = sT.createDBConnection()
 str = "stockbasics_20190118"
-#ret=ts.get_report_data(2019,1)
-#ret.to_sql("stockreport_2019_1", engine, if_exists='append')
+#ret=ts.get_report_data(2018,4)
+#ret.to_sql("stockreport_2018_4", engine, if_exists='append')
 #ret = ts.get_profit_data(2009, 2)
 #ret.to_sql('stockprofit_2009_2', engine, if_exists='append')
 # ret = ts.get_growth_data(2018, 3)
 # ret.to_sql('stockgrowth_2018_3', engine, if_exists='append')
 #ret = ts.get_stock_basics()
 #ret.to_sql(str,engine,if_exists='append')
-for y in range(2019,2021):
-    for i in range(1,5):
+# tb = "stockprofit_"
+# tb += "%s_%s" % (2018, 3)
+# deleteDupRow(tb)
+for y in range(2018,2019):
+    for i in range(1,4):
+        tb = "stockreport_"
+        tb += "%s_%s" %(y,i)
+        #deleteDupRow(tb)
+        # sqlString = "alter table stockreport_sup_"
+        # sqlString += "%s_" % (y)
+        # sqlString += "%s" % (i)
+        # sqlString += " drop dividentime"
+        #conn.execute(sqlString)
         #ret=ts.get_report_data(y,i)
-        sqlString = "create table stockreport_sup_"
-        sqlString += "%s_" % (y)
-        sqlString += "%s" % (i)
-        sqlString += "(code char(6) not null primary key,name text,eps_avg double,eps_w double,eps_adj double,"
-        sqlString += "eps_discount double, bvps_bfadj double,bvps_adj double,epcf double,reservedps double,"
-        sqlString += "perundps double,gpr double,roe double,roe_w double,gross_profits double, net_profits_discount double)"
+        #sqlString = "create table stockreport_sup_"
+        #sqlString += "%s_" % (y)
+        #sqlString += "%s" % (i)
+        #sqlString += "(code char(6) not null primary key,name text,eps_avg double,eps_w double,eps_adj double,"
+        #sqlString += "eps_discount double, bvps_bfadj double,bvps_adj double,epcf double,reservedps double,"
+        #sqlString += "perundps double,gpr double,roe double,roe_w double,gross_profits double, net_profits_discount double)"
         #conn.execute(sqlString)
         #str = "stockreport_"
         #str += "%s_" %(y)
