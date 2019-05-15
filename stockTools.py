@@ -189,9 +189,9 @@ def getClosePrice(code, dORy, month=0, day=0, autp=None):
             data = ts.get_k_data(code, start=date, end=date, autype=autp)
             if data.empty == False:
                 closeprice = data.values[0, 2]
-                sqlString = "insert into stockprice(code,closeprice,date) values("
+                sqlString = "insert into stockprice(code,closeprice,date) values('"
                 sqlString += code
-                sqlString += ",%s,'" %(closeprice)
+                sqlString += "',%s,'" %(closeprice)
                 sqlString += date.encode('utf8')
                 sqlString += "')"
                 try:
@@ -209,11 +209,11 @@ def  getClosePriceBackward(code, dORy, month=0, day=0, autp=None): #获取此日
         y,m,d = createCalender().splitDateString(dORy)
     else:
         y=dORy; m=month; d=day
-    while foundData==False and createCalender().validDate(m,d):
+    while foundData==False and createCalender().validDate(y,m,d):
         date = getDateString(y, m, d)
         foundData, closeprice = getClosePrice(code, date )
         if not foundData:
-            y, m, d = createCalender().getWorkdayBackward(y, m, d)
+            y, m, d = createCalender().getNextWorkday(y,m,d)
     if foundData == True:
         return foundData, closeprice, m, d
     else:
@@ -389,7 +389,7 @@ def getStockCount(code, dORy, month=0, day=0):
         y=dORy; m=month; d=day
     quarter = createCalender().getQuarter(m)
     #查找是否存在转股
-    sqlString = "select dividentime from stockreport_"
+    sqlString = "select dividentime from stockreport_sup_"
     sqlString += "%s_4" % (y-1)
     sqlString += " where code="
     sqlString += code

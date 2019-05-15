@@ -10,7 +10,7 @@ import time
 import matplotlib.pyplot as plt
 import stockTools as sT
 
-code = "000513"
+code = "002372"
 YEARSTART = 2008#统计起始时间
 DATA2WATCH =[]#["2014-01-24","2015-05-25","2018-01-12","2018-06-08"] #指定观察时间点
 #千禾味业["2017-05-31","2017-10-12","2018-02-23","2018-06-05","2018-09-17","2019-04-01"] #指定观察时间点
@@ -103,7 +103,7 @@ for year in range(YEARSTART, y+1):
     for dt in DATA2WATCH:
         y1,m1,d1=sT.splitDateString(dt)
         if y1==year:
-            qt = sT.getQuarter(m1)
+            qt = sT.createCalender().getQuarter(m1)
             if qt==1:
                 foundData, EPSTTM = sT.getStockEPSTTM(code, y1-1, 4)
                 _, EPSdiscountTTM = sT.getStockEPSdiscountTTM(code, y1 - 1, 4)
