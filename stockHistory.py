@@ -10,7 +10,7 @@ import time
 import matplotlib.pyplot as plt
 import stockTools as sT
 
-code = "002372"
+code = "603027"
 YEARSTART = 2008#统计起始时间
 DATA2WATCH =[]#["2014-01-24","2015-05-25","2018-01-12","2018-06-08"] #指定观察时间点
 #千禾味业["2017-05-31","2017-10-12","2018-02-23","2018-06-05","2018-09-17","2019-04-01"] #指定观察时间点
@@ -97,7 +97,7 @@ for year in range(YEARSTART, y+1):
     PEList.append(closePrice / EPS)
     PEDiscList.append(closePrice / epsdic)
     PriceList.append(closePrice * totalStock)  # 得到当年总市值
-    print sT.getDateString(year,m2,d2),",BasicPETTM=",PEList[-1],", ","discountPETTM=",PEList[-1],\
+    print sT.getDateString(year,m2,d2),",BasicPETTM=",PEList[-1],", ","discountPETTM=",PEDiscList[-1],\
                            ",priceTotal=", round(PriceList[-1]/10**4,0), ",EPSTTM=",EPS, ",EPSDicountTTM=",epsdic
 
     for dt in DATA2WATCH:
