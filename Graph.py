@@ -35,7 +35,7 @@ def autolabel(rects, ax, fs, bIntDisp, bPercent):
         n = height
         if bPercent: n=n*100.0
         if bIntDisp:
-            h = str(int(round(n,1)))
+            h = str(int(round(n,0)))
         else:
             h = str(round(n,2))
         if bPercent: h = h + '$\%$'
