@@ -64,14 +64,13 @@ str = "stockbasics_20190118"
 # tb = "stockprofit_"
 # tb += "%s_%s" % (2018, 3)
 # deleteDupRow(tb)
-for y in range(2018,2019):
-    for i in range(1,4):
-        tb = "stockreport_"
+for y in range(2013,2019):
+    for i in range(1,5):
+        tb = "asset_debt_"
         tb += "%s_%s" %(y,i)
         #deleteDupRow(tb)
-        # sqlString = "alter table stockreport_sup_"
-        # sqlString += "%s_" % (y)
-        # sqlString += "%s" % (i)
+        sqlString = "delete from "+tb
+        sqlString += " where code='002677'"
         # sqlString += " drop dividentime"
         #conn.execute(sqlString)
         #ret=ts.get_report_data(y,i)

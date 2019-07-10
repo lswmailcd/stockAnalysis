@@ -377,7 +377,7 @@ def getStockCountQuarter(code, year, quarter):
         print code, year, '年',quarter,"季度，获取股本数据,数据库访问失败！"
     result = ret.first()
     if result is None or result.gb is None:
-        print code, year, "年",quarter, "季度，资产负债表数据获取失败！"
+        print code, year, "年",quarter, "季度，资产负债表股本数据获取失败！"
         return 0.0
     else:
         return result.gb
@@ -398,22 +398,43 @@ def getStockCount(code, dORy, month=0, day=0):
         ret = conn.execute(sqlString)
     except Exception, e:
         print e
-        print code, y, "年，stockreport数据表:访问失败！"
+        print code, y, "年，stockreport_sup数据表:访问失败！"
     result = ret.first()
     if result is None or result.dividentime is None:
-        print code, y, "年，stockreport表:分红日期数据获取失败,此年可能无分红！"
+        print code, y, "年，stockreport_sup表:分红日期数据获取失败,此年可能无分红！"
         return getStockCountQuarter(code, y-1, 4)
     else:
         _, md, _ = splitDateString(result.dividentime)
         qtd = createCalender().getQuarter(md)
-        if getDateString(y,m,d)<result.dividentime and quarter == qtd:
-            if quarter==1:
+        #获取股本
+        gb = getStockCountQuarter(code, y, quarter)
+        # 股本数据获取失败，可能是由于此季度报表没有出来，则使用前一季度并结合分红给出股本数据
+        stock = 0.0
+        if gb<0.001:
+            if getDateString(y, m, d) > result.dividentime:
+                sqlString = "select distrib from stockreport_"
+                sqlString += "%s_4" % (y - 1)
+                sqlString += " where code="
+                sqlString += code
+                try:
+                    conn = createDBConnection()
+                    ret = conn.execute(sqlString)
+                except Exception, e:
+                    print e
+                    print code, y, "年，stockreport数据表:访问失败！"
+                result = ret.first()
+                if result is None or result.distrib is None:
+                    print code, y, "年，stockreport表:分红数据获取失败,此年可能无分红！"
+                else:
+                    money, stock = getDistrib(result.distrib)
+            if quarter == 1:
                 y -= 1
                 quarter = 4
             else:
                 quarter -= 1
-        #获取股本
-        return getStockCountQuarter(code, y, quarter)
+        return (1+stock)*getStockCountQuarter(code, y, quarter)
+
+
 
 def getMarketType( code ):
     if code[:3] in ("600","601") : return "sh_main"
@@ -524,7 +545,7 @@ def checkStockAssetDebt(code, startYear, endYear):
                 if month == 3: Qt = 2
                 elif month == 6: Qt = 3
                 elif month == 9: Qt = 4
-                yszkbody = body.find_all('tr')[7]
+                yszkbody = body.find_all('tr')[8]
                 yszk = []
                 for i in range(1,Qt):
                     yszkStr = yszkbody.find_all('td')[i].get_text()
@@ -532,7 +553,7 @@ def checkStockAssetDebt(code, startYear, endYear):
                         yszk.append(sG.sNINF)
                     else:
                         yszk.append(float(yszkStr.replace(',','')))
-                yszk2body = body.find_all('tr')[11]
+                yszk2body = body.find_all('tr')[12]
                 yszk2 = []
                 for i in range(1, Qt):
                     yszk2Str = yszk2body.find_all('td')[i].get_text()
@@ -540,7 +561,7 @@ def checkStockAssetDebt(code, startYear, endYear):
                         yszk2.append(sG.sNINF)
                     else:
                         yszk2.append(float(yszk2Str.replace(',','')))
-                chbody = body.find_all('tr')[13]
+                chbody = body.find_all('tr')[14]
                 ch = []
                 for i in range(1, Qt):
                     chStr = chbody.find_all('td')[i].get_text()
@@ -548,7 +569,7 @@ def checkStockAssetDebt(code, startYear, endYear):
                         ch.append(sG.sNINF)
                     else:
                         ch.append(float(chStr.replace(',','')))
-                ldzcbody = body.find_all('tr')[19]
+                ldzcbody = body.find_all('tr')[20]
                 ldzc = []
                 for i in range(1, Qt):
                     ldzcStr = ldzcbody.find_all('td')[i].get_text()
@@ -556,7 +577,7 @@ def checkStockAssetDebt(code, startYear, endYear):
                         ldzc.append(sG.sNINF)
                     else:
                         ldzc.append(float(ldzcStr.replace(',','')))
-                gdzcbody = body.find_all('tr')[40]
+                gdzcbody = body.find_all('tr')[41]
                 gdzc = []
                 for i in range(1, Qt):
                     gdzcStr = gdzcbody.find_all('td')[i].get_text()
@@ -564,7 +585,7 @@ def checkStockAssetDebt(code, startYear, endYear):
                         gdzc.append(sG.sNINF)
                     else:
                         gdzc.append(float(gdzcStr.replace(',','')))
-                ldfzbody = body.find_all('tr')[59]
+                ldfzbody = body.find_all('tr')[61]
                 ldfz = []
                 for i in range(1, Qt):
                     ldfzStr = ldfzbody.find_all('td')[i].get_text()
@@ -572,7 +593,7 @@ def checkStockAssetDebt(code, startYear, endYear):
                         ldfz.append(sG.sNINF)
                     else:
                         ldfz.append(float(ldfzStr.replace(',','')))
-                gdfzbody = body.find_all('tr')[70]
+                gdfzbody = body.find_all('tr')[72]
                 gdfz = []
                 for i in range(1, Qt):
                     gdfzStr = gdfzbody.find_all('td')[i].get_text()
@@ -580,7 +601,7 @@ def checkStockAssetDebt(code, startYear, endYear):
                         gdfz.append(sG.sNINF)
                     else:
                         gdfz.append(float(gdfzStr.replace(',','')))
-                gbbody = body.find_all('tr')[73]
+                gbbody = body.find_all('tr')[75]
                 gb = []
                 for i in range(1, Qt):
                     gbStr = gbbody.find_all('td')[i].get_text()
@@ -588,7 +609,7 @@ def checkStockAssetDebt(code, startYear, endYear):
                         gb.append(sG.sNINF)
                     else:
                         gb.append(float(gbStr.replace(',','')))
-                gdqybody = body.find_all('tr')[83]
+                gdqybody = body.find_all('tr')[85]
                 gdqy = []
                 for i in range(1, Qt):
                     gdqyStr = gdqybody.find_all('td')[i].get_text()

@@ -10,12 +10,13 @@ import time
 import matplotlib.pyplot as plt
 import stockTools as sT
 
-code = "603027"
+code = "002508"
 YEARSTART = 2008#统计起始时间
 DATA2WATCH =[]#["2014-01-24","2015-05-25","2018-01-12","2018-06-08"] #指定观察时间点
 #千禾味业["2017-05-31","2017-10-12","2018-02-23","2018-06-05","2018-09-17","2019-04-01"] #指定观察时间点
 
 date = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
+DATA2WATCH.append(date)
 y, m, d = sT.splitDateString(date)
 LASTYEAR = y-1
 name, yearToMarket, _, _ = sT.getStockBasics(code)
@@ -50,9 +51,6 @@ netProfits=0.0
 foundData = False
 strInfo = ""
 for year in range(YEARSTART, y+1):
-    #DATA2WATCH.append(sT.getDateString(year, 4, 30))
-    #DATA2WATCH.append(sT.getDateString(year, 7, 31))
-    #DATA2WATCH.append(sT.getDateString(year, 10, 31))
     YEARList.append(year)
     foundData, EPS = sT.getStockEPS(code, year, 4)
     _, epsdic = sT.getStockEPSdiscount(code, year, 4)
@@ -98,30 +96,36 @@ for year in range(YEARSTART, y+1):
     PEDiscList.append(closePrice / epsdic)
     PriceList.append(closePrice * totalStock)  # 得到当年总市值
     print sT.getDateString(year,m2,d2),",BasicPETTM=",PEList[-1],", ","discountPETTM=",PEDiscList[-1],\
-                           ",priceTotal=", round(PriceList[-1]/10**4,0), ",EPSTTM=",EPS, ",EPSDicountTTM=",epsdic
+                           "stockcount=",totalStock,"priceTotal=", round(PriceList[-1]/10**4,0), ",EPSTTM=",EPS, ",EPSDicountTTM=",epsdic
 
     for dt in DATA2WATCH:
         y1,m1,d1=sT.splitDateString(dt)
         if y1==year:
+            foundData = False
             qt = sT.createCalender().getQuarter(m1)
             if qt==1:
                 foundData, EPSTTM = sT.getStockEPSTTM(code, y1-1, 4)
                 _, EPSdiscountTTM = sT.getStockEPSdiscountTTM(code, y1 - 1, 4)
                 totalStock = sT.getStockCountQuarter(code, y1 - 1, 4)
             else:
-                foundData, EPSTTM = sT.getStockEPSTTM(code, y1, qt-1)
-                _, EPSdiscountTTM = sT.getStockEPSdiscountTTM(code, y1, qt-1)
-                totalStock = sT.getStockCountQuarter(code, y1, qt-1)
+                while qt>1 and not foundData:
+                    foundData, EPSTTM = sT.getStockEPSTTM(code, y1, qt-1)
+                    if not foundData: qt = qt - 1;continue;
+                    _, EPSdiscountTTM = sT.getStockEPSdiscountTTM(code, y1, qt-1)
+                    totalStock = sT.getStockCountQuarter(code, y1, qt-1)
             if foundData:
                 foundData, closePrice, m1T, d1T = sT.getClosePriceForward(code, dt)
-            if foundData:
                 YEARList.append(y1)
-                PriceList.append(closePrice * sT.getStockCount(code, y1, m1T, d1T))
+                PriceList.append(closePrice * totalStock)
                 #factor:处理送股造成的股价变化
                 factor = sT.getStockCount(code, y1, m1T, d1T)/totalStock
-                PEList.append(closePrice*factor / EPSTTM)
-                PEDiscList.append(closePrice*factor / EPSdiscountTTM)
-                print dt, ",BasicPETTM=",PEList[-1],", ","discountPETTM=",PEList[-1],\
+                if factor:
+                    PEList.append(closePrice*factor / EPSTTM)
+                    PEDiscList.append(closePrice*factor / EPSdiscountTTM)
+                else:
+                    PEList.append(closePrice / EPSTTM)
+                    PEDiscList.append(closePrice / EPSdiscountTTM)
+                print dt, ",BasicPETTM=",PEList[-1],", ","discountPETTM=",PEDiscList[-1],\
                       ",priceTotal=", round(PriceList[-1]/10**4,0), ",EPSTTM=",EPS, ",EPSDicountTTM=",epsdic
                 EPSTTMList.append(EPSTTM)
                 EPSTTMdiscountList.append(EPSdiscountTTM)
@@ -145,7 +149,7 @@ ax2 = fig.add_subplot(3,1,2)
 ax3 = fig.add_subplot(3,1,3)
 fs = 18
 #fig1
-Graph.drawColumnChat( ax1, YEARList, PriceList, YEARList, PriceList, name.decode('utf8'), u'', u'总市值(亿元)', fs, 0.5,True)
+Graph.drawColumnChat( ax1, YEARList, PriceList, YEARList, PriceList, name.decode('utf8'), u'', u'总市值(亿元)', fs, 0.5)
 #fig2
 spct = str(round(PETTM_MEDIAN2NOW*100.0,2))
 spct = spct + u'$\%$'
@@ -159,7 +163,7 @@ ax2.text(xlim[1]+0.01,quantile[2],'80%:'+str(round(quantile[2],2)),fontsize=fs1,
 ax2.text(xlim[1]+0.01,quantile[1],"50%:"+str(round(quantile[1],2)),fontsize=fs1,color='orange')
 ax2.text(xlim[1]+0.01,quantile[0],"20%:"+str(round(quantile[0],2)),fontsize=fs1,color='red')
 #fig3
-Graph.drawColumnChat( ax3, YEARList, PEDiscList,YEARList, PEDiscList, u'', u'', u'DiscEPS_TTM', fs, 0.5)
+Graph.drawColumnChat( ax3, YEARList, PEDiscList,YEARList, PEDiscList, u'', u'', u'DiscPE_TTM', fs, 0.5)
 
 print code,name,u"历史图绘制完成"
 plt.show()
