@@ -432,13 +432,14 @@ def getStockCount(code, dORy, month=0, day=0):
     # 获取当前季度的股本
     gb = getStockCountQuarter(code, y, quarter)
     if abs(gb)<0.001:#本年本季度股本数据没有找到
+        gb = gblast
         found, dividenTime = getDividenTime(code, y-1)
         if found and dividenTime<getDateString(y,m,d):#去年有分红且当前日期已经分了红了，要检查是否有送转股数
             found, money, stock = getDistrib(code, y-1)
             if found and stock>0.0: #去年有分红且有送转股
-                return (1+stock)*gblast
-        else:
-            return gblast
+                gb = (1+stock)*gblast
+
+    return gb
 
 def getMarketType( code ):
     if code[:3] in ("600","601") : return "sh_main"
