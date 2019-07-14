@@ -10,7 +10,7 @@ import time
 import matplotlib.pyplot as plt
 import stockTools as sT
 
-code = "002508"
+code = "000513"
 YEARSTART = 2008#统计起始时间
 DATA2WATCH =[]#["2014-01-24","2015-05-25","2018-01-12","2018-06-08"] #指定观察时间点
 #千禾味业["2017-05-31","2017-10-12","2018-02-23","2018-06-05","2018-09-17","2019-04-01"] #指定观察时间点
@@ -108,21 +108,22 @@ for year in range(YEARSTART, y+1):
                 _, EPSdiscountTTM = sT.getStockEPSdiscountTTM(code, y1 - 1, 4)
                 totalStock = sT.getStockCountQuarter(code, y1 - 1, 4)
             else:
-                while qt>1 and not foundData:
-                    foundData, EPSTTM = sT.getStockEPSTTM(code, y1, qt-1)
+                while qt>0 and not foundData:
+                    foundData, EPSTTM = sT.getStockEPSTTM(code, y1, qt)
                     if not foundData: qt = qt - 1;continue;
-                    _, EPSdiscountTTM = sT.getStockEPSdiscountTTM(code, y1, qt-1)
-                    totalStock = sT.getStockCountQuarter(code, y1, qt-1)
+                    _, EPSdiscountTTM = sT.getStockEPSdiscountTTM(code, y1, qt)
+                    totalStock = sT.getStockCountQuarter(code, y1, qt)
             if foundData:
                 foundData, closePrice, m1T, d1T = sT.getClosePriceForward(code, dt)
                 YEARList.append(y1)
-                PriceList.append(closePrice * totalStock)
                 #factor:处理送股造成的股价变化
                 factor = sT.getStockCount(code, y1, m1T, d1T)/totalStock
-                if factor:
+                if factor>1.0:
+                    PriceList.append(closePrice * totalStock * factor)
                     PEList.append(closePrice*factor / EPSTTM)
                     PEDiscList.append(closePrice*factor / EPSdiscountTTM)
                 else:
+                    PriceList.append(closePrice * totalStock)
                     PEList.append(closePrice / EPSTTM)
                     PEDiscList.append(closePrice / EPSdiscountTTM)
                 print dt, ",BasicPETTM=",PEList[-1],", ","discountPETTM=",PEDiscList[-1],\

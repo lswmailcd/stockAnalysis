@@ -36,7 +36,7 @@ def createDBConnection():
         sG.lock.release()
         exit(1)
 
-def getDistrib(distrib):#返回每股分红金额和转送股数
+def parseDistrib(distrib):#返回每股分红金额和转送股数
     nMoney = 0.0
     nStock = 0.0
     if distrib!=None:
@@ -382,15 +382,9 @@ def getStockCountQuarter(code, year, quarter):
     else:
         return result.gb
 
-def getStockCount(code, dORy, month=0, day=0):
-    if month==0:#输入的日期在dORy中，以字符串形式输入
-        y,m,d = splitDateString(dORy)
-    else:
-        y=dORy; m=month; d=day
-    quarter = createCalender().getQuarter(m)
-    #查找是否存在转股
+def getDividenTime(code, year):
     sqlString = "select dividentime from stockreport_sup_"
-    sqlString += "%s_4" % (y-1)
+    sqlString += "%s_4" % year
     sqlString += " where code="
     sqlString += code
     try:
@@ -398,43 +392,53 @@ def getStockCount(code, dORy, month=0, day=0):
         ret = conn.execute(sqlString)
     except Exception, e:
         print e
-        print code, y, "年，stockreport_sup数据表:访问失败！"
+        print code, year, "年，stockreport_sup数据表:访问失败！"
     result = ret.first()
     if result is None or result.dividentime is None:
-        print code, y, "年，stockreport_sup表:分红日期数据获取失败,此年可能无分红！"
-        return getStockCountQuarter(code, y-1, 4)
+        print code, year, "年，stockreport_sup表:分红日期数据获取失败,此年可能无分红！"
+        return False, None
+    return True, result.dividentime
+
+def getDistrib(code, year):
+    sqlString = "select distrib from stockreport_"
+    sqlString += "%s_4" % year
+    sqlString += " where code="
+    sqlString += code
+    try:
+        conn = createDBConnection()
+        ret = conn.execute(sqlString)
+    except Exception, e:
+        print e
+        print code, year, "年，stockreport数据表:访问失败！"
+        return False, None
+    result = ret.first()
+    if result is None or result.distrib is None:
+        print code, year, "年，stockreport表:分红数据获取失败,此年可能无分红！"
+        return False, None
     else:
-        _, md, _ = splitDateString(result.dividentime)
-        qtd = createCalender().getQuarter(md)
-        #获取股本
-        gb = getStockCountQuarter(code, y, quarter)
-        # 股本数据获取失败，可能是由于此季度报表没有出来，则使用前一季度并结合分红给出股本数据
-        stock = 0.0
-        if gb<0.001:
-            if getDateString(y, m, d) > result.dividentime:
-                sqlString = "select distrib from stockreport_"
-                sqlString += "%s_4" % (y - 1)
-                sqlString += " where code="
-                sqlString += code
-                try:
-                    conn = createDBConnection()
-                    ret = conn.execute(sqlString)
-                except Exception, e:
-                    print e
-                    print code, y, "年，stockreport数据表:访问失败！"
-                result = ret.first()
-                if result is None or result.distrib is None:
-                    print code, y, "年，stockreport表:分红数据获取失败,此年可能无分红！"
-                else:
-                    money, stock = getDistrib(result.distrib)
-            if quarter == 1:
-                y -= 1
-                quarter = 4
-            else:
-                quarter -= 1
-        return (1+stock)*getStockCountQuarter(code, y, quarter)
+        money, stock = parseDistrib(result.distrib)
+        return True, money, stock
 
 
+def getStockCount(code, dORy, month=0, day=0):
+    if month==0:#输入的日期在dORy中，以字符串形式输入
+        y,m,d = splitDateString(dORy)
+    else:
+        y=dORy; m=month; d=day
+    quarter = createCalender().getQuarter(m)
+    #查找是否存在转股
+    #检查去年末的股数
+    gblast = getStockCountQuarter(code,y-1,4)
+    # 获取当前季度的股本
+    gb = getStockCountQuarter(code, y, quarter)
+    if abs(gb)<0.001:#本年本季度股本数据没有找到
+        found, dividenTime = getDividenTime(code, y-1)
+        if found and dividenTime<getDateString(y,m,d):#去年有分红且当前日期已经分了红了，要检查是否有送转股数
+            found, money, stock = getDistrib(code, y-1)
+            if found and stock>0.0: #去年有分红且有送转股
+                return (1+stock)*gblast
+        else:
+            return gblast
 
 def getMarketType( code ):
     if code[:3] in ("600","601") : return "sh_main"
