@@ -3,6 +3,7 @@
 from sqlalchemy import create_engine
 import tushare as ts
 import time
+import re
 import urllib
 import bs4
 import stockGlobalSpace as sG
@@ -539,6 +540,177 @@ def checkStockAssetDebt(code, startYear, endYear):
                 print "新浪财经资产负债表数据读取完毕!"
                 time.sleep(2)
                 bs = bs4.BeautifulSoup(data, "lxml")
+                try:
+                    tb = bs.find('table',{'id':'BalanceSheetNewTable0'})
+                except Exception, e:
+                    print  code, name, year, "年", Qt, "季度，新浪财经资产负债表数据不存在！"
+                    continue
+                rows = tb.find('tbody').findAll('tr')
+                Qt = 0
+                for row in rows:
+                    if row.find('strong') and row.find('strong').get_text()==u'报表日期':
+                        Qt = len(row.findAll('td'))-1
+                    elif row.find('a',{'target':'_blank'}) \
+                            and row.find('a',{'target':'_blank'}).get_text()==u'应收账款':
+                        items = row.findAll('td',{'style':re.compile(r'text.*')})
+                        yszk = []
+                        for item in items:
+                            if item.get_text()=='--':
+                                yszk.append(sG.sNINF)
+                            else:
+                                yszk.append(float(item.get_text().replace(',','')))
+                    elif row.find('a',{'target':'_blank'}) \
+                            and row.find('a',{'target':'_blank'}).get_text()==u'其它应收款':
+                        items = row.findAll('td',{'style':re.compile(r'text.*')})
+                        yszk2 = []
+                        for item in items:
+                            if item.get_text()=='--':
+                                yszk2.append(sG.sNINF)
+                            else:
+                                yszk2.append(float(item.get_text().replace(',','')))
+                    elif row.find('a',{'target':'_blank'}) \
+                            and row.find('a',{'target':'_blank'}).get_text()==u'存货':
+                        items = row.findAll('td',{'style':re.compile(r'text.*')})
+                        ch = []
+                        for item in items:
+                            if item.get_text()=='--':
+                                ch.append(sG.sNINF)
+                            else:
+                                ch.append(float(item.get_text().replace(',','')))
+                    elif row.find('a',{'target':'_blank'}) \
+                            and row.find('a',{'target':'_blank'}).get_text()==u'流动资产合计':
+                        items = row.findAll('td',{'style':re.compile(r'text.*')})
+                        ldzc = []
+                        for item in items:
+                            if item.get_text()=='--':
+                                ldzc.append(sG.sNINF)
+                            else:
+                                ldzc.append(float(item.get_text().replace(',','')))
+                    elif row.find('a',{'target':'_blank'}) \
+                            and row.find('a',{'target':'_blank'}).get_text()==u'非流动资产合计':
+                        items = row.findAll('td',{'style':re.compile(r'text.*')})
+                        gdzc = []
+                        for item in items:
+                            if item.get_text()=='--':
+                                gdzc.append(sG.sNINF)
+                            else:
+                                gdzc.append(float(item.get_text().replace(',','')))
+                    elif row.find('a',{'target':'_blank'}) \
+                            and row.find('a',{'target':'_blank'}).get_text()==u'流动负债合计':
+                        items = row.findAll('td',{'style':re.compile(r'text.*')})
+                        ldfz = []
+                        for item in items:
+                            if item.get_text()=='--':
+                                ldfz.append(sG.sNINF)
+                            else:
+                                ldfz.append(float(item.get_text().replace(',','')))
+                    elif row.find('a',{'target':'_blank'}) \
+                            and row.find('a',{'target':'_blank'}).get_text()==u'非流动负债合计':
+                        items = row.findAll('td',{'style':re.compile(r'text.*')})
+                        gdfz = []
+                        for item in items:
+                            if item.get_text()=='--':
+                                gdfz.append(sG.sNINF)
+                            else:
+                                gdfz.append(float(item.get_text().replace(',','')))
+                    elif row.find('a',{'target':'_blank'}) \
+                            and row.find('a',{'target':'_blank'}).get_text()==u'实收资本(或股本)':
+                        items = row.findAll('td',{'style':re.compile(r'text.*')})
+                        gb = []
+                        for item in items:
+                            if item.get_text()=='--':
+                                gb.append(sG.sNINF)
+                            else:
+                                gb.append(float(item.get_text().replace(',','')))
+                    elif row.find('a',{'target':'_blank'}) \
+                            and row.find('a',{'target':'_blank'}).get_text()==u'所有者权益(或股东权益)合计':
+                        items = row.findAll('td',{'style':re.compile(r'text.*')})
+                        gdqy = []
+                        for item in items:
+                            if item.get_text()=='--':
+                                gdqy.append(sG.sNINF)
+                            else:
+                                gdqy.append(float(item.get_text().replace(',','')))
+                #将获取的数据插入数据表asset_debt
+                for i in range(1,Qt):
+                    if bDataExit[i-1]==False:#数据有缺失时，由前代码的逻辑必然数据表存在
+                        sqlString = "insert into asset_debt_"
+                        sqlString += "%s" % (year)
+                        sqlString += "_%s" % (i)
+                        sqlString += "(code,name,yszk,yszk2,ch,ldzc,gdzc,ldfz,gdfz,gb,gdqy) values('"
+                        sqlString += code
+                        sqlString += "','"
+                        sqlString += name.decode('utf8')
+                        sqlString += "',"
+                        sqlString += "%s" % (yszk[Qt-1-i])
+                        sqlString += ","
+                        sqlString += "%s" % (yszk2[Qt-1-i])
+                        sqlString += ","
+                        sqlString += "%s" % (ch[Qt-1-i])
+                        sqlString += ","
+                        sqlString += "%s" % (ldzc[Qt-1-i])
+                        sqlString += ","
+                        sqlString += "%s" % (gdzc[Qt-1-i])
+                        sqlString += ","
+                        sqlString += "%s" % (ldfz[Qt-1-i])
+                        sqlString += ","
+                        sqlString += "%s" % (gdfz[Qt-1-i])
+                        sqlString += ","
+                        sqlString += "%s" % (gb[Qt-1-i])
+                        sqlString += ","
+                        sqlString += "%s" % (gdqy[Qt-1-i])
+                        sqlString += ")"
+                        conn.execute(sqlString)
+                        log.writeUtfLog(sqlString.encode('utf8'))
+                        print "已增加", code, name, "数据至", year, "年",i,"季度asset_debt数据表"
+    except Exception,e:
+        print e
+        exit(1)
+
+def checkStockAssetDebt_BACKUP(code, startYear, endYear):
+    try:
+        name, yearToMarket,_,_ = getStockBasics(code)
+        if yearToMarket==0 : exit(1)
+        print code, name, yearToMarket,"年上市！"
+        if yearToMarket>endYear:
+            print code, name, yearToMarket,"股票上市时间比结束查询时间晚，请重新输入查询结束时间!"
+            return False
+        if yearToMarket>startYear:
+            print code, name,"股票上市时间比起始查询时间晚,以上市年份为最早检查年份!"
+            startYear = yearToMarket
+        for year in range(startYear, endYear + 1):
+            bTableExit=[True, True, True, True] #数据库中资产负债表是否已存在，初始值为True存在
+            bDataExit=[True, True, True, True] #资产负债表中的数据是否已存在，初始值为True存在
+            for Qt in range(1,5):
+                sqlString = "select code from asset_debt_"
+                sqlString += "%s" %(year)
+                sqlString += "_%s " %(Qt)
+                sqlString += "where code="
+                sqlString += code
+                conn = createDBConnection()
+                try:
+                    ret = conn.execute(sqlString)
+                except Exception, e:
+                    bTableExit[Qt-1]=False
+                    print  code, name, year, "年", Qt, "季度，asset_debt数据表不存在！"
+                    continue
+                result = ret.first()
+                if result is None:
+                    bDataExit[Qt-1] = False
+                    print  code, name, year, "年", Qt, "季度，asset_debt数据表中无此股票！"
+                else:
+                    continue
+            if bDataExit.count(False)>0:
+                url = "http://money.finance.sina.com.cn/corp/go.php/vFD_BalanceSheet/stockid/"  # http://data.eastmoney.com/bbsj/yjbb/600887.html
+                url += code
+                url += "/ctrl/"
+                url += "%s" % (year)
+                url += "/displaytype/4.phtml"
+                print "读取新浪财经资产负债表数据......"
+                data = urllib.urlopen(url).read()
+                print "新浪财经资产负债表数据读取完毕!"
+                time.sleep(2)
+                bs = bs4.BeautifulSoup(data, "lxml")
                 body = bs.find('tbody')
                 try:
                     datebody = body.find_all('tr')[0]
@@ -657,7 +829,6 @@ def checkStockAssetDebt(code, startYear, endYear):
     except Exception,e:
         print e
         exit(1)
-
 
 def checkStockReport(code, startYear, endYear):
     """
