@@ -4,11 +4,13 @@ from sqlalchemy import create_engine
 import tushare as ts
 import time
 import re
-import urllib
+import urllib2
 import bs4
 import stockGlobalSpace as sG
 import logRecoder as log
 from stockCalender import stockCalender
+
+headers = {'User-Agent':'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36'}
 
 def createCalender():
     try:
@@ -497,6 +499,26 @@ def getEastMoneyData( strData ):
     return n
 
 def checkStockAssetDebt(code, startYear, endYear):
+
+    def getData(items):
+        dataList = []
+        for item in items:
+            if item.get_text() == '--':
+                dataList.append(sG.sNINF)
+            else:
+                dataList.append(float(item.get_text().replace(',', '')))
+        return dataList
+
+    def findRow(row, rowname, items):
+        if row.find('a', {'target': '_blank'}) \
+                and row.find('a', {'target': '_blank'}).get_text() == rowname:
+            result = row.findAll('td', {'style': re.compile(r'text.*')})
+            for r in result:
+                items.append(r)
+            return True
+        else:
+            return False
+
     try:
         name, yearToMarket,_,_ = getStockBasics(code)
         if yearToMarket==0 : exit(1)
@@ -535,104 +557,35 @@ def checkStockAssetDebt(code, startYear, endYear):
                 url += "/ctrl/"
                 url += "%s" % (year)
                 url += "/displaytype/4.phtml"
-                print "读取新浪财经资产负债表数据......"
-                data = urllib.urlopen(url).read()
-                print "新浪财经资产负债表数据读取完毕!"
-                time.sleep(2)
-                bs = bs4.BeautifulSoup(data, "lxml")
                 try:
-                    tb = bs.find('table',{'id':'BalanceSheetNewTable0'})
+                    print "读取新浪财经资产负债表数据......"
+                    request = urllib2.Request(url=url, headers=headers)
+                    response = urllib2.urlopen(request)
+                    data = response.read()
+                    print "新浪财经资产负债表数据读取完毕!"
+                    time.sleep(2)
                 except Exception, e:
-                    print  code, name, year, "年", Qt, "季度，新浪财经资产负债表数据不存在！"
+                    print  code, name, year, "年，新浪财经资产负债表数据不存在！"
                     continue
+                bs = bs4.BeautifulSoup(data, "lxml")
+                tb = bs.find('table',{'id':'BalanceSheetNewTable0'})
                 rows = tb.find('tbody').findAll('tr')
                 Qt = 0
                 for row in rows:
+                    items = []
                     if row.find('strong') and row.find('strong').get_text()==u'报表日期':
                         Qt = len(row.findAll('td'))-1
-                    elif row.find('a',{'target':'_blank'}) \
-                            and row.find('a',{'target':'_blank'}).get_text()==u'应收账款':
-                        items = row.findAll('td',{'style':re.compile(r'text.*')})
-                        yszk = []
-                        for item in items:
-                            if item.get_text()=='--':
-                                yszk.append(sG.sNINF)
-                            else:
-                                yszk.append(float(item.get_text().replace(',','')))
-                    elif row.find('a',{'target':'_blank'}) \
-                            and row.find('a',{'target':'_blank'}).get_text()==u'其它应收款':
-                        items = row.findAll('td',{'style':re.compile(r'text.*')})
-                        yszk2 = []
-                        for item in items:
-                            if item.get_text()=='--':
-                                yszk2.append(sG.sNINF)
-                            else:
-                                yszk2.append(float(item.get_text().replace(',','')))
-                    elif row.find('a',{'target':'_blank'}) \
-                            and row.find('a',{'target':'_blank'}).get_text()==u'存货':
-                        items = row.findAll('td',{'style':re.compile(r'text.*')})
-                        ch = []
-                        for item in items:
-                            if item.get_text()=='--':
-                                ch.append(sG.sNINF)
-                            else:
-                                ch.append(float(item.get_text().replace(',','')))
-                    elif row.find('a',{'target':'_blank'}) \
-                            and row.find('a',{'target':'_blank'}).get_text()==u'流动资产合计':
-                        items = row.findAll('td',{'style':re.compile(r'text.*')})
-                        ldzc = []
-                        for item in items:
-                            if item.get_text()=='--':
-                                ldzc.append(sG.sNINF)
-                            else:
-                                ldzc.append(float(item.get_text().replace(',','')))
-                    elif row.find('a',{'target':'_blank'}) \
-                            and row.find('a',{'target':'_blank'}).get_text()==u'非流动资产合计':
-                        items = row.findAll('td',{'style':re.compile(r'text.*')})
-                        gdzc = []
-                        for item in items:
-                            if item.get_text()=='--':
-                                gdzc.append(sG.sNINF)
-                            else:
-                                gdzc.append(float(item.get_text().replace(',','')))
-                    elif row.find('a',{'target':'_blank'}) \
-                            and row.find('a',{'target':'_blank'}).get_text()==u'流动负债合计':
-                        items = row.findAll('td',{'style':re.compile(r'text.*')})
-                        ldfz = []
-                        for item in items:
-                            if item.get_text()=='--':
-                                ldfz.append(sG.sNINF)
-                            else:
-                                ldfz.append(float(item.get_text().replace(',','')))
-                    elif row.find('a',{'target':'_blank'}) \
-                            and row.find('a',{'target':'_blank'}).get_text()==u'非流动负债合计':
-                        items = row.findAll('td',{'style':re.compile(r'text.*')})
-                        gdfz = []
-                        for item in items:
-                            if item.get_text()=='--':
-                                gdfz.append(sG.sNINF)
-                            else:
-                                gdfz.append(float(item.get_text().replace(',','')))
-                    elif row.find('a',{'target':'_blank'}) \
-                            and row.find('a',{'target':'_blank'}).get_text()==u'实收资本(或股本)':
-                        items = row.findAll('td',{'style':re.compile(r'text.*')})
-                        gb = []
-                        for item in items:
-                            if item.get_text()=='--':
-                                gb.append(sG.sNINF)
-                            else:
-                                gb.append(float(item.get_text().replace(',','')))
-                    elif row.find('a',{'target':'_blank'}) \
-                            and row.find('a',{'target':'_blank'}).get_text()==u'所有者权益(或股东权益)合计':
-                        items = row.findAll('td',{'style':re.compile(r'text.*')})
-                        gdqy = []
-                        for item in items:
-                            if item.get_text()=='--':
-                                gdqy.append(sG.sNINF)
-                            else:
-                                gdqy.append(float(item.get_text().replace(',','')))
+                    elif findRow(row, u'应收账款',items): yszk = getData(items)
+                    elif findRow(row, u'其它应收款', items): yszk2 = getData(items)
+                    elif findRow(row, u'存货', items): ch = getData(items)
+                    elif findRow(row, u'流动资产合计', items): ldzc = getData(items)
+                    elif findRow(row, u'非流动资产合计', items): gdzc = getData(items)
+                    elif findRow(row, u'流动负债合计', items): ldfz = getData(items)
+                    elif findRow(row, u'非流动负债合计', items): gdfz = getData(items)
+                    elif findRow(row, u'实收资本(或股本)', items): gb = getData(items)
+                    elif findRow(row, u'所有者权益(或股东权益)合计', items): gdqy = getData(items)
                 #将获取的数据插入数据表asset_debt
-                for i in range(1,Qt):
+                for i in range(1,Qt+1):
                     if bDataExit[i-1]==False:#数据有缺失时，由前代码的逻辑必然数据表存在
                         sqlString = "insert into asset_debt_"
                         sqlString += "%s" % (year)
@@ -642,23 +595,23 @@ def checkStockAssetDebt(code, startYear, endYear):
                         sqlString += "','"
                         sqlString += name.decode('utf8')
                         sqlString += "',"
-                        sqlString += "%s" % (yszk[Qt-1-i])
+                        sqlString += "%s" % (yszk[Qt-i])
                         sqlString += ","
-                        sqlString += "%s" % (yszk2[Qt-1-i])
+                        sqlString += "%s" % (yszk2[Qt-i])
                         sqlString += ","
-                        sqlString += "%s" % (ch[Qt-1-i])
+                        sqlString += "%s" % (ch[Qt-i])
                         sqlString += ","
-                        sqlString += "%s" % (ldzc[Qt-1-i])
+                        sqlString += "%s" % (ldzc[Qt-i])
                         sqlString += ","
-                        sqlString += "%s" % (gdzc[Qt-1-i])
+                        sqlString += "%s" % (gdzc[Qt-i])
                         sqlString += ","
-                        sqlString += "%s" % (ldfz[Qt-1-i])
+                        sqlString += "%s" % (ldfz[Qt-i])
                         sqlString += ","
-                        sqlString += "%s" % (gdfz[Qt-1-i])
+                        sqlString += "%s" % (gdfz[Qt-i])
                         sqlString += ","
-                        sqlString += "%s" % (gb[Qt-1-i])
+                        sqlString += "%s" % (gb[Qt-i])
                         sqlString += ","
-                        sqlString += "%s" % (gdqy[Qt-1-i])
+                        sqlString += "%s" % (gdqy[Qt-i])
                         sqlString += ")"
                         conn.execute(sqlString)
                         log.writeUtfLog(sqlString.encode('utf8'))
@@ -831,6 +784,195 @@ def checkStockAssetDebt_BACKUP(code, startYear, endYear):
         exit(1)
 
 def checkStockReport(code, startYear, endYear):
+    """
+
+    :rtype: object
+    """
+
+    def getData(items):
+        dataList = []
+        for item in items:
+            if item.get_text() == '--':
+                dataList.append(sG.sNINF)
+            else:
+                dataList.append(float(item.get_text().replace(',', '')))
+        return dataList
+
+    def findRow(row, rowname, items):
+        if row.find('a', {'target': '_blank'}) \
+                and row.find('a', {'target': '_blank'}).get_text() == rowname:
+            result = row.findAll('td', {'style': re.compile(r'text.*')})
+            for r in result:
+                items.append(r)
+            return True
+        else:
+            return False
+
+    try:
+        name, yearToMarket,_,_ = getStockBasics(code)
+        if yearToMarket==0 : exit(1)
+        print code, name, yearToMarket,"年上市！"
+        if yearToMarket>endYear:
+            print code, name, yearToMarket,"股票上市时间比结束查询时间晚，请重新输入查询结束时间!"
+            return False
+        if yearToMarket>startYear:
+            print code, name,"股票上市时间比起始查询时间晚,以上市年份为最早检查年份!"
+            startYear = yearToMarket
+        for year in range(startYear, endYear + 1):
+            #bTableExit=[True, True, True, True] #数据库中stockreport业绩报表是否已存在，初始值为True存在
+            bDataExit=[True, True, True, True] #stockreport业绩报表中的数据是否已存在，初始值为True存在
+            #bTableSupExist = [True, True, True, True]#数据库中stockreport_sup业绩报表是否已存在，初始值为True存在
+            bDataSupExist = [True, True, True, True]#stockreport_sup业绩报表中的数据是否已存在，初始值为True存在
+            for Qt in range(1, 5):
+                sqlString = "select code from stockreport_"
+                sqlString += "%s" %(year)
+                sqlString += "_%s " % (Qt)
+                sqlString += "where code="
+                sqlString += code
+                conn = createDBConnection()
+                try:
+                    ret = conn.execute(sqlString)
+                except Exception, e:
+                    #bTableExit[Qt-1]=False
+                    print  code, name, year, "年", Qt, "季度，stockreport数据表不存在！"
+                    continue
+                result = ret.first()
+                if result is None:
+                    bDataExit[Qt-1] = False
+                    print  code, name, year, "年", Qt, "季度，stockreport数据表中无此股票！"
+                else:
+                    continue
+            for Qt in range(1, 5):
+                sqlString = "select code from stockreport_sup_"
+                sqlString += "%s" %(year)
+                sqlString += "_%s " % (Qt)
+                sqlString += "where code="
+                sqlString += code
+                conn = createDBConnection()
+                try:
+                    ret = conn.execute(sqlString)
+                except Exception, e:
+                    #bTableSupExist[Qt-1]=False
+                    print  code, name, year, "年", Qt, "季度，stockreport_sup数据表不存在！"
+                    continue
+                result = ret.first()
+                if result is None:
+                    bDataSupExist[Qt-1] = False
+                    print  code, name, year, "年", Qt, "季度，stockreport_sup数据表中无此股票！"
+                else:
+                    continue
+            if bDataExit.count(False)>0 or bDataSupExist.count(False)>0:
+                url = "http://money.finance.sina.com.cn/corp/go.php/vFD_FinancialGuideLine/stockid/" #http://data.eastmoney.com/bbsj/yjbb/600887.html
+                url += code
+                url += "/ctrl/"
+                url += "%s" %(year)
+                url += "/displaytype/4.phtml"
+                try:
+                    print "读取新浪财经财务指标......"
+                    request = urllib2.Request(url=url, headers=headers)
+                    response = urllib2.urlopen(request)
+                    data = response.read()
+                    print "新浪财经财务指标读取完毕!"
+                    time.sleep(2)
+                except Exception, e:
+                    print  code, name, year, "年，新浪财经财务指标数据不存在！"
+                    continue
+                bs = bs4.BeautifulSoup(data,"lxml")
+                table = bs.find('table',{'id':'BalanceSheetNewTable0'})
+                tbody = table.find('tbody')
+                rows = tbody.find_all('tr')
+                Qt = 0
+                for row in rows:
+                    items = []
+                    if row.find('strong') and row.find('strong').get_text()==u'报告日期':
+                        Qt = len(row.findAll('td'))-1
+                    elif findRow(row, u'摊薄每股收益(元)',items): epsavg = getData(items)
+                    elif findRow(row, u'加权每股收益(元)', items): epsw = getData(items)
+                    elif findRow(row, u'每股收益_调整后(元)', items): epsadj = getData(items)
+                    elif findRow(row, u'扣除非经常性损益后的每股收益(元)', items): epsdiscount = getData(items)
+                    elif findRow(row, u'每股净资产_调整前(元)', items): bvps_bfadj = getData(items)
+                    elif findRow(row, u'每股净资产_调整后(元)', items): bvps_adj = getData(items)
+                    elif findRow(row, u'每股经营性现金流(元)', items): epcf = getData(items)
+                    elif findRow(row, u'每股资本公积金(元)', items): reservedps = getData(items)
+                    elif findRow(row, u'每股未分配利润(元)', items): perundps = getData(items)
+                    elif findRow(row, u'销售毛利率(%)', items): gpr = getData(items)
+                    elif findRow(row, u'净资产收益率(%)', items): roe = getData(items)
+                    elif findRow(row, u'加权净资产收益率(%)', items): roew = getData(items)
+                    elif findRow(row, u'扣除非经常性损益后的净利润(元)', items):
+                        net_profits_discount = [d/10**4 for d in getData(items)]
+                    elif findRow(row, u'净利润增长率(%)', items): profits_yoy = getData(items)
+                if bDataExit.count(False)>0:
+                #将获取的数据插入数据表stock_report
+                    for i in range(1,Qt+1):
+                        if bDataExit[i-1]==False:#数据有缺失时，由前代码的逻辑必然数据表存在
+                            sqlString = "insert into stockreport_"
+                            sqlString += "%s" % (year)
+                            sqlString += "_%s" % (i)
+                            sqlString += "(code,name,eps,bvps,roe,net_profits,profits_yoy) values('"
+                            sqlString += code
+                            sqlString += "','"
+                            sqlString += name.decode('utf8')
+                            sqlString += "',"
+                            sqlString += "%s" % (epsadj[Qt-i])
+                            sqlString += ","
+                            sqlString += "%s" % (bvps_adj[Qt-i])
+                            sqlString += ","
+                            sqlString += "%s" % (roe[Qt-i])
+                            sqlString += ","
+                            sqlString += "%s" % (net_profits_discount[Qt-i])
+                            sqlString += ","
+                            sqlString += "%s" % (profits_yoy[Qt-i])
+                            sqlString += ")"
+                            conn.execute(sqlString)
+                            log.writeUtfLog(sqlString.encode('utf8'))
+                            print "已增加", code, name, "数据至", year, "年",i, "季度，stockreport数据表"
+                if bDataSupExist.count(False)>0:
+                    for i in range(1,Qt+1):
+                        if bDataSupExist[i-1]==False:#数据有缺失时，由前代码的逻辑必然数据表存在
+                            sqlString = "insert into stockreport_sup_"
+                            sqlString += "%s" % (year)
+                            sqlString += "_%s" % (i)
+                            sqlString += "(code,name,eps_avg,eps_w,eps_adj,eps_discount, bvps_bfadj,bvps_adj,"
+                            sqlString += "epcf,reservedps,perundps,gpr,roe,roe_w,net_profits_discount) values('"
+                            sqlString += code
+                            sqlString += "','"
+                            sqlString += name.decode('utf8')
+                            sqlString += "',"
+                            sqlString += "%s" % (epsavg[Qt-i])
+                            sqlString += ","
+                            sqlString += "%s" % (epsw[Qt-i])
+                            sqlString += ","
+                            sqlString += "%s" % (epsadj[Qt - i])
+                            sqlString += ","
+                            sqlString += "%s" % (epsdiscount[Qt - i])
+                            sqlString += ","
+                            sqlString += "%s" % (bvps_bfadj[Qt-i])
+                            sqlString += ","
+                            sqlString += "%s" % (bvps_adj[Qt - i])
+                            sqlString += ","
+                            sqlString += "%s" % (epcf[Qt - i])
+                            sqlString += ","
+                            sqlString += "%s" % (reservedps[Qt - i])
+                            sqlString += ","
+                            sqlString += "%s" % (perundps[Qt - i])
+                            sqlString += ","
+                            sqlString += "%s" % (gpr[Qt - i])
+                            sqlString += ","
+                            sqlString += "%s" % (roe[Qt-i])
+                            sqlString += ","
+                            sqlString += "%s" % (roew[Qt - i])
+                            sqlString += ","
+                            sqlString += "%s" % (net_profits_discount[Qt-i])
+                            sqlString += ")"
+                            conn.execute(sqlString)
+                            log.writeUtfLog(sqlString.encode('utf8'))
+                            print "已增加", code, name, "数据至", year, "年",i, "季度，stockreport_sup数据表"
+    except Exception,e:
+        print e
+        exit(1)
+    return True, startYear
+
+def checkStockReport_BACKUP(code, startYear, endYear):
     """
 
     :rtype: object
@@ -1174,14 +1316,17 @@ def checkDistrib(code, startYear, endYear):
                     url += code
                     url += ".phtml"
                     print "读取新浪财经股票分红数据......"
-                    data = urllib.urlopen(url).read()
+                    request = urllib2.Request(url=url, headers=headers)
+                    response = urllib2.urlopen(request)
+                    data = response.read()
                     print "新浪财经股票分红数据读取完毕！"
                     time.sleep(5)
                     bAccessDataFinished = True
                 bs = bs4.BeautifulSoup(data, "lxml")
-                div = bs.find("div")
-                table = div.find_all("table")[12]
-                tbody = table.find_all("tbody")[0]
+                table = bs.find('table',{'id':'sharebonus_1'})
+                # div = bs.find("div")
+                # table = div.find_all("table")[12]
+                tbody = table.find("tbody")
                 try:
                     tds = tbody.find_all("td")
                 except Exception, e:
