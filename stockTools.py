@@ -328,7 +328,7 @@ def getStockEPSdiscount(code, year, quarter):#获取扣非EPS
         except Exception, e:
             return False, sG.sNINF
         if (result is None or result.net_profits_discount is None) or (result1 is None or result1.gb is None):
-            print code, getStockNameByCode(code), year, u"年", quarter, u"季度", u"数据库中无此股票DiscountEPS信息!"
+            print code, getStockNameByCode(code), year, u"年", quarter, u"季度", u"stockreport_sup数据库中无此股票DiscountEPS信息!"
             return False, sG.sNINF
         else:#通过扣非利润计算每股扣非，并填空eps_discount列
             EPSdiscount = result.net_profits_discount / result1.gb
@@ -361,7 +361,7 @@ def getStockEPS(code, year, quarter):#获取基本EPS
     except Exception, e:
         return False, 0
     if result is None or result.eps is None:
-        print code, getStockNameByCode(code), year, u"年", quarter, u"季度", u"数据库中无此股票!"
+        print code, getStockNameByCode(code), year, u"年", quarter, u"季度", u"stockreport数据库中无此股票!"
         return False, 0
     else:
         return True, result.eps
@@ -377,10 +377,10 @@ def getStockCountQuarter(code, year, quarter):
         ret = conn.execute(sqlString)
     except Exception, e:
         print e
-        print code, year, '年',quarter,"季度，获取股本数据,数据库访问失败！"
+        print code, year, '年',quarter,"季度，获取股本数据,asset_debt数据库访问失败！"
     result = ret.first()
     if result is None or result.gb is None:
-        print code, year, "年",quarter, "季度，资产负债表股本数据获取失败！"
+        print code, year, "年",quarter, "季度，asset_debt资产负债表股本数据获取失败！"
         return 0.0
     else:
         return result.gb
@@ -576,7 +576,7 @@ def checkStockAssetDebt(code, startYear, endYear):
                     if row.find('strong') and row.find('strong').get_text()==u'报表日期':
                         Qt = len(row.findAll('td'))-1
                     elif findRow(row, u'应收账款',items): yszk = getData(items)
-                    elif findRow(row, u'其它应收款', items): yszk2 = getData(items)
+                    elif findRow(row, u'其他应收款', items): yszk2 = getData(items)
                     elif findRow(row, u'存货', items): ch = getData(items)
                     elif findRow(row, u'流动资产合计', items): ldzc = getData(items)
                     elif findRow(row, u'非流动资产合计', items): gdzc = getData(items)
@@ -801,9 +801,9 @@ def checkStockReport(code, startYear, endYear):
     def findRow(row, rowname, items):
         if row.find('a', {'target': '_blank'}) \
                 and row.find('a', {'target': '_blank'}).get_text() == rowname:
-            result = row.findAll('td', {'style': re.compile(r'text.*')})
-            for r in result:
-                items.append(r)
+            result = row.findAll('td')
+            for i in range(1, len(result)):
+                items.append(result[i])
             return True
         else:
             return False
