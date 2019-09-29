@@ -38,6 +38,9 @@ for p in product:
     bs = bs4.BeautifulSoup(data, "html.parser")
     jsonStr = bs.get_text().replace("\r","").replace("\n","")[14:-1]
     jsPair = json.loads(jsonStr)
+    if not jsPair['ProdList']:
+        print "获取"+p[0]+":"+p[1]+"当前净值数据失败!"
+        continue
     jsInfo = jsPair['ProdList'][0]
     if jsInfo['netval'] is None:
         print "获取"+p[0]+":"+p[1]+"当前净值数据失败!"
@@ -71,6 +74,6 @@ for p in product:
         print p[0]," 数据表bankproductprice数据查找出错！"
         print e
         exit(1)
-print "\n"
+print
 print "+"*10,"银行理财数据获取完毕！","+"*10
 
