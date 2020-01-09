@@ -10,8 +10,6 @@ import stockGlobalSpace as sG
 import logRecoder as log
 from stockCalender import stockCalender
 
-headers = {'User-Agent':'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36'}
-
 def createCalender():
     try:
         if  sG.Calender is None:
@@ -230,9 +228,9 @@ def getStockEPSTTM(code, year, quarter):
         foundData_Q3, EPS_Q3 = getStockEPS(code, year, 3)
         totalStockQ3 = getStockCountQuarter(code, year, 3)
         foundData_LQ4, EPS_LQ4 = getStockEPS(code, year-1, 4)
-        totalStockLQ4 = getStockCountQuarter(code, year, 4)
+        totalStockLQ4 = getStockCountQuarter(code, year-1, 4)
         foundData_LQ3, EPS_LQ3 = getStockEPS(code, year-1, 3)
-        totalStockLQ3 = getStockCountQuarter(code, year, 3)
+        totalStockLQ3 = getStockCountQuarter(code, year-1, 3)
         if foundData_Q3:
             return True, (EPS_Q3*totalStockQ3 + EPS_LQ4*totalStockLQ4 - EPS_LQ3*totalStockLQ3)/totalStockQ3
     elif quarter == 2:
@@ -250,9 +248,9 @@ def getStockEPSTTM(code, year, quarter):
         foundData_Q1, EPS_Q1 = getStockEPS(code, year, 1)
         totalStockQ1 = getStockCountQuarter(code, year, 1)
         foundData_LQ4, EPS_LQ4 = getStockEPS(code, year - 1, 4)
-        totalStockLQ4 = getStockCountQuarter(code, year-1, 4)
+        totalStockLQ4 = getStockCountQuarter(code, year - 1, 4)
         foundData_LQ1, EPS_LQ1 = getStockEPS(code, year - 1, 1)
-        totalStockLQ1 = getStockCountQuarter(code, year-1, 1)
+        totalStockLQ1 = getStockCountQuarter(code, year - 1, 1)
         if foundData_Q1:
             return True, (EPS_Q1*totalStockQ1 + EPS_LQ4*totalStockLQ4 - EPS_LQ1*totalStockLQ1)/totalStockQ1
 
@@ -266,17 +264,17 @@ def getStockEPSdiscountTTM(code, year, quarter):
         foundData_Q3, EPS_Q3 = getStockEPSdiscount(code, year, 3)
         totalStockQ3 = getStockCountQuarter(code, year, 3)
         foundData_LQ4, EPS_LQ4 = getStockEPSdiscount(code, year-1, 4)
-        totalStockLQ4 = getStockCountQuarter(code, year, 4)
+        totalStockLQ4 = getStockCountQuarter(code, year-1, 4)
         foundData_LQ3, EPS_LQ3 = getStockEPSdiscount(code, year-1, 3)
-        totalStockLQ3 = getStockCountQuarter(code, year, 3)
+        totalStockLQ3 = getStockCountQuarter(code, year-1, 3)
         if foundData_Q3:
             return True, (EPS_Q3*totalStockQ3 + EPS_LQ4*totalStockLQ4 - EPS_LQ3*totalStockLQ3)/totalStockQ3
     elif quarter == 2:
         # epsTTM = 当年2季报eps+去年4季报eps-去年2季报eps
         foundData_Q2, EPS_Q2 = getStockEPSdiscount(code, year, 2)
+        totalStockQ2 = getStockCountQuarter(code, year, 2)
         foundData_LQ4, EPS_LQ4 = getStockEPSdiscount(code, year - 1, 4)
         foundData_LQ2, EPS_LQ2 = getStockEPSdiscount(code, year - 1, 2)
-        totalStockQ2 = getStockCountQuarter(code, year, 2)
         totalStockLQ4 = getStockCountQuarter(code, year - 1, 4)
         totalStockLQ2 = getStockCountQuarter(code, year - 1, 2)
         if foundData_Q2:
@@ -284,9 +282,9 @@ def getStockEPSdiscountTTM(code, year, quarter):
     else:
         # epsTTM = 当年1季报eps+去年4季报eps-去年1季报eps
         foundData_Q1, EPS_Q1 = getStockEPSdiscount(code, year, 1)
+        totalStockQ1 = getStockCountQuarter(code, year, 1)
         foundData_LQ4, EPS_LQ4 = getStockEPSdiscount(code, year - 1, 4)
         foundData_LQ1, EPS_LQ1 = getStockEPSdiscount(code, year - 1, 1)
-        totalStockQ1 = getStockCountQuarter(code, year, 1)
         totalStockLQ4 = getStockCountQuarter(code, year-1, 4)
         totalStockLQ1 = getStockCountQuarter(code, year-1, 1)
         if foundData_Q1:
@@ -559,7 +557,7 @@ def checkStockAssetDebt(code, startYear, endYear):
                 url += "/displaytype/4.phtml"
                 try:
                     print "读取新浪财经资产负债表数据......"
-                    request = urllib2.Request(url=url, headers=headers)
+                    request = urllib2.Request(url=url, headers=sG.browserHeaders)
                     response = urllib2.urlopen(request)
                     data = response.read()
                     print "新浪财经资产负债表数据读取完毕!"
@@ -869,7 +867,7 @@ def checkStockReport(code, startYear, endYear):
                 url += "/displaytype/4.phtml"
                 try:
                     print "读取新浪财经财务指标......"
-                    request = urllib2.Request(url=url, headers=headers)
+                    request = urllib2.Request(url=url, headers=sG.browserHeaders)
                     response = urllib2.urlopen(request)
                     data = response.read()
                     print "新浪财经财务指标读取完毕!"
@@ -1316,7 +1314,7 @@ def checkDistrib(code, startYear, endYear):
                     url += code
                     url += ".phtml"
                     print "读取新浪财经股票分红数据......"
-                    request = urllib2.Request(url=url, headers=headers)
+                    request = urllib2.Request(url=url, headers=sG.browserHeaders)
                     response = urllib2.urlopen(request)
                     data = response.read()
                     print "新浪财经股票分红数据读取完毕！"
