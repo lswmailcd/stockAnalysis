@@ -1,6 +1,6 @@
 #encoding:utf-8
 
-
+import os
 from sqlalchemy import create_engine
 import stockGlobalSpace as sG
 import numpy as np
@@ -9,8 +9,11 @@ import tushare as ts
 import time
 import matplotlib.pyplot as plt
 import stockTools as sT
+import stockDataChecker as ck
 
 code = "000513"
+REPORTYEARLAST = 2018 #最新年报年份
+
 YEARSTART = 2009#统计起始时间
 DATA2WATCH =[]#["2014-01-24","2015-05-25","2018-01-12","2018-06-08"] #指定观察时间点
 #千禾味业["2017-05-31","2017-10-12","2018-02-23","2018-06-05","2018-09-17","2019-04-01"] #指定观察时间点
@@ -29,14 +32,7 @@ strInfo = raw_input("不检查历史数据继续请按'回车',如需检查请�
 sG.lock.release()
 if strInfo=="q" : exit(0)
 if strInfo=="c" :
-    print("checking asset_debt...")
-    if sT.checkStockAssetDebt(code, YEARSTART, y) == False: exit(1)
-    print("checking reports...")
-    found, YEARSTART = sT.checkStockReport(code, YEARSTART, y)
-    if found==False : exit(1)
-    print("checking distrib...")
-    if sT.checkDistrib(code, YEARSTART, LASTYEAR) == False: exit(1)
-    print("checking DONE!")
+    ck.subprocess(code, 2008, REPORTYEARLAST)
 
 YEARList = []
 PEList = []
@@ -166,6 +162,6 @@ ax2.text(xlim[1]+0.01,quantile[1],"50%:"+str(round(quantile[1],2)),fontsize=fs1,
 ax2.text(xlim[1]+0.01,quantile[0],"20%:"+str(round(quantile[0],2)),fontsize=fs1,color='red')
 #fig3
 Graph.drawColumnChat( ax3, YEARList, PEDiscList,YEARList, PEDiscList, u'', u'', u'DiscPE_TTM', fs, 0.5)
-
+ax3.axhline(color='red',y=PEDiscList[-1])
 print code,name,u"历史图绘制完成"
 plt.show()

@@ -12,6 +12,15 @@ import xlwt
 import stockTools as sT
 import logRecoder as log
 
+def subprocess(code, sYear, eYear):
+    print "checking reports..."
+    found, STARTYEAR = sT.checkStockReport(code, sYear, eYear)
+    if found == False: exit(1)
+    print("checking asset_debt...")
+    if sT.checkStockAssetDebt(code, sYear, eYear) == False: exit(1)
+    print "checking distrib..."
+    if sT.checkDistrib(code, sYear, eYear) == False: exit(1)
+
 def process(STARTYEAR, ENDYEAR, FileName):
     str = "*******************stockDataChecker开始检查......*******************"
     print  str
@@ -31,11 +40,7 @@ def process(STARTYEAR, ENDYEAR, FileName):
             if code[i] == "" or code[i]=='0.0': continue
             name[i] = sT.getStockNameByCode(code[i]).decode('utf8')
             print code[i], name[i]
-            print "checking reports..."
-            found, STARTYEAR = sT.checkStockReport(code[i], STARTYEAR, ENDYEAR)
-            if found == False: exit(1)
-            print "checking distrib..."
-            if sT.checkDistrib(code[i], STARTYEAR, ENDYEAR) == False: exit(1)
+            subprocess(code[i], STARTYEAR, ENDYEAR)
             sname, yearToMarket,_,_ = sT.getStockBasics(code[i])
             if yearToMarket == 0:
                 print code[i], name[i], u"上市时间不详!"
