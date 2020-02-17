@@ -214,7 +214,9 @@ def  getClosePriceBackward(code, dORy, month=0, day=0, autp=None): #获取此日
         date = getDateString(y, m, d)
         foundData, closeprice = getClosePrice(code, date )
         if not foundData:
+            m1, d1 = m, d
             y, m, d = createCalender().getNextWorkday(y,m,d)
+            if m1==m and d1==d: break
     if foundData == True:
         return foundData, closeprice, m, d
     else:
