@@ -71,7 +71,8 @@ class stockCalender():
             return y,m,d
 
     def getWorkdayBackward(self, y, m, d):
-        if m in (1,5) and d in(1,2,3): d = 4 #五一，元旦
+        if m == 1: d = 4 #元旦
+        if m==5 : d = 6 #五一
         if  m==10 and (d>0 and d<8): d = 8 #十一
         wd = self.getWeekday(y, m, d)
         if wd in (6,7):
@@ -81,9 +82,9 @@ class stockCalender():
             else:
                 m += 1
                 if self.validDate(y, m, 15):
-                    return self.getWorkdayBackward(self, y, m, 1)
+                    return self.getWorkdayBackward(y, m, 1)
                 else:
-                    return self.getWorkdayForward(self, y+1, 1, 1)
+                    return self.getWorkdayForward(y+1, 1, 1)
         else:
             return y,m,d
 
