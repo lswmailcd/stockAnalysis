@@ -8,14 +8,14 @@ import stockTools as sT
 import xlrd
 import xlwt
 
-STARTYEAR = 2008 #投资起始年
-STARTMONTH = 10#投资起始月份
+STARTYEAR = 2019 #投资起始年
+STARTMONTH = 1#投资起始月份
 buyDay = 31    #投资起始日期
-ENDYEAR = 2009  #投资结束年
-ENDMONTH = 7  #投资结束月份
-saleDay = 31  #投资结束日期
+ENDYEAR = 2020  #投资结束年
+ENDMONTH = 6  #投资结束月份
+saleDay = 30  #投资结束日期
 checkDay = 15  #回撤检查日
-REPORTYEARLAST = 2017 #最新年报年份
+REPORTYEARLAST = 2020 #最新报表年份
 
 nStockInvest = 100     #购买的股数
 
@@ -91,24 +91,12 @@ for i in range(nrows):
             print "WARNING:", code[i], name[i], distribYear, u"年分红不详，数据库年报分红数据获取失败！此年可能无分红！"
             bDividen = False #无分红
         else:
-            try:
-                sqlString = "select dividenTime from stockreport_"
-                sqlString += "%s" % (distribYear)
-                sqlString += "_4 where code="
-                sqlString += code[i]
-                ret = conn.execute(sqlString)
-            except Exception, e:
-                print "WARNING: ", code[i], name[i], "connect database failure!"
-                print e
-                exit(1)
-            resultDividenDate = ret.first()
-            if resultDividenDate.dividenTime is None:
-                bDividen = False
-            elif( sT.getDateString(STARTYEAR, STARTMONTH, buyDay) <= resultDividenDate.dividenTime ) \
-                and ( sT.getDateString(ENDYEAR, ENDMONTH, saleDay) > resultDividenDate.dividenTime ):
-                    print resultDividenDate.dividenTime, "计算分红"
+            bDividen, dividenTime = sT.getDividenTime(code[i], distribYear)
+            if bDividen and ( sT.getDateString(STARTYEAR, STARTMONTH, buyDay) <= dividenTime ) \
+                and ( sT.getDateString(ENDYEAR, ENDMONTH, saleDay) > dividenTime ):
+                    print dividenTime, "计算分红"
                     # 计算分红送转
-                    r, s = sT.getDistrib(resultDistrib.distrib)
+                    bdis, r, s = sT.getDistrib(code[i], distribYear)
                     # 分红计算
                     ndividend += nStockTotal * r
                     # 送转增加股本计算
@@ -127,7 +115,7 @@ for i in range(nrows):
         for m in range(startMonth,endMonth):
             foundData, price, tm, d = sT.getClosePriceForward( code[i], year, m, checkDay )
             if foundData:
-                if bDividen and (sT.getDateString(year, m, checkDay) <= resultDividenDate.dividenTime ):
+                if bDividen and (sT.getDateString(year, m, checkDay) <= dividenTime ):
                     lost = nStockTotalBeforeDividen * price + ndividend - nCapitalInvest
                 else:
                     lost = nStockTotal * price + ndividend - nCapitalInvest
