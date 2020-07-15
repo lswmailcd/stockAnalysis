@@ -8,23 +8,21 @@ import stockTools as sT
 import xlrd
 import xlwt
 import time
+import stockDataChecker as ck
 
-STARTYEAR = 2016  #定投起始年
+STARTYEAR = 2016 #定投起始年
 STARTMONTH = 1  #定投起始月份
-ENDYEAR = 2018   #定投结束年
+ENDYEAR = 2017  #定投结束年
 ENDMONTH = 12 #定投结束月份
 TRADEDAY = 20 #每月中的定投日期
-REPORTYEARLAST = 2017 #最新年报年份
+REPORTYEARLAST = 2020 #最新报表年份
 
-moneyLimit = 6000  #每月定投金额上限，实际金额根据买的股数取整
+moneyLimit = 20000  #每月定投金额上限，实际金额根据买的股数取整
 
 print u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月---",ENDYEAR,u"年",ENDMONTH,u"月"
 print u"***请确保已经使用stockDataChecker.py对数据进行检查***"
 str = raw_input("不检查继续请按'回车',如需检查请按'c',退出请按'q': ")
 if str=="q" : exit(0)
-if str=="c" :
-    dirName = os.path.dirname(os.path.realpath(__file__))
-    os.system('C:\Users\lsw\Anaconda3\envs\conda27\python ' + dirName + '\\stockDataChecker.py 2008 2017 StockList.xls')
 
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('StepInvestResult')
@@ -50,7 +48,10 @@ for i in range(nrows):
         if yearToMarket == 0:
             print code[count], name[count], u"上市时间不详!"
             exit(1)
+        if str == "c":
+            ck.subprocess(code[count], 2008, REPORTYEARLAST)
         count += 1
+
 
 engine = create_engine('mysql://root:0609@127.0.0.1:3306/stockdatabase?charset=utf8', encoding='utf-8')
 conn = engine.connect()
@@ -81,7 +82,7 @@ for i in range(count):
                 m = -1  # 无分红，则分红月m的值置为-1
             else:
                 try:
-                    sqlString = "select dividenTime from stockreport_"
+                    sqlString = "select dividenTime from stockreport_sup_"
                     sqlString += "%s" % (distribYear)
                     sqlString += "_4 where code="
                     sqlString += code[i]
@@ -125,7 +126,7 @@ for i in range(count):
                 bDistrib = True
                 #print year,month,actualDay, "计算分红" , y,m,d
                 # 计算分红送转
-                r, s = sT.getDistrib(resultDistrib.distrib)
+                r, s = sT.parseDistrib(resultDistrib.distrib)
                 # 分红计算
                 ndividend += nStockTotal * r
                 # 送转增加股本计算
@@ -187,6 +188,10 @@ for i in range(count):
 workbook.save('.\\data\\StepInvestResult.xls')
 print "Invest result has been wrotten to StepInvestResult.xls"
 print u"请确认已使用stockDataChecker.py进行数据检查！"
+
+
+
+
 
 
 
