@@ -120,4 +120,9 @@ class stockCalender():
         y, m, d = self.getNextDay(y, m, d)
         return self.getWorkdayBackward(y, m, d)
 
+    def dayDiff(self, y1,m1,d1, y2,m2,d2):
+        df = date(y2,m2,d2) - date(y1,m1,d1)
+        return df.days
+
+
 

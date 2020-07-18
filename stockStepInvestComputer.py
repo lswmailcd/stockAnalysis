@@ -10,9 +10,9 @@ import xlwt
 import time
 import stockDataChecker as ck
 
-STARTYEAR = 2016 #定投起始年
-STARTMONTH = 1  #定投起始月份
-ENDYEAR = 2017  #定投结束年
+STARTYEAR = 2015 #定投起始年
+STARTMONTH = 5  #定投起始月份
+ENDYEAR = 2016  #定投结束年
 ENDMONTH = 12 #定投结束月份
 TRADEDAY = 20 #每月中的定投日期
 REPORTYEARLAST = 2020 #最新报表年份
@@ -158,7 +158,7 @@ for i in range(count):
         nCapitalTotal = nStockTotal*closePrice+ndividend
         income = nCapitalTotal-nCapitalInvest
         incomeRate = income/nCapitalInvest
-        investPeriod = round(year-1-STARTYEAR+(12-STARTMONTH+1+actualMonth)/12.0,2)
+        investPeriod = round(sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,1,year,actualMonth,day)/365.0, 2)
         dictColumnValues[u'代码'] = code[i]
         dictColumnValues[u'名称'] = name[i]
         dictColumnValues[u'投资时长（年）'] = investPeriod

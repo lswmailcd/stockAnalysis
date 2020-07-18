@@ -8,12 +8,12 @@ import stockTools as sT
 import xlrd
 import xlwt
 
-STARTYEAR = 2019 #投资起始年
-STARTMONTH = 1#投资起始月份
-buyDay = 31    #投资起始日期
-ENDYEAR = 2020  #投资结束年
-ENDMONTH = 6  #投资结束月份
-saleDay = 30  #投资结束日期
+STARTYEAR = 2015 #投资起始年
+STARTMONTH = 5#投资起始月份
+buyDay = 29    #投资起始日期
+ENDYEAR = 2016  #投资结束年
+ENDMONTH = 12  #投资结束月份
+saleDay = 31  #投资结束日期
 checkDay = 15  #回撤检查日
 REPORTYEARLAST = 2020 #最新报表年份
 
@@ -25,7 +25,7 @@ str = raw_input("不检查继续请按'回车',如需检查请按'c',退出请�
 if str=="q" : exit(0)
 if str=="c" :
     dirName = os.path.dirname(os.path.realpath(__file__))
-    os.system('C:\Users\lsw\Anaconda3\envs\conda27\python ' + dirName + '\\stockDataChecker.py 2008 2017 stockList.xls')
+    os.system('C:\Users\lsw\Anaconda3\envs\conda27\python ' + dirName + '\\stockDataChecker.py 2008 2020 stockList.xls')
 
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('InvestResult')
@@ -130,7 +130,7 @@ for i in range(nrows):
         nCapitalTotal = nStockTotal*closePrice+ndividend
         income = nCapitalTotal-nCapitalInvest
         incomeRate = income/nCapitalInvest
-        investPeriod = round(year-1-STARTYEAR+(12-STARTMONTH+1+saleMonth)/12.0,2)
+        investPeriod = round(sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,buyDay,ENDYEAR,ENDMONTH,saleDay)/365.0, 2)
         dictColumnValues[u'代码'] = code[i]
         dictColumnValues[u'名称'] = name[i]
         dictColumnValues[u'投资时长（年）'] = investPeriod
