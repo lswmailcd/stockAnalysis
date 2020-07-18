@@ -8,12 +8,12 @@ import tushare as ts
 import time
 import stockTools as sT
 
-STARTYEAR = 2013  #投资起始年
-STARTMONTH = 1 #投资起始月份
-startDay = 1      #投资起始日期
-ENDYEAR = 2017  #投资结束年
-ENDMONTH = 12  #投资结束月份
-endDay = 31  #投资结束日
+STARTYEAR = 2015  #投资起始年
+STARTMONTH = 5 #投资起始月份
+startDay = 29      #投资起始日期
+ENDYEAR = 2017 #投资结束年
+ENDMONTH = 1  #投资结束月份
+endDay = 1  #投资结束日
 
 print u"WARNING:请注意基金历史分红情况，默认以现金分红为准！"
 str = raw_input("默认现金分红进行计算请按'回车',如需以红利再投进行计算请按'c',退出请按'q': ")
@@ -61,7 +61,7 @@ for i in range(count):
         continue
     rateList = data.split(":")[4].split(",")[0].split('"')
     rate = float(rateList[1])/100.0
-    investPeriod = round(float( ENDYEAR - STARTYEAR - 1 + (12 - STARTMONTH + 1 + ENDMONTH) / 12.0), 2 )
+    investPeriod = round(sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,1,ENDYEAR,ENDMONTH,endDay)/365.0, 2)
     ratePerYear = round(((rate + 1) ** (1.0 / investPeriod) - 1), 4)
     worksheet.write(i+1, 0, code[i])
     worksheet.write(i+1, 1, name[i])
@@ -73,7 +73,6 @@ for i in range(count):
 
 workbook.save('.\\data\\dataResult.xls')
 print "Invest result has been wrotten to dataResult.xls"
-
 
 
 
