@@ -11,21 +11,25 @@ import matplotlib.pyplot as plt
 import stockTools as sT
 import stockDataChecker as ck
 
-code = "000513"
-REPORTYEARLAST = 2018 #最新年报年份
+code = "600887"
+REPORTYEARLAST = 2020 #最新报表年份
 
 YEARSTART = 2009#统计起始时间
-DATA2WATCH =[]#["2014-01-24","2015-05-25","2018-01-12","2018-06-08"] #指定观察时间点
+DATA2WATCH =["2018-01-23","2019-07-02","2015-05-26","2013-10-21"]#指定观察时间点
+#通化东宝["2018-07-13","2015-05-26"]
+#丽珠集团["2018-01-24","2020-08-05","2015-05-26"]
+#伊利股份["2018-01-23","2019-07-02","2015-05-26","2013-10-21"]
 #千禾味业["2017-05-31","2017-10-12","2018-02-23","2018-06-05","2018-09-17","2019-04-01"] #指定观察时间点
 
 date = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
-DATA2WATCH.append(date)
+#DATA2WATCH.append(date)
 y, m, d = sT.splitDateString(date)
 LASTYEAR = y-1
 name, yearToMarket, _, _ = sT.getStockBasics(code)
 if yearToMarket == 0:
     print code, name, u"上市时间不详!"
     exit(1)
+print code, name
 if yearToMarket>=YEARSTART: YEARSTART = yearToMarket+1
 sG.lock.acquire()
 strInfo = raw_input("不检查历史数据继续请按'回车',如需检查请按'c',退出请按'q': ")
@@ -103,12 +107,15 @@ for year in range(YEARSTART, y+1):
             if qt==1:
                 foundData, EPSTTM = sT.getStockEPSTTM(code, y1-1, 4)
                 _, EPSdiscountTTM = sT.getStockEPSdiscountTTM(code, y1 - 1, 4)
-                totalStock = sT.getStockCountQuarter(code, y1 - 1, 4)
+                #totalStock = sT.getStockCountQuarter(code, y1 - 1, 4)
+                totalStock = sT.getStockCount(code, y1, m1, d1)
             else:
+                qt = qt - 1#本季度报表没有出来，因此使用上季度报表
                 while qt>0 and not foundData:
                     foundData, EPSTTM = sT.getStockEPSTTM(code, y1, qt)
                     if not foundData: qt = qt - 1;continue;
-                    totalStock = sT.getStockCountQuarter(code, y1, qt)
+                    #totalStock = sT.getStockCountQuarter(code, y1, qt)
+                    totalStock = sT.getStockCount(code, y1, m1, d1)
                     _, EPSdiscountTTM = sT.getStockEPSdiscountTTM(code, y1, qt)
             if foundData:
                 foundData, closePrice, m1T, d1T = sT.getClosePriceForward(code, dt)
@@ -123,7 +130,7 @@ for year in range(YEARSTART, y+1):
                     PriceList.append(closePrice * totalStock)
                     PEList.append(closePrice / EPSTTM)
                     PEDiscList.append(closePrice / EPSdiscountTTM)
-                print dt, ",BasicPETTM=",PEList[-1],", ","discountPETTM=",PEDiscList[-1],\
+                print dt, ",BasicPETTM=",PEList[-1],", ","discountPETTM=",PEDiscList[-1],"stockcount=",totalStock,\
                       ",priceTotal=", round(PriceList[-1]/10**4,0), ",EPSTTM=",EPS, ",EPSDicountTTM=",epsdic
                 EPSTTMList.append(EPSTTM)
                 EPSTTMdiscountList.append(EPSdiscountTTM)

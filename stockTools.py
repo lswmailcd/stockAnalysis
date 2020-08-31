@@ -385,7 +385,7 @@ def getStockCountQuarter(code, year, quarter):
     else:
         return result.gb
 
-def getDividenTime(code, year):
+def getDividenTime(code, year):#取得股权登记日，为分红日的前一天
     sqlString = "select dividentime from stockreport_sup_"
     sqlString += "%s_4" % year
     sqlString += " where code="
@@ -434,6 +434,10 @@ def getStockCount(code, dORy, month=0, day=0):
     gblast = getStockCountQuarter(code,y-1,4)
     # 获取当前季度的股本
     gb = getStockCountQuarter(code, y, quarter)
+    if gblast<>gb:#去年末和当前季度存在股数变化
+        found, dividenTime = getDividenTime(code, y - 1)
+        if found and dividenTime >= getDateString(y, m, d):  # 去年有分红且当前日期还没有分红送股
+            gb = gblast
     if abs(gb)<0.001:#本年本季度股本数据没有找到
         gb = gblast
         found, dividenTime = getDividenTime(code, y-1)
