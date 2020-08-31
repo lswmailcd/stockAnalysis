@@ -98,7 +98,7 @@ for year in range(YEARSTART, y+1):
     print sT.getDateString(year,m2,d2),",BasicPETTM=",PEList[-1],", ","discountPETTM=",PEDiscList[-1],\
                            "stockcount=",totalStock,"priceTotal=", round(PriceList[-1]/10**4,0), ",EPSTTM=",EPS,\
                            ",EPSDicountTTM=",epsdic
-
+    drawPE = PEList[-1]
     for dt in DATA2WATCH:
         y1,m1,d1=sT.splitDateString(dt)
         if y1==year:
@@ -167,6 +167,7 @@ fs1 = fs*0.8
 ax2.text(xlim[1]+0.01,quantile[2],'80%:'+str(round(quantile[2],2)),fontsize=fs1,color='green')
 ax2.text(xlim[1]+0.01,quantile[1],"50%:"+str(round(quantile[1],2)),fontsize=fs1,color='orange')
 ax2.text(xlim[1]+0.01,quantile[0],"20%:"+str(round(quantile[0],2)),fontsize=fs1,color='red')
+ax2.axhline(color='red',y=drawPE)
 #fig3
 Graph.drawColumnChat( ax3, YEARList, PEDiscList,YEARList, PEDiscList, u'', u'', u'DiscPE_TTM', fs, 0.5)
 ax3.axhline(color='red',y=PEDiscList[-1])
