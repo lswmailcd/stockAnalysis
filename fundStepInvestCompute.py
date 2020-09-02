@@ -9,13 +9,13 @@ import time
 import stockTools as sT
 import stockGlobalSpace as sG
 
-#!!!!注意，一定要保证所有日期处于交易日，否则程序会报错！！！
-STARTYEAR = 2011  #投资起始年
+#!!!!注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！
+STARTYEAR = 2016  #投资起始年
 STARTMONTH = 1 #投资起始月份
 startDay = 1      #投资起始日期
-ENDYEAR = 2015  #投资结束年
-ENDMONTH = 6  #投资结束月份
-endDay = 28  #投资结束日
+ENDYEAR = 2020  #投资结束年
+ENDMONTH = 8  #投资结束月份
+endDay = 31  #投资结束日
 buyDay = 20  #定投日
 interval  = 1    #定投间隔的月份
 
