@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import urllib
+import urllib2
 import numpy as np
 import bs4
 import xlrd
@@ -7,13 +7,15 @@ import xlwt
 import tushare as ts
 import time
 import stockTools as sT
+import stockGlobalSpace as sG
 
-STARTYEAR = 2015  #投资起始年
-STARTMONTH = 5 #投资起始月份
+#!!!!注意，一定要保证所有日期处于交易日，否则程序会报错！！！
+STARTYEAR = 2011  #投资起始年
+STARTMONTH = 1 #投资起始月份
 startDay = 1      #投资起始日期
-ENDYEAR = 2016  #投资结束年
-ENDMONTH = 12  #投资结束月份
-endDay = 31  #投资结束日
+ENDYEAR = 2015  #投资结束年
+ENDMONTH = 6  #投资结束月份
+endDay = 28  #投资结束日
 buyDay = 20  #定投日
 interval  = 1    #定投间隔的月份
 
@@ -56,7 +58,10 @@ for i in range(count):
     url = url + "&sdate=" + startDate + "&edate=" + saleDate + "&shdate=" + saleDate
     url = url + "&round=" + "%s" %(interval) + "&dtr=" + "%s" %(buyDay) + "&p=" + "0" + "&je=" + "10000"
     url = url + "&stype=" + stype + "&needfirst=" + "2" + "&jsoncallback=FundDTSY.result"
-    data = urllib.urlopen(url).read()
+    request = urllib2.Request(url=url, headers=sG.browserHeaders)
+    response = urllib2.urlopen(request)
+    data = response.read()
+    #data = urllib.urlopen(url).read()
     time.sleep(1)
     infoStr = data.split('|')
     if infoStr[0]=='var Result={"error"':
