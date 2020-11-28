@@ -10,21 +10,21 @@ import stockTools as sT
 import stockGlobalSpace as sG
 
 #!!!!注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！
-STARTYEAR = 2016  #投资起始年
-STARTMONTH = 1 #投资起始月份
+STARTYEAR = 2020  #投资起始年
+STARTMONTH = 8 #投资起始月份
 startDay = 1      #投资起始日期
 ENDYEAR = 2020  #投资结束年
-ENDMONTH = 8  #投资结束月份
-endDay = 31  #投资结束日
+ENDMONTH = 11  #投资结束月份
+endDay = 27  #投资结束日
 buyDay = 20  #定投日
 interval  = 1    #定投间隔的月份
 
 print u"WARNING:请注意基金历史分红情况，默认以现金分红为准！"
-str = raw_input("默认现金分红进行计算请按'回车',如需以红利再投进行计算请按'c',退出请按'q': ")
+str = raw_input("默认红利再投进行计算请按'回车',如需现金分红以进行计算请按'c',退出请按'q': ")
 if str=="q" : exit(0)
-stype = "2" #现金分红
+stype = "1" #红利再投
 if str=="c" :
-    stype = "1" #红利再投
+    stype = "2" #现金分红
 print u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", startDay,u"日\
 ---",ENDYEAR,u"年",ENDMONTH,u"月", endDay,u"日"
 startDate = sT.getDateString(STARTYEAR, STARTMONTH, startDay)
@@ -51,6 +51,12 @@ worksheet.write(0, 2, u"收益率")
 worksheet.write(0, 3, u"年化收益率")
 worksheet.write(0, 4, u"起始时间")
 worksheet.write(0, 5, u"终止时间")
+worksheet.write(0, 6, u"最大回撤")
+worksheet.write(0, 7, u"最大回撤率")
+worksheet.write(0, 8, u"最大回撤时间")
+worksheet.write(0, 9, u"最大收益")
+worksheet.write(0, 10, u"最大收益率")
+worksheet.write(0, 11, u"最大收益时间")
 for i in range(count):
     foundData = 0
     if code[i] == u'' : continue
@@ -67,6 +73,23 @@ for i in range(count):
     if infoStr[0]=='var Result={"error"':
         print data
         continue
+    details = infoStr[7][:-3].split("_")
+    moneyTotal, share, diffWorse, diffBest, dateWorse, dateBest, worseRate, bestRate = \
+    0.0, 0.0, 0.0, 0.0, "", "", 0.0,0.0
+    for s in details:
+        t = s.split("~")#t[0]:日期,t[1]:价格,t[2]:本金,t[3]:份额
+        moneyTotal = moneyTotal + float(t[2].replace(",",""))
+        share = share + float(t[3].replace(",",""))
+        diff = float(t[1])*share - moneyTotal
+        if diff<diffWorse:
+            diffWorse = diff
+            dateWorse = t[0]
+            worseRate = diff/moneyTotal
+        if diff>diffBest:
+            diffBest = diff
+            dateBest = t[0]
+            bestRate = diff / moneyTotal
+
     rate = float(infoStr[6][:-1])/100.0
     investPeriod = round(sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,1,ENDYEAR,ENDMONTH,endDay)/365.0, 2)
     ratePerYear = round(((rate + 1) ** (1.0 / investPeriod) - 1), 4)
@@ -76,6 +99,12 @@ for i in range(count):
     worksheet.write(i+1, 3, ratePerYear)
     worksheet.write(i+1, 4, startDate)
     worksheet.write(i+1, 5, saleDate)
+    worksheet.write(i+1, 6, diffWorse)
+    worksheet.write(i+1, 7, worseRate)
+    worksheet.write(i + 1, 8, dateWorse.decode("utf8"))
+    worksheet.write(i+1, 9, diffBest)
+    worksheet.write(i+1, 10, bestRate)
+    worksheet.write(i + 1, 11, dateBest.decode("utf8"))
     print code[i], name[i], "收益：%.2f%%" % (rate * 100.0), "年化收益：%.2f%%" % (ratePerYear * 100.0)
 
 workbook.save('.\\data\\dataResult.xls')
