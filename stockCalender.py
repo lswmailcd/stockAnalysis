@@ -63,10 +63,10 @@ class stockCalender():
             else:
                 m -= 1
                 if self.validDate(y, m, 15):
-                    d1 = self.getValidLastDay(y, m)
-                    return self.getWorkdayForward(self, y, m, d1)
+                    d1 = self.getLastDay(y, m)
+                    return self.getWorkdayForward( y, m, d1)
                 else:
-                    return self.getWorkdayForward(self, y-1, 12, self.getValidLastDay(y-1, 12))
+                    return self.getWorkdayForward( y-1, 12, self.getLastDay(y-1, 12))
         else:
             return y,m,d
 
