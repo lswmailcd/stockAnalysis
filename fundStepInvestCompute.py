@@ -10,14 +10,15 @@ import stockTools as sT
 import stockGlobalSpace as sG
 
 #!!!!注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！
-STARTYEAR = 2020  #投资起始年
-STARTMONTH = 8 #投资起始月份
+STARTYEAR = 2020 #投资起始年
+STARTMONTH = 9 #投资起始月份
 startDay = 1      #投资起始日期
 ENDYEAR = 2020  #投资结束年
-ENDMONTH = 11  #投资结束月份
-endDay = 27  #投资结束日
-buyDay = 20  #定投日
+ENDMONTH = 12  #投资结束月份
+endDay = 18  #投资结束日
+buyDay = 10  #定投日
 interval  = 1    #定投间隔的月份
+InvestMoney = "10000"
 
 print u"WARNING:请注意基金历史分红情况，默认以现金分红为准！"
 str = raw_input("默认红利再投进行计算请按'回车',如需现金分红以进行计算请按'c',退出请按'q': ")
@@ -62,7 +63,7 @@ for i in range(count):
     if code[i] == u'' : continue
     url = "http://fund.eastmoney.com/data/FundInvestCaculator_AIPDatas.aspx?fcode=" + code[i]
     url = url + "&sdate=" + startDate + "&edate=" + saleDate + "&shdate=" + saleDate
-    url = url + "&round=" + "%s" %(interval) + "&dtr=" + "%s" %(buyDay) + "&p=" + "0" + "&je=" + "10000"
+    url = url + "&round=" + "%s" %(interval) + "&dtr=" + "%s" %(buyDay) + "&p=" + "0" + "&je=" + InvestMoney
     url = url + "&stype=" + stype + "&needfirst=" + "2" + "&jsoncallback=FundDTSY.result"
     request = urllib2.Request(url=url, headers=sG.browserHeaders)
     response = urllib2.urlopen(request)

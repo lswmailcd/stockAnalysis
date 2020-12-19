@@ -8,19 +8,19 @@ import tushare as ts
 import time
 import stockTools as sT
 
-STARTYEAR = 2015  #投资起始年
-STARTMONTH = 5 #投资起始月份
-startDay = 29      #投资起始日期
-ENDYEAR = 2017 #投资结束年
-ENDMONTH = 1  #投资结束月份
-endDay = 1  #投资结束日
+STARTYEAR = 2020  #投资起始年
+STARTMONTH = 9 #投资起始月份
+startDay = 1      #投资起始日期
+ENDYEAR = 2020 #投资结束年
+ENDMONTH = 12  #投资结束月份
+endDay = 18  #投资结束日
 
 print u"WARNING:请注意基金历史分红情况，默认以现金分红为准！"
-str = raw_input("默认现金分红进行计算请按'回车',如需以红利再投进行计算请按'c',退出请按'q': ")
+str = raw_input("默认红利再投进行计算请按'回车',如需以现金分红进行计算请按'c',退出请按'q': ")
 if str=="q" : exit(0)
-stype = "1" #现金分红
+stype = "1" #红利再投
 if str=="c" :
-    stype = "2" #红利再投
+    stype = "2" #现金分红
 print u"一次性投资计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", startDay,u"日\
 ---",ENDYEAR,u"年",ENDMONTH,u"月", endDay,u"日"
 startDate = sT.getDateString(STARTYEAR, STARTMONTH, startDay)
