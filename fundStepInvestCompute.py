@@ -11,12 +11,12 @@ import stockGlobalSpace as sG
 
 #!!!!注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！
 STARTYEAR = 2020 #投资起始年
-STARTMONTH = 9 #投资起始月份
+STARTMONTH = 8 #投资起始月份
 startDay = 1      #投资起始日期
 ENDYEAR = 2020  #投资结束年
 ENDMONTH = 12  #投资结束月份
-endDay = 18  #投资结束日
-buyDay = 10  #定投日
+endDay = 24  #投资结束日
+buyDay = 20  #定投日
 interval  = 1    #定投间隔的月份
 InvestMoney = "10000"
 
@@ -46,18 +46,12 @@ for i in range(nrows):
 
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('dataResult')
-worksheet.write(0, 0, u"代码")
-worksheet.write(0, 1, u"名称")
-worksheet.write(0, 2, u"收益率")
-worksheet.write(0, 3, u"年化收益率")
-worksheet.write(0, 4, u"起始时间")
-worksheet.write(0, 5, u"终止时间")
-worksheet.write(0, 6, u"最大回撤")
-worksheet.write(0, 7, u"最大回撤率")
-worksheet.write(0, 8, u"最大回撤时间")
-worksheet.write(0, 9, u"最大收益")
-worksheet.write(0, 10, u"最大收益率")
-worksheet.write(0, 11, u"最大收益时间")
+ListColumnName = [u'代码',u'名称',u'投资月数',u'投资收益率',u'投资年化复合收益率',u'最大回撤时的收益率',\
+                  u'最大回撤出现的时间', u'最大收益', u'最大收益率', u'最大收益出现的时间', u'投资总成本',u'投资总市值',\
+                  u'投资总收益',u'分红',u'平均年收益',u'总份额', u'购买份额',u'最大回撤',u'投资起始时间',u'卖出基金时间']
+for idx in range(len(ListColumnName)):
+    worksheet.write(0, idx, ListColumnName[idx])
+
 for i in range(count):
     foundData = 0
     if code[i] == u'' : continue
@@ -74,6 +68,7 @@ for i in range(count):
     if infoStr[0]=='var Result={"error"':
         print data
         continue
+    dictColumnValues = {}
     details = infoStr[7][:-3].split("_")
     moneyTotal, share, diffWorse, diffBest, dateWorse, dateBest, worseRate, bestRate = \
     0.0, 0.0, 0.0, 0.0, "", "", 0.0,0.0
@@ -92,20 +87,31 @@ for i in range(count):
             bestRate = diff / moneyTotal
 
     rate = float(infoStr[6][:-1])/100.0
-    investPeriod = round(sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,1,ENDYEAR,ENDMONTH,endDay)/365.0, 2)
+    investPeriod = round(sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,startDay,ENDYEAR,ENDMONTH,endDay)/365.0, 2)
     ratePerYear = round(((rate + 1) ** (1.0 / investPeriod) - 1), 4)
-    worksheet.write(i+1, 0, code[i])
-    worksheet.write(i+1, 1, name[i])
-    worksheet.write(i+1, 2, rate)
-    worksheet.write(i+1, 3, ratePerYear)
-    worksheet.write(i+1, 4, startDate)
-    worksheet.write(i+1, 5, saleDate)
-    worksheet.write(i+1, 6, diffWorse)
-    worksheet.write(i+1, 7, worseRate)
-    worksheet.write(i + 1, 8, dateWorse.decode("utf8"))
-    worksheet.write(i+1, 9, diffBest)
-    worksheet.write(i+1, 10, bestRate)
-    worksheet.write(i + 1, 11, dateBest.decode("utf8"))
+    dictColumnValues[u'代码'] = code[i]
+    dictColumnValues[u'名称'] = name[i]
+    dictColumnValues[u'投资月数'] = investPeriod * 12
+    dictColumnValues[u'投资起始时间'] = startDate
+    dictColumnValues[u'卖出基金时间'] = saleDate
+    dictColumnValues[u'投资总成本'] = moneyTotal
+    dictColumnValues[u'投资总市值'] = moneyTotal*(1+rate)
+    dictColumnValues[u'投资总收益'] = moneyTotal*rate
+    dictColumnValues[u'分红'] = 0.0
+    dictColumnValues[u'平均年收益'] = round(dictColumnValues[u'投资总收益'] / investPeriod, 2)
+    dictColumnValues[u'投资收益率'] = round(rate, 4)
+    dictColumnValues[u'投资年化复合收益率'] = ratePerYear
+    dictColumnValues[u'总份额'] = share
+    dictColumnValues[u'购买份额'] = share
+    dictColumnValues[u'最大回撤'] = diffWorse
+    dictColumnValues[u'最大回撤时的收益率'] = worseRate
+    dictColumnValues[u'最大回撤出现的时间'] = dateWorse.decode("utf8")
+    dictColumnValues[u'最大收益'] = diffBest
+    dictColumnValues[u'最大收益率'] = bestRate
+    dictColumnValues[u'最大收益出现的时间'] = dateBest.decode("utf8")
+    for idx in range(len(ListColumnName)):
+        worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]])
+
     print code[i], name[i], "收益：%.2f%%" % (rate * 100.0), "年化收益：%.2f%%" % (ratePerYear * 100.0)
 
 workbook.save('.\\data\\dataResult.xls')

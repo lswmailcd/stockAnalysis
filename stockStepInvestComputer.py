@@ -10,14 +10,14 @@ import xlwt
 import time
 import stockDataChecker as ck
 
-STARTYEAR = 2015 #定投起始年
-STARTMONTH = 5  #定投起始月份
-ENDYEAR = 2016  #定投结束年
-ENDMONTH = 12 #定投结束月份
+STARTYEAR = 2016 #定投起始年
+STARTMONTH = 1  #定投起始月份
+ENDYEAR = 2020  #定投结束年
+ENDMONTH = 6 #定投结束月份
 TRADEDAY = 20 #每月中的定投日期
 REPORTYEARLAST = 2020 #最新报表年份
 
-moneyLimit = 20000  #每月定投金额上限，实际金额根据买的股数取整
+moneyLimit = 10000  #每月定投金额上限，实际金额根据买的股数取整
 
 print u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月---",ENDYEAR,u"年",ENDMONTH,u"月"
 print u"***请确保已经使用stockDataChecker.py对数据进行检查***"
@@ -26,7 +26,7 @@ if str=="q" : exit(0)
 
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('StepInvestResult')
-ListColumnName = [u'代码',u'名称',u'投资时长（年）',u'投资收益率',u'投资年化复合收益率',u'最大回撤时的收益率',\
+ListColumnName = [u'代码',u'名称',u'投资月数',u'投资收益率',u'投资年化复合收益率',u'最大回撤时的收益率',\
                   u'最大回撤出现的时间',u'投资总成本',u'投资总市值',u'投资总收益',u'分红',u'平均年收益',u'总股本',\
                   u'购买股本',u'最大回撤',u'投资起始时间',u'卖出股份时间',u"每月最小投资额",u"每月最大投资额"\
                   ]
@@ -161,7 +161,7 @@ for i in range(count):
         investPeriod = round(sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,1,year,actualMonth,day)/365.0, 2)
         dictColumnValues[u'代码'] = code[i]
         dictColumnValues[u'名称'] = name[i]
-        dictColumnValues[u'投资时长（年）'] = investPeriod
+        dictColumnValues[u'投资月数'] = investPeriod*12
         dictColumnValues[u'投资起始时间'] = sT.getDateString(STARTYEAR,STARTMONTH,1)
         dictColumnValues[u'卖出股份时间'] = sT.getDateString(year,actualMonth,day)
         dictColumnValues[u'投资总成本'] = nCapitalInvest
@@ -178,7 +178,7 @@ for i in range(count):
         dictColumnValues[u'最大回撤出现的时间'] = lostMoneyMaxTime
         dictColumnValues[u"每月最小投资额"] = nMinInvPerMonth
         dictColumnValues[u"每月最大投资额"] = nMaxInvPerMonth
-        print u'时长：',dictColumnValues[u'投资时长（年）'],u'年 '\
+        print u'时长：',dictColumnValues[u'投资时长（月）'],u'月 '\
               u'投资收益率:',"%.2f%%" %(dictColumnValues[u'投资收益率']*100),\
               u'最大回撤时的收益率:',"%.2f%%" %(dictColumnValues[u'最大回撤时的收益率']*100)
         for idx in range(len(ListColumnName)):
