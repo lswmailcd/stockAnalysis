@@ -54,7 +54,7 @@ for i in range(nrows):
 
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('dataResult')
-ListColumnName = [u'代码',u'名称',u'定投月数',u'投资收益率',u'投资年化复合收益率',u'最大回撤时的收益率',\
+ListColumnName = [u'代码',u'名称',u'定投年数',u'投资收益率',u'投资年化复合收益率',u'最大回撤时的收益率',\
                   u'最大回撤出现的时间', u'最大收益', u'最大收益率', u'最大收益出现的时间', u'投资总成本',u'投资总市值',\
                   u'投资总收益',u'分红',u'平均年收益',u'总份额', u'购买份额',u'最大回撤',\
                   u'定投起始时间',u'卖出基金时间'] #u'定投结束时间'#,
@@ -102,7 +102,7 @@ for i in range(count):
     ratePerYear = round(((rate + 1) ** (1.0 / investPeriod) - 1), 4)
     dictColumnValues[u'代码'] = code[i]
     dictColumnValues[u'名称'] = name[i]
-    dictColumnValues[u'定投月数'] = investPeriod * 12
+    dictColumnValues[u'定投年数'] = investPeriod
     dictColumnValues[u'定投起始时间'] = startDate
     #dictColumnValues[u'定投结束时间'] = endDate
     dictColumnValues[u'卖出基金时间'] = endDate

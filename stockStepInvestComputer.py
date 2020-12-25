@@ -26,7 +26,7 @@ if str=="q" : exit(0)
 
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('StepInvestResult')
-ListColumnName = [u'代码',u'名称',u'投资月数',u'投资收益率',u'投资年化复合收益率',u'最大回撤时的收益率',\
+ListColumnName = [u'代码',u'名称',u'投资年数',u'投资收益率',u'投资年化复合收益率',u'最大回撤时的收益率',\
                   u'最大回撤出现的时间',u'投资总成本',u'投资总市值',u'投资总收益',u'分红',u'平均年收益',u'总股本',\
                   u'购买股本',u'最大回撤',u'投资起始时间',u'卖出股份时间',u"每月最小投资额",u"每月最大投资额"\
                   ]
@@ -161,7 +161,7 @@ for i in range(count):
         investPeriod = round(sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,1,year,actualMonth,day)/365.0, 2)
         dictColumnValues[u'代码'] = code[i]
         dictColumnValues[u'名称'] = name[i]
-        dictColumnValues[u'投资月数'] = investPeriod*12
+        dictColumnValues[u'投资年数'] = investPeriod
         dictColumnValues[u'投资起始时间'] = sT.getDateString(STARTYEAR,STARTMONTH,1)
         dictColumnValues[u'卖出股份时间'] = sT.getDateString(year,actualMonth,day)
         dictColumnValues[u'投资总成本'] = nCapitalInvest
