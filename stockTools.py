@@ -377,7 +377,6 @@ def getStockCountQuarter(code, year, quarter):
         conn = createDBConnection()
         ret = conn.execute(sqlString)
     except Exception, e:
-        print e
         print code, year, '年',quarter,"季度，获取股本数据,asset_debt数据库访问失败！"
         return 0.0
     result = ret.first()
