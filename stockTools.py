@@ -366,6 +366,7 @@ def getStockEPS(code, year, quarter):#获取基本EPS
     else:
         return True, result.eps
 
+#有股本数据时，返回当前季度股本；没有股本数据时，返回0.0
 def getStockCountQuarter(code, year, quarter):
     #获取股本
     sqlString = "select gb from asset_debt_"
@@ -378,6 +379,7 @@ def getStockCountQuarter(code, year, quarter):
     except Exception, e:
         print e
         print code, year, '年',quarter,"季度，获取股本数据,asset_debt数据库访问失败！"
+        return 0.0
     result = ret.first()
     if result is None or result.gb is None:
         print code, year, "年",quarter, "季度，asset_debt资产负债表股本数据获取失败！"

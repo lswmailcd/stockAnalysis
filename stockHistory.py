@@ -11,11 +11,15 @@ import matplotlib.pyplot as plt
 import stockTools as sT
 import stockDataChecker as ck
 
-code = "600887"
-REPORTYEARLAST = 2020 #最新报表年份
+code = "000513"
+REPORTYEARLAST = 2019 #最新年报时间
 
 YEARSTART = 2009#统计起始时间
-DATA2WATCH =["2018-01-23","2019-07-02","2015-05-26","2013-10-21"]#指定观察时间点
+DATA2WATCH =[]#指定观察时间点
+#贵州茅台["2018-06-12","2015-05-25","2012-07-13"]
+#五粮液["2018-01-15","2015-06-08","2007-10-15"]
+#涪陵榨菜["2018-07-31","2015-06-08","2013-10-08"]
+#恒瑞医药["2020-07-15","2018-05-28","2015-05-27"]
 #通化东宝["2018-07-13","2015-05-26"]
 #丽珠集团["2018-01-24","2020-08-05","2015-05-26"]
 #伊利股份["2018-01-23","2019-07-02","2015-05-26","2013-10-21"]
@@ -53,33 +57,38 @@ strInfo = ""
 for year in range(YEARSTART, y+1):
     YEARList.append(year)
     foundData, EPS = sT.getStockEPS(code, year, 4)
-    _, epsdic = sT.getStockEPSdiscount(code, year, 4)
-    totalStock = sT.getStockCountQuarter(code, year, 4)  # 得到总市值
-    if not foundData:
+    if foundData:
+        _, epsdic = sT.getStockEPSdiscount(code, year, 4)
+        totalStock = sT.getStockCountQuarter(code, year, 4)  # 得到总市值
+    else:
         strInfo = "%s" %(code) + name + "%s" %(year) + "年4季度,数据库中无此股票EPS!epsTTM = 当年3季报eps+去年4季报eps-去年3季报eps"
         #epsTTM = 当年3季报eps+去年4季报eps-去年3季报eps
         foundData, EPS = sT.getStockEPSTTM( code, year, 3 )
-        _, epsdic = sT.getStockEPSdiscountTTM( code, year, 3 )
-        totalStock = sT.getStockCountQuarter(code, year, 3)  # 得到总市值
-        if not foundData:
+        if foundData:
+            _, epsdic = sT.getStockEPSdiscountTTM( code, year, 3 )
+            totalStock = sT.getStockCountQuarter(code, year, 3)  # 得到总市值
+        else:
             strInfo = "%s" % (code) + name + "%s" % (year) + "年3季度,数据库中无此股票EPS!epsTTM = 当年2季报eps+去年4季报eps-去年2季报eps"
             # epsTTM = 当年2季报eps+去年4季报eps-去年2季报eps
             foundData, EPS = sT.getStockEPSTTM(code, year, 2)
-            _, epsdic = sT.getStockEPSdiscountTTM(code, year, 2)
-            totalStock = sT.getStockCountQuarter(code, year, 2)  # 得到总市值
-            if not foundData:
+            if foundData:
+                _, epsdic = sT.getStockEPSdiscountTTM(code, year, 2)
+                totalStock = sT.getStockCountQuarter(code, year, 2)  # 得到总市值
+            else:
                 strInfo = "%s" % (code) + name + "%s" % (year) + "年2季度,数据库中无此股票EPS!epsTTM = 当年1季报eps+去年4季报eps-去年1季报eps"
                 # epsTTM = 当年1季报eps+去年4季报eps-去年1季报eps
                 foundData, EPS = sT.getStockEPSTTM(code, year, 1)
-                _, epsdic = sT.getStockEPSdiscountTTM(code, year, 1)
-                totalStock = sT.getStockCountQuarter(code, year, 1)  # 得到总市值
-                if not foundData:
+                if foundData:
+                    _, epsdic = sT.getStockEPSdiscountTTM(code, year, 1)
+                    totalStock = sT.getStockCountQuarter(code, year, 1)  # 得到总市值
+                else:
                     strInfo = "%s" % (code) + name + "%s" % (year) + "年1季度,数据库中无此股票EPS!eps = 去年4季报（去年年报）"
                     # eps = 去年4季报（去年年报）
                     foundData, EPS = sT.getStockEPSTTM(code, year-1, 4)
-                    _, epsdic = sT.getStockEPSdiscountTTM(code, year-1, 4)
-                    totalStock = sT.getStockCountQuarter(code, year-1, 4)  # 得到总市值
-                    if not foundData:
+                    if foundData:
+                        _, epsdic = sT.getStockEPSdiscountTTM(code, year-1, 4)
+                        totalStock = sT.getStockCountQuarter(code, year-1, 4)  # 得到总市值
+                    else:
                         strInfo = "%s," % (code) + name + "%s," % (year-1) + "年4季度, 数据库中无此股票EPS!采用去年3季报eps+前年4季报eps-前年3季报eps"
                         # epsTTM = 去年3季报eps+前年4季报eps-前年3季报eps
                         foundData, EPS = sT.getStockEPSTTM(code, year - 1, 3)
