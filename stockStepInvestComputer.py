@@ -14,10 +14,11 @@ STARTYEAR = 2016 #定投起始年
 STARTMONTH = 1  #定投起始月份
 ENDYEAR = 2020  #定投结束年
 ENDMONTH = 6 #定投结束月份
-TRADEDAY = 20 #每月中的定投日期
+#TRADEDAY = 20 #每月中的定投日期
+BUYDAY=[5,20] #每月中的定投日期列表
 REPORTYEARLAST = 2020 #最新报表年份
 
-moneyLimit = 10000  #每月定投金额上限，实际金额根据买的股数取整
+moneyLimit = 20000  #每次定投金额上限，实际金额根据买的股数取整
 
 print u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月---",ENDYEAR,u"年",ENDMONTH,u"月"
 print u"***请确保已经使用stockDataChecker.py对数据进行检查***"
@@ -115,37 +116,38 @@ for i in range(count):
         #if year==STARTYEAR: step=1
         bDistrib = False
         for month in range(startMonth,endMonth,1):# month in (4,9,10,12)
-            foundData,closePrice,actualMonth, actualDay=sT.getClosePriceBackward(code[i], year, month, TRADEDAY)
-            #print closePrice,sT.getDateString(year,month,actualDay)
-            if foundData==False:
-                print "WARNING:",year, month, u"获取连网股价失败！可能此月股票停牌，暂停定投！"
-                continue
-            # 如果该月是分红月，且不是最后一年就计算此年的分红配送（最后一年年报可能未出）
-            # 如果价格日期大于分红登记日期表示已经除权除息，则需要计算分红送转后再计算回撤
-            if (month == m and actualDay>d or month == m+1 and bDistrib==False) and year <= REPORTYEARLAST:
-                bDistrib = True
-                #print year,month,actualDay, "计算分红" , y,m,d
-                # 计算分红送转
-                r, s = sT.parseDistrib(resultDistrib.distrib)
-                # 分红计算
-                ndividend += nStockTotal * r
-                # 送转增加股本计算
-                nStockTotal += nStockTotal * s
-                # print year, "年，每10股分红：", 10*r, "送转股数：", 10*s
-            nStockThisMonth = int(moneyLimit/closePrice/100)*100 #买入股数，如结果为560股则买入500股
-            nStockInvest += nStockThisMonth #总计购入股本
-            if nStockThisMonth==0: nStockThisMonth = 100 #至少保证买入100股
-            nCapitalInvestThisMonth = nStockThisMonth*closePrice+5  #5元为买入手续费
-            if nMaxInvPerMonth<nCapitalInvestThisMonth: nMaxInvPerMonth = nCapitalInvestThisMonth
-            if nMinInvPerMonth>nCapitalInvestThisMonth: nMinInvPerMonth = nCapitalInvestThisMonth
-            #print year,month,actualDay,closePrice,nStockTotal,nCapitalInvest
-            nStockTotal += nStockThisMonth    #本年总计股数
-            nCapitalInvest += nCapitalInvestThisMonth  #本月投入成本
-            lost = nStockTotal*closePrice+ndividend-nCapitalInvest
-            if lostMoneyMax>lost:#由于计算时只计算检查日时的最大回撤，可能有比检查日回撤更大的时候，尤其是最后卖出时。
-                lostMoneyMax = lost
-                lostMoneyMaxCaption = nCapitalInvest
-                lostMoneyMaxTime = sT.getDateString(year,month,actualDay)
+            for tradeDay in BUYDAY:
+                foundData,closePrice,actualMonth, actualDay=sT.getClosePriceBackward(code[i], year, month, tradeDay)
+                #print closePrice,sT.getDateString(year,month,actualDay)
+                if foundData==False:
+                    print "WARNING:",year, month, u"获取连网股价失败！可能此月股票停牌，暂停定投！"
+                    continue
+                # 如果该月是分红月，且不是最后一年就计算此年的分红配送（最后一年年报可能未出）
+                # 如果价格日期大于分红登记日期表示已经除权除息，则需要计算分红送转后再计算回撤
+                if (month == m and actualDay>d or month == m+1 and bDistrib==False) and year <= REPORTYEARLAST:
+                    bDistrib = True
+                    #print year,month,actualDay, "计算分红" , y,m,d
+                    # 计算分红送转
+                    r, s = sT.parseDistrib(resultDistrib.distrib)
+                    # 分红计算
+                    ndividend += nStockTotal * r
+                    # 送转增加股本计算
+                    nStockTotal += nStockTotal * s
+                    # print year, "年，每10股分红：", 10*r, "送转股数：", 10*s
+                nStockThisMonth = int(moneyLimit/closePrice/100)*100 #买入股数，如结果为560股则买入500股
+                nStockInvest += nStockThisMonth #总计购入股本
+                if nStockThisMonth==0: nStockThisMonth = 100 #至少保证买入100股
+                nCapitalInvestThisMonth = nStockThisMonth*closePrice+5  #5元为买入手续费
+                if nMaxInvPerMonth<nCapitalInvestThisMonth: nMaxInvPerMonth = nCapitalInvestThisMonth
+                if nMinInvPerMonth>nCapitalInvestThisMonth: nMinInvPerMonth = nCapitalInvestThisMonth
+                #print year,month,actualDay,closePrice,nStockTotal,nCapitalInvest
+                nStockTotal += nStockThisMonth    #本年总计股数
+                nCapitalInvest += nCapitalInvestThisMonth  #本月投入成本
+                lost = nStockTotal*closePrice+ndividend-nCapitalInvest
+                if lostMoneyMax>lost:#由于计算时只计算检查日时的最大回撤，可能有比检查日回撤更大的时候，尤其是最后卖出时。
+                    lostMoneyMax = lost
+                    lostMoneyMaxCaption = nCapitalInvest
+                    lostMoneyMaxTime = sT.getDateString(year,month,actualDay)
 
     if ENDMONTH==12:
         year = ENDYEAR+1
@@ -178,7 +180,7 @@ for i in range(count):
         dictColumnValues[u'最大回撤出现的时间'] = lostMoneyMaxTime
         dictColumnValues[u"每月最小投资额"] = nMinInvPerMonth
         dictColumnValues[u"每月最大投资额"] = nMaxInvPerMonth
-        print u'时长：',dictColumnValues[u'投资时长（月）'],u'月 '\
+        print u'时长：',dictColumnValues[u'投资年数'],u'年 '\
               u'投资收益率:',"%.2f%%" %(dictColumnValues[u'投资收益率']*100),\
               u'最大回撤时的收益率:',"%.2f%%" %(dictColumnValues[u'最大回撤时的收益率']*100)
         for idx in range(len(ListColumnName)):
