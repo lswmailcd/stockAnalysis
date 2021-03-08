@@ -8,14 +8,17 @@ import tushare as ts
 import time
 import stockTools as sT
 import stockGlobalSpace as sG
+import bs4
+import re
+from random import randint
 
 #!!!!注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！
 STARTYEAR = 2011 #投资起始年
 STARTMONTH = 1 #投资起始月份
 STARTDAY = 1      #投资起始日期
-ENDYEAR = 2014  #定投结束年
-ENDMONTH = 12  #定投结束月份
-ENDDAY = 31  #定投结束日
+ENDYEAR = 2015  #定投结束年
+ENDMONTH = 6  #定投结束月份
+ENDDAY = 1  #定投结束日
 BUYDAY = 20  #定投日
 INTERVAL  = 1    #定投间隔的月份
 INVESTMONEY = "10000"
@@ -26,12 +29,6 @@ INVESTMONEY = "10000"
 #SALEDAY = 1  #卖出日
 
 
-print u"WARNING:请注意基金历史分红情况，默认以现金分红为准！"
-str = raw_input("默认红利再投进行计算请按'回车',如需现金分红以进行计算请按'c',退出请按'q': ")
-if str=="q" : exit(0)
-stype = "1" #红利再投
-if str=="c" :
-    stype = "2" #现金分红
 print u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", STARTDAY,u"日\
 ---",ENDYEAR,u"年",ENDMONTH,u"月", ENDDAY,u"日"
 
@@ -51,6 +48,23 @@ for i in range(nrows):
         if code[i] == "" or code[i]=='0.0': continue
         name[i] = table.cell(i + 1, 1).value
         count = count+1
+
+print u"WARNING:请注意基金历史分红情况，默认为红利再投资！"
+str = raw_input("默认红利再投进行计算请按'回车',如需现金分红以进行计算请按'c',退出请按'q': ")
+if str=="q" : exit(0)
+stype = "1" #红利再投
+if str=="c" :
+    stype = "2" #现金分红
+
+str = raw_input("如不进行分红检查请按'回车',如需检查请按'c',退出请按'q': ")
+if str=="q" : exit(0)
+if str=="c" :
+    print("开始检查基金分红数据......")
+    for i in range(count):
+        if code[i] == u'': continue
+        sT.checkFundDistrib(code[i])
+
+    print("基金分红数据检查完成！")
 
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('dataResult')
@@ -72,31 +86,53 @@ for i in range(count):
     response = urllib2.urlopen(request)
     data = response.read()
     #data = urllib.urlopen(url).read()
-    time.sleep(1)
+    time.sleep(randint(1,3))
     infoStr = data.split('|')
-    if infoStr[0]=='var Result={"error"':
+    if infoStr[2]=='0期':
         print data
         continue
+
     dictColumnValues = {}
     investTotal = float(infoStr[3].replace(",",""))
     totalValue = float(infoStr[5].replace(",",""))
     details = infoStr[7][:-3].split("_")
-    moneyTotal, share, diffWorse, diffBest, dateWorse, dateBest, worseRate, bestRate = \
+    moneyTotal, shareTotal, diffWorse, diffBest, dateWorse, dateBest, worseRate, bestRate = \
     0.0, 0.0, 0.0, 0.0, "", "", 0.0,0.0
+    d0 = startDate
+    #获取基金分红数据，用于计算份额变动
+    _, distrib = sT.getFundDistrib(code[i])
     for s in details:
         t = s.split("~")#t[0]:日期,t[1]:价格,t[2]:本金,t[3]:份额
+        p = t[0].replace(",","").find("星")
+        date = t[0].replace(",","")[:p]
+        share = float(t[3].replace(",",""))
+        for d in distrib:#d[0]:登记及除息日，d[1]:每份分红金额,d[2]:红利发放日，红利再投资日
+            if d0<=d[0]<date:
+                disMoney = shareTotal*d[1]
+                shareTotal += disMoney/sT.getFundPrice(code[i], d[2])[1]
+
+        d0 = date
+
+        shareTotal += share
         moneyTotal = moneyTotal + float(t[2].replace(",",""))
-        share = share + float(t[3].replace(",",""))
-        diff = float(t[1])*share - moneyTotal
+        diff = float(t[1])*shareTotal - moneyTotal
+        #print(float(t[1]))
+        #print('diff=', diff, 'shareTotal=', shareTotal, 'date', date)
         if diff<diffWorse:
             diffWorse = diff
             dateWorse = t[0]
             worseRate = diff/moneyTotal
+            #print('diffWorse=',diffWorse,'dateWorse',dateWorse)
         if diff>diffBest:
             diffBest = diff
             dateBest = t[0]
             bestRate = diff / moneyTotal
+            #print('diffBest=', diffBest, 'dateBest', dateBest)
 
+    # print(totalValue-investTotal)
+    # print(shareTotal*sT.getFundPrice(code[i], endDate)[1]-moneyTotal)
+    # print(totalValue==shareTotal*sT.getFundPrice(code[i], endDate)[1],investTotal==moneyTotal )
+    # print shareTotal, totalValue/sT.getFundPrice(code[i], endDate)[1]
     rate = (totalValue-investTotal)/investTotal#float(infoStr[6][:-1])/100.0
     investPeriod = round(sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,STARTDAY,ENDYEAR,ENDMONTH,ENDDAY)/365.0, 2)
     ratePerYear = round(((rate + 1) ** (1.0 / investPeriod) - 1), 4)

@@ -1307,8 +1307,13 @@ def checkDistrib(code, startYear, endYear):
             sqlString += table1
             sqlString += ".code="
             sqlString += code
-            conn = createDBConnection()
-            ret = conn.execute(sqlString)
+            try:
+                conn = createDBConnection()
+                ret = conn.execute(sqlString)
+            except Exception, e:
+                print year,"年，分红数据访问出错！"
+                print "checkDistrib（）：数据库访问错！"
+                continue
             result = ret.first()
             if result is None:
                 print  code, year, "年，stockreport表或stockreport_sup表中无此股票！"
@@ -1400,3 +1405,162 @@ def getDateString(year, month, day):
         date += "0"
     date += "%s" % (day)
     return date
+
+def getFundPrice(code, dORy, month=0, day=0, autp=None):
+    if month==0:#输入的日期在dORy中，以字符串形式输入
+        y,m,d = splitDateString(dORy)
+    else:
+        y=dORy; m=month; d=day
+
+    if createCalender().validDate(y,m,d):
+        date = getDateString(y, m, d)
+        conn = createDBConnection()
+        sqlString = "select price from fundprice where code='"
+        sqlString += code
+        sqlString += "' and date='"
+        sqlString += date.encode('utf8')
+        sqlString += "'"
+        try:
+            ret = conn.execute(sqlString)
+            result = ret.first()
+        except Exception, e:
+            print e
+        if result is not None and result.price is not None:
+            return True, result.price
+        else:
+            url = "http://fund.eastmoney.com/f10/F10DataApi.aspx?type=lsjz&code=" + code
+            url = url + "&page=1&per=20&sdate="
+            url = url + date
+            url = url + "&edate="
+            url = url + date
+            url = url + "&rt=0.19110643402290917"
+            data = urllib2.urlopen(url).read()
+            bs = bs4.BeautifulSoup(data, "html.parser")
+            try:
+                price = float(bs.find_all("td")[2].get_text())
+                sqlString = "insert into fundprice(code,price,date) values('"
+                sqlString += code
+                sqlString += "',%s,'" % (price)
+                sqlString += date.encode('utf8')
+                sqlString += "')"
+                try:
+                    ret = conn.execute(sqlString)
+                    log.writeUtfLog(sqlString)
+                    return True, price
+                except Exception, e:
+                    print e
+                    return False, 0
+            except Exception, e:
+                print e
+                return False, 0
+    else:
+        return False, 0
+
+def checkFundDistrib(code):
+    #获取基金分红数据，用于计算份额变动
+    url = "http://fundf10.eastmoney.com/fhsp_"
+    url += code
+    url += ".html"
+    request = urllib2.Request(url=url, headers=sG.browserHeaders)
+    response = urllib2.urlopen(request)
+    data = response.read()
+    bs = bs4.BeautifulSoup(data, "lxml")
+    tb = bs.find('table', {'class': 'w782 comm cfxq'})
+    tbody = tb.find('tbody')
+    rows = tbody.find_all('tr')
+    distrib = []
+    for row in rows:
+        cells = row.find_all('td')
+        if u"暂无分红信息" in cells[0].get_text(): break
+        pos0 = cells[3].get_text().find(u'金')
+        pos1 = cells[3].get_text().find(u'元')
+        dis = float(cells[3].get_text()[pos0+1:pos1])
+        distrib.append( (cells[1].get_text(), cells[2].get_text() , dis, cells[4].get_text()) )
+
+    if distrib:
+        #检查数据库中分红信息是否完整，不完整则填充
+        sqlString = "select dateReg from funddistrib where code="
+        sqlString += code
+        try:
+            conn = createDBConnection()
+            ret = conn.execute(sqlString)
+        except Exception, e:
+            print e
+            print "checkFundDistrib（）：数据库访问错！"
+            return
+        result = ret.fetchall()
+        if result:
+            for d in distrib:
+                try:
+                    result.index((d[0],))
+                except Exception, e:
+                    sqlString = "insert into funddistrib"
+                    sqlString += "(code,dateReg,dateDividen,dateBonus,bonus) values('"
+                    sqlString += code
+                    sqlString += "','"
+                    sqlString += d[0].encode('utf8')
+                    sqlString += "','"
+                    sqlString += d[1].encode('utf8')
+                    sqlString += "','"
+                    sqlString += d[3].encode('utf8')
+                    sqlString += "',%s" % (d[2])
+                    sqlString += ")"
+                    try:
+                        conn.execute(sqlString)
+                        log.writeUtfLog(sqlString.encode('utf8'))
+                    except Exception, e:
+                        print e
+                        print "checkFundDistrib(),基金分红信息插入失败"
+        else:
+            for d in distrib:
+                sqlString = "insert into funddistrib"
+                sqlString += "(code,dateReg,dateDividen,dateBonus,bonus) values('"
+                sqlString += code
+                sqlString += "','"
+                sqlString += d[0].encode('utf8')
+                sqlString += "','"
+                sqlString += d[1].encode('utf8')
+                sqlString += "','"
+                sqlString += d[3].encode('utf8')
+                sqlString += "',%s" % (d[2])
+                sqlString += ")"
+                try:
+                    conn.execute(sqlString)
+                    log.writeUtfLog(sqlString.encode('utf8'))
+                except Exception, e:
+                    print e
+                    print "checkFundDistrib(),基金分红信息插入失败"
+
+def parseFundDistrib(d):
+    distrib = []
+    for dis in d:
+        distrib.append((dis.dateDividen, dis.bonus, dis.dateBonus))
+
+    return distrib
+
+def getFundDistrib(code):
+    sqlString = "select dateDividen,dateBonus,bonus from funddistrib where code="
+    sqlString += code
+    try:
+        conn = createDBConnection()
+        ret = conn.execute(sqlString)
+    except Exception, e:
+        print e
+        print code, "funddistrib数据表:访问失败！"
+        return False, None
+    result = ret.fetchall()
+    if result:
+        disturb = parseFundDistrib(result)
+        disturb.sort()
+        return True, disturb
+    else:
+        print code,"funddistrib数据表:分红数据获取失败,基金可能无分红！"
+        return False, []
+
+
+
+
+
+
+
+
