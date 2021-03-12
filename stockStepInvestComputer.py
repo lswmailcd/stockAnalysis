@@ -10,14 +10,16 @@ import xlwt
 import time
 import stockDataChecker as ck
 
-STARTYEAR = 2018 #定投起始年
-STARTMONTH = 1  #定投起始月份
+STARTYEAR = 2016 #定投起始年
+STARTMONTH = 7  #定投起始月份
 ENDYEAR = 2021  #定投结束年
 ENDMONTH = 1 #定投结束月份
 BUYDAY=[20] #每月中的定投日期列表
 REPORTYEARLAST = 2020 #最新报表年份
 
 moneyLimit = 10000  #每次定投金额上限，实际金额根据买的股数取整
+
+style_percent = xlwt.easyxf(num_format_str='0.00%')
 
 print u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月---",ENDYEAR,u"年",ENDMONTH,u"月"
 print u"***请确保已经使用stockDataChecker.py对数据进行检查***"
@@ -26,9 +28,9 @@ if str=="q" : exit(0)
 
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('StepInvestResult')
-ListColumnName = [u'代码',u'名称',u'投资年数',u'投资收益率',u'投资年化复合收益率',u'最大回撤时的收益率',u'最大收益时的收益率',\
-                  u'最大回撤出现的时间',u'最大收益出现的时间',u'投资总成本',u'投资总市值',\
-                  u'投资总收益',u'分红',u'平均年收益',u'总股本',u'购买股本',u'最大回撤',u'投资起始时间',u'卖出股份时间',\
+ListColumnName = [u'代码',u'名称',u'投资年数',u'投资收益率',u'投资年化复合收益率',u'最大回撤时的收益率',u'最大回撤额',\
+                  u'最大回撤出现的时间',u'最大收益时的收益率',u'最大收益出现的时间',u'投资总成本',u'投资总市值',\
+                  u'投资总收益',u'分红',u'平均年收益',u'总股本',u'购买股本',u'投资起始时间',u'卖出股份时间',\
                   u"每月最小投资额",u"每月最大投资额"]
 for idx in range(len(ListColumnName)):
     worksheet.write(0, idx, ListColumnName[idx])
@@ -181,7 +183,7 @@ for i in range(count):
         dictColumnValues[u'投资年化复合收益率'] = round(((incomeRate+1)**(1.0/investPeriod)-1),4)
         dictColumnValues[u'总股本'] = nStockTotal
         dictColumnValues[u'购买股本'] = nStockInvest
-        dictColumnValues[u'最大回撤'] = lostMoneyMax
+        dictColumnValues[u'最大回撤额'] = lostMoneyMax
         dictColumnValues[u'最大回撤时的收益率'] = round(lostMoneyMax/lostMoneyMaxCaption,4)
         dictColumnValues[u'最大回撤出现的时间'] = lostMoneyMaxTime
         dictColumnValues[u'最大收益'] = earnMoneyMax
@@ -189,11 +191,15 @@ for i in range(count):
         dictColumnValues[u'最大收益出现的时间'] = earnMoneyMaxTime
         dictColumnValues[u"每月最小投资额"] = nMinInvPerMonth
         dictColumnValues[u"每月最大投资额"] = nMaxInvPerMonth
-        print u'时长：',dictColumnValues[u'投资年数'],u'年 '\
-              u'投资收益率:',"%.2f%%" %(dictColumnValues[u'投资收益率']*100),\
-              u'最大回撤时的收益率:',"%.2f%%" %(dictColumnValues[u'最大回撤时的收益率']*100)
+        print u'时长：',dictColumnValues[u'投资年数'],u'年 ',\
+              u'投资收益率:',"%.2f%%" %(dictColumnValues[u'投资收益率']*100), \
+              u'最大回撤时的收益率:', "%.2f%%" % (dictColumnValues[u'最大回撤时的收益率'] * 100), \
+              u'最大收益时的收益率:',"%.2f%%" %(dictColumnValues[u'最大收益时的收益率']*100)
         for idx in range(len(ListColumnName)):
-            worksheet.write(i+1, idx, dictColumnValues[ListColumnName[idx]])
+            if ListColumnName[idx].find(u'率') != -1:
+                worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]], style_percent)
+            else:
+                worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]])
     else:
         print u"获取卖出日价格失败！",year, month, day
 workbook.save('.\\data\\StepInvestResult.xls')

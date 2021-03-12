@@ -28,6 +28,7 @@ INVESTMONEY = "10000"
 #SALEMONTH = 6  #卖出月份
 #SALEDAY = 1  #卖出日
 
+style_percent = xlwt.easyxf(num_format_str='0.00%')
 
 print u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", STARTDAY,u"日\
 ---",ENDYEAR,u"年",ENDMONTH,u"月", ENDDAY,u"日"
@@ -68,8 +69,8 @@ if str=="c" :
 
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('dataResult')
-ListColumnName = [u'代码',u'名称',u'定投年数',u'投资收益率',u'投资年化复合收益率',u'最大回撤时的收益率', u'最大收益率',\
-                  u'最大回撤出现的时间', u'最大收益', u'最大收益出现的时间', u'投资总成本',u'投资总市值',\
+ListColumnName = [u'代码',u'名称',u'定投年数',u'投资收益率',u'投资年化复合收益率',u'最大回撤时的收益率', \
+                  u'最大回撤出现的时间', u'最大收益率',u'最大收益', u'最大收益出现的时间', u'投资总成本',u'投资总市值',\
                   u'投资总收益',u'分红',u'平均年收益',u'总份额', u'购买份额',u'最大回撤',\
                   u'定投起始时间',u'卖出基金时间'] #u'定投结束时间'#,
 for idx in range(len(ListColumnName)):
@@ -158,7 +159,10 @@ for i in range(count):
     dictColumnValues[u'最大收益率'] = bestRate
     dictColumnValues[u'最大收益出现的时间'] = dateBest.decode("utf8")
     for idx in range(len(ListColumnName)):
-        worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]])
+        if ListColumnName[idx].find(u'率') != -1:
+            worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]], style_percent)
+        else:
+            worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]])
 
     print code[i], name[i], "收益：%.2f%%" % (rate * 100.0), "年化收益：%.2f%%" % (ratePerYear * 100.0)
 
