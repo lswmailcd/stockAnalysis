@@ -10,15 +10,14 @@ import xlwt
 import time
 import stockDataChecker as ck
 
-STARTYEAR = 2016 #定投起始年
+STARTYEAR = 2018 #定投起始年
 STARTMONTH = 1  #定投起始月份
-ENDYEAR = 2020  #定投结束年
-ENDMONTH = 6 #定投结束月份
-#TRADEDAY = 20 #每月中的定投日期
-BUYDAY=[5,20] #每月中的定投日期列表
+ENDYEAR = 2021  #定投结束年
+ENDMONTH = 1 #定投结束月份
+BUYDAY=[20] #每月中的定投日期列表
 REPORTYEARLAST = 2020 #最新报表年份
 
-moneyLimit = 20000  #每次定投金额上限，实际金额根据买的股数取整
+moneyLimit = 10000  #每次定投金额上限，实际金额根据买的股数取整
 
 print u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月---",ENDYEAR,u"年",ENDMONTH,u"月"
 print u"***请确保已经使用stockDataChecker.py对数据进行检查***"
@@ -27,10 +26,10 @@ if str=="q" : exit(0)
 
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('StepInvestResult')
-ListColumnName = [u'代码',u'名称',u'投资年数',u'投资收益率',u'投资年化复合收益率',u'最大回撤时的收益率',\
-                  u'最大回撤出现的时间',u'投资总成本',u'投资总市值',u'投资总收益',u'分红',u'平均年收益',u'总股本',\
-                  u'购买股本',u'最大回撤',u'投资起始时间',u'卖出股份时间',u"每月最小投资额",u"每月最大投资额"\
-                  ]
+ListColumnName = [u'代码',u'名称',u'投资年数',u'投资收益率',u'投资年化复合收益率',u'最大回撤时的收益率',u'最大收益时的收益率',\
+                  u'最大回撤出现的时间',u'最大收益出现的时间',u'投资总成本',u'投资总市值',\
+                  u'投资总收益',u'分红',u'平均年收益',u'总股本',u'购买股本',u'最大回撤',u'投资起始时间',u'卖出股份时间',\
+                  u"每月最小投资额",u"每月最大投资额"]
 for idx in range(len(ListColumnName)):
     worksheet.write(0, idx, ListColumnName[idx])
 
@@ -63,8 +62,11 @@ for i in range(count):
     nStockInvest = 0  # 购买的股数
     lostMoneyMax = 0  # 最大回撤的损失
     lostMoneyMaxCaption = 0  #最大回撤时投入的总资本
+    earnMoneyMax = 0  # 最大收益的利润
+    earnMoneyMaxCaption = 0  #最大收益时投入的总资本
     dictColumnValues = {}
     lostMoneyMaxTime = ""
+    earnMoneyMaxTime = ""
     nMaxInvPerMonth = 0.0
     nMinInvPerMonth = 10000.0
     print code[i],name[i]
@@ -143,11 +145,15 @@ for i in range(count):
                 #print year,month,actualDay,closePrice,nStockTotal,nCapitalInvest
                 nStockTotal += nStockThisMonth    #本年总计股数
                 nCapitalInvest += nCapitalInvestThisMonth  #本月投入成本
-                lost = nStockTotal*closePrice+ndividend-nCapitalInvest
-                if lostMoneyMax>lost:#由于计算时只计算检查日时的最大回撤，可能有比检查日回撤更大的时候，尤其是最后卖出时。
-                    lostMoneyMax = lost
+                profit = nStockTotal*closePrice+ndividend-nCapitalInvest
+                if lostMoneyMax>profit:#由于计算时只计算检查日时的最大回撤，可能有比检查日回撤更大的时候，尤其是最后卖出时。
+                    lostMoneyMax = profit
                     lostMoneyMaxCaption = nCapitalInvest
                     lostMoneyMaxTime = sT.getDateString(year,month,actualDay)
+                if earnMoneyMax<profit:#由于计算时只计算检查日时的最大收益，可能有比检查日收益更大的时候，尤其是最后卖出时。
+                    earnMoneyMax = profit
+                    earnMoneyMaxCaption = nCapitalInvest
+                    earnMoneyMaxTime = sT.getDateString(year,month,actualDay)
 
     if ENDMONTH==12:
         year = ENDYEAR+1
@@ -178,6 +184,9 @@ for i in range(count):
         dictColumnValues[u'最大回撤'] = lostMoneyMax
         dictColumnValues[u'最大回撤时的收益率'] = round(lostMoneyMax/lostMoneyMaxCaption,4)
         dictColumnValues[u'最大回撤出现的时间'] = lostMoneyMaxTime
+        dictColumnValues[u'最大收益'] = earnMoneyMax
+        dictColumnValues[u'最大收益时的收益率'] = round(earnMoneyMax/earnMoneyMaxCaption,4)
+        dictColumnValues[u'最大收益出现的时间'] = earnMoneyMaxTime
         dictColumnValues[u"每月最小投资额"] = nMinInvPerMonth
         dictColumnValues[u"每月最大投资额"] = nMaxInvPerMonth
         print u'时长：',dictColumnValues[u'投资年数'],u'年 '\
