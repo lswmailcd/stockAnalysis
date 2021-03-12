@@ -13,8 +13,8 @@ import re
 from random import randint
 
 #!!!!注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！
-STARTYEAR = 2018 #投资起始年
-STARTMONTH = 1 #投资起始月份
+STARTYEAR = 2015 #投资起始年
+STARTMONTH = 6 #投资起始月份
 STARTDAY = 1      #投资起始日期
 ENDYEAR = 2021  #定投结束年
 ENDMONTH = 2  #定投结束月份
@@ -69,9 +69,9 @@ if str=="c" :
 
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('dataResult')
-ListColumnName = [u'代码',u'名称',u'定投年数',u'投资收益率',u'投资年化复合收益率',u'最大回撤时的收益率', \
+ListColumnName = [u'代码',u'名称',u'定投年数',u'投资收益率',u'投资年化复合收益率',u'最大回撤时的收益率', u'最大回撤',\
                   u'最大回撤出现的时间', u'最大收益率',u'最大收益', u'最大收益出现的时间', u'投资总成本',u'投资总市值',\
-                  u'投资总收益',u'分红',u'平均年收益',u'总份额', u'购买份额',u'最大回撤',\
+                  u'投资总收益',u'分红',u'平均年收益',u'总份额', u'购买份额',\
                   u'定投起始时间',u'卖出基金时间'] #u'定投结束时间'#,
 for idx in range(len(ListColumnName)):
     worksheet.write(0, idx, ListColumnName[idx])
