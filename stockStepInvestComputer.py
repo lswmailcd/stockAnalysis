@@ -14,7 +14,7 @@ STARTYEAR = 2016 #定投起始年
 STARTMONTH = 7  #定投起始月份
 ENDYEAR = 2021  #定投结束年
 ENDMONTH = 1 #定投结束月份
-BUYDAY=[20] #每月中的定投日期列表
+BUYDAY=[10] #每月中的定投日期列表
 REPORTYEARLAST = 2020 #最新报表年份
 
 moneyLimit = 10000  #每次定投金额上限，实际金额根据买的股数取整
@@ -28,10 +28,13 @@ if str=="q" : exit(0)
 
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('StepInvestResult')
-ListColumnName = [u'代码',u'名称',u'投资年数',u'投资收益率',u'投资年化复合收益率',u'最大回撤时的收益率',u'最大回撤额',\
-                  u'最大回撤出现的时间',u'最大收益时的收益率',u'最大收益出现的时间',u'投资总成本',u'投资总市值',\
-                  u'投资总收益',u'分红',u'平均年收益',u'总股本',u'购买股本',u'投资起始时间',u'卖出股份时间',\
-                  u"每月最小投资额",u"每月最大投资额"]
+ListColumnName = [u'代码',u'名称',u'投资年数',u'投资收益率',u'投资年化复合收益率',\
+                  u'最佳收益率',u'最佳收益额',u'最佳收益时间',\
+                  u'最差收益率',u'最差收益额',u'最差收益时间',\
+                  u'最大回撤额时的收益率',u'最大回撤额', u'最大回撤额出现的时间', \
+                  u'最大收益额时的收益率',u'最大收益额', u'最大收益额出现的时间', \
+                  u'投资总成本',u'投资总市值',u'投资总收益',u'平均年收益',u'分红',u'总股本',u'购买股本',\
+                  u'投资起始时间',u'卖出股份时间',u"每月最小投资额",u"每月最大投资额"]
 for idx in range(len(ListColumnName)):
     worksheet.write(0, idx, ListColumnName[idx])
 
@@ -71,6 +74,12 @@ for i in range(count):
     earnMoneyMaxTime = ""
     nMaxInvPerMonth = 0.0
     nMinInvPerMonth = 10000.0
+    worstRate = 0.0
+    bestRate = 0.0
+    worstLost = 0.0
+    bestEarn = 0.0
+    worstRateTime = ""
+    bestRateTime = ""
     print code[i],name[i]
     for year in range(STARTYEAR,ENDYEAR+1):
         # 检查本年分红送配情况
@@ -148,14 +157,24 @@ for i in range(count):
                 nStockTotal += nStockThisMonth    #本年总计股数
                 nCapitalInvest += nCapitalInvestThisMonth  #本月投入成本
                 profit = nStockTotal*closePrice+ndividend-nCapitalInvest
+                rate = profit/nCapitalInvest
+                tradeDate = sT.getDateString(year, month, actualDay)
                 if lostMoneyMax>profit:#由于计算时只计算检查日时的最大回撤，可能有比检查日回撤更大的时候，尤其是最后卖出时。
                     lostMoneyMax = profit
                     lostMoneyMaxCaption = nCapitalInvest
-                    lostMoneyMaxTime = sT.getDateString(year,month,actualDay)
+                    lostMoneyMaxTime = tradeDate
                 if earnMoneyMax<profit:#由于计算时只计算检查日时的最大收益，可能有比检查日收益更大的时候，尤其是最后卖出时。
                     earnMoneyMax = profit
                     earnMoneyMaxCaption = nCapitalInvest
-                    earnMoneyMaxTime = sT.getDateString(year,month,actualDay)
+                    earnMoneyMaxTime = tradeDate
+                if rate<worstRate:
+                    worstRate = rate
+                    worstRateTime = tradeDate
+                    worstLost = profit
+                if rate>bestRate:
+                    bestRate = rate
+                    bestRateTime = tradeDate
+                    bestEarn = profit
 
     if ENDMONTH==12:
         year = ENDYEAR+1
@@ -183,18 +202,23 @@ for i in range(count):
         dictColumnValues[u'投资年化复合收益率'] = round(((incomeRate+1)**(1.0/investPeriod)-1),4)
         dictColumnValues[u'总股本'] = nStockTotal
         dictColumnValues[u'购买股本'] = nStockInvest
-        dictColumnValues[u'最大回撤额'] = lostMoneyMax
-        dictColumnValues[u'最大回撤时的收益率'] = round(lostMoneyMax/lostMoneyMaxCaption,4)
-        dictColumnValues[u'最大回撤出现的时间'] = lostMoneyMaxTime
-        dictColumnValues[u'最大收益'] = earnMoneyMax
-        dictColumnValues[u'最大收益时的收益率'] = round(earnMoneyMax/earnMoneyMaxCaption,4)
-        dictColumnValues[u'最大收益出现的时间'] = earnMoneyMaxTime
         dictColumnValues[u"每月最小投资额"] = nMinInvPerMonth
         dictColumnValues[u"每月最大投资额"] = nMaxInvPerMonth
+        dictColumnValues[u'最大回撤额'] = lostMoneyMax
+        dictColumnValues[u'最大回撤额时的收益率'] = round(lostMoneyMax/lostMoneyMaxCaption,4)
+        dictColumnValues[u'最大回撤额出现的时间'] = lostMoneyMaxTime
+        dictColumnValues[u'最大收益额'] = earnMoneyMax
+        dictColumnValues[u'最大收益额时的收益率'] = round(earnMoneyMax/earnMoneyMaxCaption,4)
+        dictColumnValues[u'最大收益额出现的时间'] = earnMoneyMaxTime
+        dictColumnValues[u'最佳收益率'] = bestRate
+        dictColumnValues[u'最差收益率'] = worstRate
+        dictColumnValues[u'最佳收益额'] = bestEarn
+        dictColumnValues[u'最差收益额'] = worstLost
+        dictColumnValues[u'最佳收益时间'] = bestRateTime
+        dictColumnValues[u'最差收益时间'] = worstRateTime
         print u'时长：',dictColumnValues[u'投资年数'],u'年 ',\
               u'投资收益率:',"%.2f%%" %(dictColumnValues[u'投资收益率']*100), \
-              u'最大回撤时的收益率:', "%.2f%%" % (dictColumnValues[u'最大回撤时的收益率'] * 100), \
-              u'最大收益时的收益率:',"%.2f%%" %(dictColumnValues[u'最大收益时的收益率']*100)
+              u'投资年化复合收益率:', "%.2f%%" % (dictColumnValues[u'投资年化复合收益率'] * 100)
         for idx in range(len(ListColumnName)):
             if ListColumnName[idx].find(u'率') != -1:
                 worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]], style_percent)
