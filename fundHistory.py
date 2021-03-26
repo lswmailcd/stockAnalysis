@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import urllib
+import urllib2
 import numpy as np
 import bs4
 import xlrd
@@ -9,41 +9,108 @@ import time
 import stockTools as sT
 import Graph
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+from random import randint
+import stockGlobalSpace as sG
+import datetime
 
-code = "110028"
-STARTYEAR = 2013  #投资起始年
-date = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
-y,m,d = sT.splitDateString(date)
+BONUS_SHARE = "1" #红利再投
+BONUS_CASH = "2" #现金红利
 
-print u"WARNING:请注意基金历史分红情况，默认以现金分红为准！"
-str = raw_input("默认现金分红进行计算请按'回车',如需以红利再投进行计算请按'c',退出请按'q': ")
+#!!!!注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！
+STARTYEAR = 2010 #投资起始年
+STARTMONTH = 1 #投资起始月份
+STARTDAY = 1      #投资起始日期
+
+#定投结束日即是卖出日，目前无法实现定投结束日和卖出日不同。
+ENDYEAR = 2021  #定投结束年
+ENDMONTH = 3  #定投结束月份
+ENDDAY = 25  #定投结束日
+BUYDAY = 10  #定投日
+INTERVAL  = 1    #定投间隔的月份
+INVESTMONEY = "10000"
+
+code = "110022"
+
+print u"WARNING:请注意基金历史分红情况，默认为红利再投资！"
+str = raw_input("默认红利再投进行计算请按'回车',如需现金分红以进行计算请按'c',退出请按'q': ")
 if str=="q" : exit(0)
-stype = "1" #现金分红
+stype = BONUS_SHARE #红利再投
 if str=="c" :
-    stype = "2" #红利再投
-print code, u"  计算时间段为：",STARTYEAR,u"年","---",y,u"年",m,u"月"
-YEARList = [0]*(y-STARTYEAR+1)
-profitList = []
-for year in range(STARTYEAR,y+1):
-    YEARList[year - STARTYEAR] = year
-    startDate = sT.getDateString(year-1, 12, 31)
-    saleDate = sT.getDateString(year, 12, 31)
-    url = "http://fundex.eastmoney.com/FundWebServices/FundSylCalculator.aspx?fc=" + code
-    url = url + "&stime=" + startDate + "&etime=" + saleDate
-    url = url + "&stype=" + stype + "&sgfl=" + "0" + "&shfl=" + "0" + "&sg=" + "10000" + "&lx=1"
-    data = urllib.urlopen(url).read()
-    time.sleep(1)
-    infoStr = data.split(':')
-    if infoStr[0]=='var Result={"error"':
-        print "请检查基金代码是否正确！"
-        exit(1)
-    rateList = data.split(":")[4].split(",")[0].split('"')
-    profitList.append(float(rateList[1])/100.0)
-    print year, "%.2f%%" %(profitList[-1]*100.0)
+    stype = BONUS_CASH #现金分红
 
-fig = plt.figure()
-ax1 = fig.add_subplot(1,1,1)
-Graph.drawColumnChat( ax1, YEARList, profitList, code.decode('utf8'), u'', u'收益率', 20, 0.5, bPercent=True)
+str = raw_input("如不进行分红检查请按'回车',如需检查请按'c',退出请按'q': ")
+if str=="q" : exit(0)
+if str=="c" :
+    print("开始检查基金分红数据......")
+    sT.checkFundDistrib(code)
+
+    print("基金分红数据检查完成！")
+
+print u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", STARTDAY,u"日\
+---",ENDYEAR,u"年",ENDMONTH,u"月", ENDDAY,u"日"
+
+startDate = sT.getDateString(STARTYEAR, STARTMONTH, STARTDAY)
+endDate = sT.getDateString(ENDYEAR, ENDMONTH, ENDDAY)
+
+url = "http://fund.eastmoney.com/data/FundInvestCaculator_AIPDatas.aspx?fcode=" + code
+url = url + "&sdate=" + startDate + "&edate=" + endDate + "&shdate=" + endDate
+url = url + "&round=" + "%s" % (INTERVAL) + "&dtr=" + "%s" % (BUYDAY) + "&p=" + "0" + "&je=" + INVESTMONEY
+url = url + "&stype=" + stype + "&needfirst=" + "2" + "&jsoncallback=FundDTSY.result"
+request = urllib2.Request(url=url, headers=sG.browserHeaders)
+response = urllib2.urlopen(request)
+data = response.read()
+time.sleep(randint(1, 3))
+infoStr = data.split('|')
+name = infoStr[1]
+if infoStr[2] == '0期':
+    print code,infoStr[1],data
+    exit(1)
+
+dictColumnValues = {}
+investTotal = float(infoStr[3].replace(",", ""))
+totalValue = float(infoStr[5].replace(",", ""))
+details = infoStr[7][:-3].split("_")
+
+dateList=[]
+rateList=[]
+moneyTotal, shareTotalInvest, shareTotal, diffWorst, diffBest, dateWorse, dateBest, diffWorstRate, diffBestRate, \
+rateWorst, rateBest, dateRateWorst, dateRateBest, bonusTotal, lostWorst, earnBest = \
+    0.0, 0.0, 0.0, 0.0, 0.0, "", "", 0.0, 0.0, 0.0, 0.0, "", "", 0.0, 0.0, 0.0
+d0 = startDate
+# 获取基金分红数据，用于计算份额变动（红利再投）或分红情况（现金红利）
+_, distrib = sT.getFundDistrib(code)
+for s in details:
+    t = s.split("~")  # t[0]:日期,t[1]:价格,t[2]:本金,t[3]:份额
+    p = t[0].replace(",", "").find("星")
+    date = t[0].replace(",", "")[:p]
+    dateList.append(date)
+    share = float(t[3].replace(",", ""))
+    shareTotalInvest += share
+    shareTotal += share
+    for d in distrib:  # d[0]:登记及除息日，d[1]:每份分红金额,d[2]:红利发放日，红利再投资日
+        if d0 <= d[0] < date:
+            disMoney = shareTotal * d[1]
+            if stype == BONUS_SHARE:  # 红利再投
+                shareTotal += disMoney / sT.getFundPrice(code, d[2])[1]
+            else:  # 现金红利
+                bonusTotal += disMoney
+
+    d0 = date
+
+    moneyTotal = moneyTotal + float(t[2].replace(",", ""))
+    diff = float(t[1]) * shareTotal - moneyTotal
+    rate = diff / moneyTotal
+    rateList.append(rate*100.0)
+
+plt.plot(dateList,rateList)
+ax = plt.gca()
+ax.yaxis.set_major_locator(mpl.ticker.MultipleLocator(5))
+ax.yaxis.set_major_formatter(mpl.ticker.FormatStrFormatter("%.0f%%"))
+mpl.rcParams['font.sans-serif'] = ['SimHei']  # 指定默认字体
+ax.set_title(code+name.decode('utf8'))
+plt.gcf().autofmt_xdate()
+plt.grid(True)
 plt.show()
 
 
