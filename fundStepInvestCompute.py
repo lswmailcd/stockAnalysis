@@ -17,11 +17,13 @@ BONUS_CASH = "2" #现金红利
 style_percent = xlwt.easyxf(num_format_str='0.00%')
 
 #!!!!注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！
-STARTYEAR = 2018 #投资起始年
+STARTYEAR = 2012 #投资起始年
 STARTMONTH = 1 #投资起始月份
 STARTDAY = 1      #投资起始日期
-ENDYEAR = 2021  #定投结束年
-ENDMONTH = 2  #定投结束月份
+
+#定投结束日即是卖出日，目前无法实现定投结束日和卖出日不同。
+ENDYEAR = 2015  #定投结束年
+ENDMONTH = 6  #定投结束月份
 ENDDAY = 1  #定投结束日
 BUYDAY = 10  #定投日
 INTERVAL  = 1    #定投间隔的月份
@@ -51,7 +53,6 @@ for i in range(nrows):
     if table.cell(i + 1, 0).value!="":
         code[i] = table.cell(i + 1, 0).value
         if code[i] == "" or code[i]=='0.0': continue
-        name[i] = table.cell(i + 1, 1).value
         count = count+1
 
 print u"WARNING:请注意基金历史分红情况，默认为红利再投资！"
@@ -96,9 +97,11 @@ for i in range(count):
     #data = urllib.urlopen(url).read()
     time.sleep(randint(1,3))
     infoStr = data.split('|')
-    if infoStr[2]=='0期':
+    if infoStr==['']:
         print data
         continue
+
+    name[i] = infoStr[1].decode('utf8')
 
     dictColumnValues = {}
     investTotal = float(infoStr[3].replace(",",""))

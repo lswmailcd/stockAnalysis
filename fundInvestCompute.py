@@ -9,11 +9,11 @@ import time
 import stockTools as sT
 
 STARTYEAR = 2020  #投资起始年
-STARTMONTH = 9 #投资起始月份
-startDay = 1      #投资起始日期
-ENDYEAR = 2020 #投资结束年
-ENDMONTH = 12  #投资结束月份
-endDay = 18  #投资结束日
+STARTMONTH = 12 #投资起始月份
+startDay = 31      #投资起始日期
+ENDYEAR = 2021 #投资结束年
+ENDMONTH = 3  #投资结束月份
+endDay = 19  #投资结束日
 
 print u"WARNING:请注意基金历史分红情况，默认以现金分红为准！"
 str = raw_input("默认红利再投进行计算请按'回车',如需以现金分红进行计算请按'c',退出请按'q': ")
@@ -36,7 +36,6 @@ for i in range(nrows):
     if table.cell(i + 1, 0).value!="":
         code[i] = table.cell(i + 1, 0).value
         if code[i] == "" or code[i]=='0.0': continue
-        name[i] = table.cell(i + 1, 1).value
         count = count+1
 
 workbook = xlwt.Workbook(encoding = 'ascii')
@@ -59,6 +58,7 @@ for i in range(count):
     if infoStr[0]=='var Result={"error"':
         print data
         continue
+    name[i] = infoStr[1].decode('utf8')
     rateList = data.split(":")[4].split(",")[0].split('"')
     rate = float(rateList[1])/100.0
     investPeriod = round(sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,1,ENDYEAR,ENDMONTH,endDay)/365.0, 2)
