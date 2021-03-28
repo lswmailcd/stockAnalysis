@@ -18,19 +18,30 @@ BONUS_SHARE = "1" #红利再投
 BONUS_CASH = "2" #现金红利
 
 #!!!!注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！
-STARTYEAR = 2015 #投资起始年
-STARTMONTH = 5 #投资起始月份
+STARTYEAR = 2021 #投资起始年
+STARTMONTH = 1 #投资起始月份
 STARTDAY = 1      #投资起始日期
 
 #定投结束日即是卖出日，目前无法实现定投结束日和卖出日不同。
-ENDYEAR = 2020  #定投结束年
+ENDYEAR = 2021  #定投结束年
 ENDMONTH = 8  #定投结束月份
 ENDDAY = 1  #定投结束日
 BUYDAY = 10  #定投日
 INTERVAL  = 1    #定投间隔的月份
 INVESTMONEY = "10000"
 
-code = "110022"
+data = xlrd.open_workbook('.\\data\\fundata.xls')
+table = data.sheets()[0]
+nrows = table.nrows-1
+a = np.zeros([nrows])
+code = np.array(a, dtype=np.unicode)
+name = np.array(a, dtype=np.unicode)
+count  = 0
+for i in range(nrows):
+    if table.cell(i + 1, 0).value!="":
+        code[i] = table.cell(i + 1, 0).value
+        if code[i] == "" or code[i]=='0.0': continue
+        count = count+1
 
 print u"WARNING:请注意基金历史分红情况，默认为红利再投资！"
 str = raw_input("默认红利再投进行计算请按'回车',如需现金分红以进行计算请按'c',退出请按'q': ")
@@ -43,8 +54,9 @@ str = raw_input("如不进行分红检查请按'回车',如需检查请按'c',�
 if str=="q" : exit(0)
 if str=="c" :
     print("开始检查基金分红数据......")
-    sT.checkFundDistrib(code)
-
+    for i in range(count):
+        if code[i] == u'': continue
+        sT.checkFundDistrib(code[i])
     print("基金分红数据检查完成！")
 
 print u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", STARTDAY,u"日\
@@ -53,62 +65,67 @@ print u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", STARTDA
 startDate = sT.getDateString(STARTYEAR, STARTMONTH, STARTDAY)
 endDate = sT.getDateString(ENDYEAR, ENDMONTH, ENDDAY)
 
-url = "http://fund.eastmoney.com/data/FundInvestCaculator_AIPDatas.aspx?fcode=" + code
-url = url + "&sdate=" + startDate + "&edate=" + endDate + "&shdate=" + endDate
-url = url + "&round=" + "%s" % (INTERVAL) + "&dtr=" + "%s" % (BUYDAY) + "&p=" + "0" + "&je=" + INVESTMONEY
-url = url + "&stype=" + stype + "&needfirst=" + "2" + "&jsoncallback=FundDTSY.result"
-request = urllib2.Request(url=url, headers=sG.browserHeaders)
-response = urllib2.urlopen(request)
-data = response.read()
-time.sleep(randint(1, 3))
-infoStr = data.split('|')
-name = infoStr[1]
-if infoStr[2] == '0期':
-    print code,infoStr[1],data
-    exit(1)
+dataList=[]
+for i in range(count):
+    url = "http://fund.eastmoney.com/data/FundInvestCaculator_AIPDatas.aspx?fcode=" + code[i]
+    url = url + "&sdate=" + startDate + "&edate=" + endDate + "&shdate=" + endDate
+    url = url + "&round=" + "%s" % (INTERVAL) + "&dtr=" + "%s" % (BUYDAY) + "&p=" + "0" + "&je=" + INVESTMONEY
+    url = url + "&stype=" + stype + "&needfirst=" + "2" + "&jsoncallback=FundDTSY.result"
+    request = urllib2.Request(url=url, headers=sG.browserHeaders)
+    response = urllib2.urlopen(request)
+    data = response.read()
+    time.sleep(randint(1, 3))
+    infoStr = data.split('|')
+    name[i] = infoStr[1].decode("utf8")
+    if infoStr[2] == '0期':
+        print code,infoStr[1],data
+        exit(1)
 
-dictColumnValues = {}
-investTotal = float(infoStr[3].replace(",", ""))
-totalValue = float(infoStr[5].replace(",", ""))
-details = infoStr[7][:-3].split("_")
+    dictColumnValues = {}
+    investTotal = float(infoStr[3].replace(",", ""))
+    totalValue = float(infoStr[5].replace(",", ""))
+    details = infoStr[7][:-3].split("_")
 
-dateList=[]
-rateList=[]
-moneyTotal, shareTotalInvest, shareTotal, diffWorst, diffBest, dateWorse, dateBest, diffWorstRate, diffBestRate, \
-rateWorst, rateBest, dateRateWorst, dateRateBest, bonusTotal, lostWorst, earnBest = \
-    0.0, 0.0, 0.0, 0.0, 0.0, "", "", 0.0, 0.0, 0.0, 0.0, "", "", 0.0, 0.0, 0.0
-d0 = startDate
-# 获取基金分红数据，用于计算份额变动（红利再投）或分红情况（现金红利）
-_, distrib = sT.getFundDistrib(code)
-for s in details:
-    t = s.split("~")  # t[0]:日期,t[1]:价格,t[2]:本金,t[3]:份额
-    p = t[0].replace(",", "").find("星")
-    date = t[0].replace(",", "")[:p]
-    dateList.append(date)
-    share = float(t[3].replace(",", ""))
-    shareTotalInvest += share
-    shareTotal += share
-    for d in distrib:  # d[0]:登记及除息日，d[1]:每份分红金额,d[2]:红利发放日，红利再投资日
-        if d0 <= d[0] < date:
-            disMoney = shareTotal * d[1]
-            if stype == BONUS_SHARE:  # 红利再投
-                shareTotal += disMoney / sT.getFundPrice(code, d[2])[1]
-            else:  # 现金红利
-                bonusTotal += disMoney
+    dateList=[]
+    rateList=[]
+    moneyTotal, shareTotalInvest, shareTotal, diffWorst, diffBest, dateWorse, dateBest, diffWorstRate, diffBestRate, \
+    rateWorst, rateBest, dateRateWorst, dateRateBest, bonusTotal, lostWorst, earnBest = \
+        0.0, 0.0, 0.0, 0.0, 0.0, "", "", 0.0, 0.0, 0.0, 0.0, "", "", 0.0, 0.0, 0.0
+    d0 = startDate
+    # 获取基金分红数据，用于计算份额变动（红利再投）或分红情况（现金红利）
+    _, distrib = sT.getFundDistrib(code[i])
+    for s in details:
+        t = s.split("~")  # t[0]:日期,t[1]:价格,t[2]:本金,t[3]:份额
+        p = t[0].replace(",", "").find("星")
+        date = t[0].replace(",", "")[:p]
+        dateList.append(date)
+        share = float(t[3].replace(",", ""))
+        shareTotalInvest += share
+        shareTotal += share
+        for d in distrib:  # d[0]:登记及除息日，d[1]:每份分红金额,d[2]:红利发放日，红利再投资日
+            if d0 <= d[0] < date:
+                disMoney = shareTotal * d[1]
+                if stype == BONUS_SHARE:  # 红利再投
+                    shareTotal += disMoney / sT.getFundPrice(code[i], d[2])[1]
+                else:  # 现金红利
+                    bonusTotal += disMoney
 
-    d0 = date
+        d0 = date
 
-    moneyTotal = moneyTotal + float(t[2].replace(",", ""))
-    diff = float(t[1]) * shareTotal - moneyTotal
-    rate = diff / moneyTotal
-    rateList.append(rate*100.0)
+        moneyTotal = moneyTotal + float(t[2].replace(",", ""))
+        diff = float(t[1]) * shareTotal - moneyTotal
+        rate = diff / moneyTotal
+        rateList.append(rate*100.0)
 
-plt.plot(dateList,rateList)
+    dataList.append([dateList,rateList])
+
+for i in range(len(dataList)):
+    plt.plot(dataList[i][0],dataList[i][1],label=name[i])
 ax = plt.gca()
 ax.yaxis.set_major_locator(mpl.ticker.MultipleLocator(5))
 ax.yaxis.set_major_formatter(mpl.ticker.FormatStrFormatter("%.0f%%"))
 mpl.rcParams['font.sans-serif'] = ['SimHei']  # 指定默认字体
-ax.set_title(code+name.decode('utf8'), fontsize=15)
+plt.legend(loc=len(dataList),ncol=len(dataList),mode="expand",borderaxespad=0.0)
 plt.gcf().autofmt_xdate()
 plt.grid(True)
 plt.show()
