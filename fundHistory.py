@@ -18,13 +18,13 @@ BONUS_SHARE = "1" #红利再投
 BONUS_CASH = "2" #现金红利
 
 #!!!!注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！
-STARTYEAR = 2021 #投资起始年
-STARTMONTH = 1 #投资起始月份
+STARTYEAR = 2015 #投资起始年
+STARTMONTH = 7 #投资起始月份
 STARTDAY = 1      #投资起始日期
 
 #定投结束日即是卖出日，目前无法实现定投结束日和卖出日不同。
-ENDYEAR = 2021  #定投结束年
-ENDMONTH = 8  #定投结束月份
+ENDYEAR = 2018  #定投结束年
+ENDMONTH = 7  #定投结束月份
 ENDDAY = 1  #定投结束日
 BUYDAY = 10  #定投日
 INTERVAL  = 1    #定投间隔的月份
@@ -124,8 +124,9 @@ for i in range(len(dataList)):
 ax = plt.gca()
 ax.yaxis.set_major_locator(mpl.ticker.MultipleLocator(5))
 ax.yaxis.set_major_formatter(mpl.ticker.FormatStrFormatter("%.0f%%"))
+ax.axhline(color='black',y=0)
 mpl.rcParams['font.sans-serif'] = ['SimHei']  # 指定默认字体
-plt.legend(loc=len(dataList),ncol=len(dataList),mode="expand",borderaxespad=0.0)
+plt.legend(loc=0,ncol=len(dataList),mode="expand",borderaxespad=0.0)
 plt.gcf().autofmt_xdate()
 plt.grid(True)
 plt.show()
