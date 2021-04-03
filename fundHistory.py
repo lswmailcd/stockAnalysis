@@ -18,14 +18,14 @@ BONUS_SHARE = "1" #红利再投
 BONUS_CASH = "2" #现金红利
 
 #!!!!注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！
-STARTYEAR = 2015 #投资起始年
-STARTMONTH = 7 #投资起始月份
-STARTDAY = 1      #投资起始日期
+STARTYEAR = 2020 #投资起始年
+STARTMONTH = 1 #投资起始月份
+STARTDAY = 31      #投资起始日期
 
 #定投结束日即是卖出日，目前无法实现定投结束日和卖出日不同。
-ENDYEAR = 2018  #定投结束年
-ENDMONTH = 7  #定投结束月份
-ENDDAY = 1  #定投结束日
+ENDYEAR = 2021  #定投结束年
+ENDMONTH = 4 #定投结束月份
+ENDDAY = 2  #定投结束日
 BUYDAY = 10  #定投日
 INTERVAL  = 1    #定投间隔的月份
 INVESTMONEY = "10000"
@@ -117,10 +117,11 @@ for i in range(count):
         rate = diff / moneyTotal
         rateList.append(rate*100.0)
 
+    #print(dateList)
     dataList.append([dateList,rateList])
 
-for i in range(len(dataList)):
-    plt.plot(dataList[i][0],dataList[i][1],label=name[i])
+for i in range(len(dataList)):#日期选择一个日期，坐标轴不能有两种不同的日期表示
+    plt.plot(dataList[0][0],dataList[i][1],label=name[i])
 ax = plt.gca()
 ax.yaxis.set_major_locator(mpl.ticker.MultipleLocator(5))
 ax.yaxis.set_major_formatter(mpl.ticker.FormatStrFormatter("%.0f%%"))

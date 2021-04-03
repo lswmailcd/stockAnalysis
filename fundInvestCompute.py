@@ -8,12 +8,15 @@ import tushare as ts
 import time
 import stockTools as sT
 
-STARTYEAR = 2020  #投资起始年
-STARTMONTH = 12 #投资起始月份
-startDay = 31      #投资起始日期
+style_percent = xlwt.easyxf(num_format_str='0.00%')
+
+STARTYEAR = 2021  #投资起始年
+STARTMONTH = 2 #投资起始月份
+startDay = 26      #投资起始日期
 ENDYEAR = 2021 #投资结束年
 ENDMONTH = 3  #投资结束月份
-endDay = 19  #投资结束日
+endDay = 31  #投资结束日
+
 
 print u"WARNING:请注意基金历史分红情况，默认以现金分红为准！"
 str = raw_input("默认红利再投进行计算请按'回车',如需以现金分红进行计算请按'c',退出请按'q': ")
@@ -33,10 +36,10 @@ code = np.array(a, dtype=np.unicode)
 name = np.array(a, dtype=np.unicode)
 count  = 0
 for i in range(nrows):
-    if table.cell(i + 1, 0).value!="":
+    if table.cell(i + 1, 1).value != "":
         code[i] = table.cell(i + 1, 0).value
-        if code[i] == "" or code[i]=='0.0': continue
-        count = count+1
+        name[i] = table.cell(i + 1, 1).value
+        count += 1
 
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('dataResult')
@@ -58,15 +61,15 @@ for i in range(count):
     if infoStr[0]=='var Result={"error"':
         print data
         continue
-    name[i] = infoStr[1].decode('utf8')
+
     rateList = data.split(":")[4].split(",")[0].split('"')
     rate = float(rateList[1])/100.0
     investPeriod = round(sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,1,ENDYEAR,ENDMONTH,endDay)/365.0, 2)
     ratePerYear = round(((rate + 1) ** (1.0 / investPeriod) - 1), 4)
     worksheet.write(i+1, 0, code[i])
     worksheet.write(i+1, 1, name[i])
-    worksheet.write(i+1, 2, rate)
-    worksheet.write(i+1, 3, ratePerYear)
+    worksheet.write(i+1, 2, rate, style_percent)
+    worksheet.write(i+1, 3, ratePerYear, style_percent)
     worksheet.write(i+1, 4, startDate)
     worksheet.write(i+1, 5, saleDate)
     print code[i], name[i], "收益：%.2f%%" % (rate * 100.0), "年化收益：%.2f%%" % (ratePerYear * 100.0)
