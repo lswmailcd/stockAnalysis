@@ -8,13 +8,15 @@ import stockTools as sT
 import xlrd
 import xlwt
 
-STARTYEAR = 2015 #投资起始年
-STARTMONTH = 5#投资起始月份
-buyDay = 29    #投资起始日期
-ENDYEAR = 2016  #投资结束年
-ENDMONTH = 12  #投资结束月份
+style_percent = xlwt.easyxf(num_format_str='0.00%')
+
+STARTYEAR = 2021 #投资起始年
+STARTMONTH = 2#投资起始月份
+buyDay = 26    #投资起始日期
+ENDYEAR = 2021  #投资结束年
+ENDMONTH = 3  #投资结束月份
 saleDay = 31  #投资结束日期
-checkDay = 15  #回撤检查日
+checkDay = 10  #回撤检查日
 REPORTYEARLAST = 2020 #最新报表年份
 
 nStockInvest = 100     #购买的股数
@@ -38,23 +40,30 @@ for idx in range(len(ListColumnName)):
 data = xlrd.open_workbook('.\\data\\StockList.xls')
 table = data.sheets()[0]
 nrows = table.nrows-1
-a = np.zeros([nrows])
-code = np.array(a, dtype=np.unicode)
-name = np.array(a, dtype=np.unicode)
-count  = 0
+code = []
+name = []
+count = 0
 for i in range(nrows):
-    if table.cell(i + 1, 0).value!="":
-        code[i] = table.cell(i + 1, 0).value
-        if code[i] == "" or code[i]=='0.0': continue
-        name[i] = sT.getStockNameByCode(code[i]).decode('utf8')
-        sname, yearToMarket,_ ,_ = sT.getStockBasics(code[i])
-        if yearToMarket == 0:
-            print code[i], name[i], u"上市时间不详!"
-            exit(1)
+    if table.cell(i + 1, 0).value<>"" or table.cell(i + 1, 1).value<>"":
+        count += 1
+        code.append(table.cell(i + 1, 0).value)
+        if code[i] == "":
+            name.append("")
+        else:
+            name.append(sT.getStockNameByCode(code[i]))
+            if name[i] == None:
+                code[i] = ""
+                continue
+            else:
+                name[i] = name[i].decode('utf8')
+            sname, yearToMarket,_ ,_ = sT.getStockBasics(code[i])
+            if yearToMarket == 0:
+                print code[i], name[i], u"上市时间不详!"
+                exit(1)
 
 engine = create_engine('mysql://root:0609@127.0.0.1:3306/stockdatabase?charset=utf8', encoding='utf-8')
 conn = engine.connect()
-for i in range(nrows):
+for i in range(count):
     if code[i] == "" or code[i]=='0.0':
         worksheet.write(i + 1, 0, "")
         continue
@@ -152,7 +161,10 @@ for i in range(nrows):
               u'投资收益率:',"%.2f%%" %(dictColumnValues[u'投资收益率']*100),\
               u',最大回撤时的收益率:',"%.2f%%" %(dictColumnValues[u'最大回撤时的收益率']*100)
         for idx in range(len(ListColumnName)):
-            worksheet.write(i+1, idx, dictColumnValues[ListColumnName[idx]])
+            if ListColumnName[idx].find(u'率') != -1:
+                worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]], style_percent)
+            else:
+                worksheet.write(i+1, idx, dictColumnValues[ListColumnName[idx]])
     else:
         print u"获取卖出日价格失败！",year, saleMonth, saleDay
 
