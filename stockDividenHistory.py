@@ -7,11 +7,12 @@ import stockTools as sT
 import Graph
 import matplotlib.pyplot as plt
 import time
+import stockGlobalSpace as sG
 
-code = "600578"
+code = "601288"
 YEARSTART = 2008  #统计起始时间
 YEAREND = 2019
-reportYearLast = 2017
+reportYearLast = 2018
 yearNow = 2019
 moneyInvest = 10000.0
 
@@ -20,7 +21,9 @@ if yearToMarket == 0:
     print code, name, u"上市时间不详!"
     exit(1)
 if yearToMarket>=YEARSTART: YEARSTART = yearToMarket+1
+sG.lock.acquire()
 str = raw_input("不检查历史数据继续请按'回车',如需检查请按'c',退出请按'q': ")
+sG.lock.release()
 if str=="q" : exit(0)
 if str=="c" :
     y = YEAREND + 1
@@ -70,7 +73,7 @@ for year in range(YEARSTART, YEAREND +1):
     else:
         r = rLast
     DividenRateList[i] = r*nStock/moneyInvest
-    print code, name, "distrib=",r,"股息率: %.2f%%" %(DividenRateList[i]*100.0)
+    print code, name, year,"年，distrib=",r,"股息率: %.2f%%" %(DividenRateList[i]*100.0)
     i=i+1
 
 fig = plt.figure()
