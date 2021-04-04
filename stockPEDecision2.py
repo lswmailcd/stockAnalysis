@@ -8,16 +8,16 @@ import Graph
 peLowLimit = 0
 peHighLimit = 100
 n=-1
-#dateDict = dict([(n-1,'20071031'), (n,'20081231'),(n+1,'20140630'), (n+2,'20150529'), (n+3,'20111230'), (n+4,'20171222'), (n+5,'20180126'), (n+6,'20180619')])
+#PE数据来源于mySQL数据库
 dateDict = dict([(n+1,'20051230'),(n+2,'20081031'),(n+3,'20121130'), (n+4,'20140130'),(n+5,'20160229'), \
                   (n + 6, '20181018'),(n+7,'20181228'), (n+8,'20190131'), (n+9,'20190301'), \
-                  (n+10, '20180131'),(n+11, '20150529'),(n+12, '20090731'),(n+13, '20071031'),(n+14,'20190321') ])
+                  (n+10, '20180131'),(n+11, '20150529'),(n+12, '20090731'),(n+13, '20071031'),(n+14,'20190321'),\
+                 (n+15,'20200731'),(n+16,'20210210')])
 #colorDict = dict([(n,'b'),(n+1,'g'),  (n+2,'c'), (n+3,'k'), (n+4,'y'), (n+5,'b'), (n+6,'r'), (n+7,'k'), (n+8,'k'), (n+9,'k')])
 
 engine = create_engine('mysql://root:0609@127.0.0.1:3306/stockdatabase?charset=utf8', encoding='utf-8')
 conn = engine.connect()
-data = conn.execute("select code,name from stockba"
-                    "sics where code like '600%%'\
+data = conn.execute("select code,name from stockbasics where code like '600%%'\
                      or code like '601%%' or code like '000%%' or code like '001%%'").fetchall()
 nrow  = len(data)
 peList = [[0]*nrow for key in dateDict]
@@ -71,6 +71,8 @@ ax1 = fig.add_subplot(2,1,1)
 ax2 = fig.add_subplot(2,1,2)
 Graph.drawColumnChat( ax1, None, peMeanList, dateList, peMeanList, u'市场PE历史图(各时期股票不同)', u'', u'PE mean', 15, 0.5)
 Graph.drawColumnChat( ax2, None, peMedianList, dateList, peMedianList, u'', u'', u'PE median', 15, 0.5)
+ax1.axhline(color='r',y=peMeanList[-1])
+ax2.axhline(color='r',y=peMedianList[-1])
 #Graph.drawColumnChat( ax3, dateList, avgProfitList, u'', u'', u'profit mean', 20, 0.5)
 print u"市场PE历史图绘制完成"
 plt.show()
