@@ -13,13 +13,21 @@ import stockTools as sT
 import logRecoder as log
 
 def subprocess(code, sYear, eYear):
-    print "checking reports..."
-    found, STARTYEAR = sT.checkStockReport(code, sYear, eYear)
-    if found == False: exit(1)
-    print("checking asset_debt...")
-    if sT.checkStockAssetDebt(code, sYear, eYear) == False: exit(1)
-    print "checking distrib..."
-    if sT.checkDistrib(code, sYear, eYear) == False: exit(1)
+    print "*******checking reports*******"
+    try:
+        sT.checkStockReport(code, sYear, eYear)
+    except Exception, e:
+        print e
+    print("*******checking asset_debt*******")
+    try:
+        sT.checkStockAssetDebt(code, sYear, eYear)
+    except Exception, e:
+        print e
+    print "*******checking distrib*******"
+    try:
+        sT.checkDistrib(code, sYear, eYear)
+    except Exception, e:
+        print e
 
 def process(STARTYEAR, ENDYEAR, FileName):
     str = "*******************stockDataChecker开始检查......*******************"
