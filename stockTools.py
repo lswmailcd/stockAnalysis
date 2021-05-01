@@ -1,14 +1,18 @@
 #coding:utf-8
 
+import pymysql
+pymysql.install_as_MySQLdb()    #手动指定将MySQLdb转给pymysql处理
 from sqlalchemy import create_engine
 import tushare as ts
 import time
 import re
-import urllib2
+import urllib
 import bs4
 import stockGlobalSpace as sG
 import logRecoder as log
 from stockCalender import stockCalender
+
+ts.set_token('af19674c38f5c197b7bfc96e5353166998c66717ae9e82b6cc371ca2')
 
 def createCalender():
     try:
@@ -17,8 +21,8 @@ def createCalender():
             return sG.Calender
         else:
             return sG.Calender
-    except Exception,e:
-        print e
+    except Exception as e:
+        print(e)
         exit(1)
 
 def createDBConnection():
@@ -32,8 +36,8 @@ def createDBConnection():
             return sG.dbConnection
         else:
             return sG.dbConnection
-    except Exception,e:
-        print e
+    except Exception as e:
+        print(e)
         sG.lock.release()
         exit(1)
 
@@ -80,7 +84,7 @@ def getStockNameByCode(code):
     sqlString += code
     ret = conn.execute(sqlString)
     if ret.rowcount == 0:
-        print "代码", code, "有误，找不到该股票！"
+        print("代码", code, "有误，找不到该股票！")
         return None
     return ret.first().name
 
@@ -91,7 +95,7 @@ def getStockType(code):
     sqlString += code
     ret = conn.execute(sqlString)
     if ret.rowcount == 0:
-        print "代码", code, "有误，找不到该股票！"
+        print("代码", code, "有误，找不到该股票！")
         return ""
     return ret.first().stockType
 
@@ -119,7 +123,7 @@ def  getClosePriceForward(code, dORy, month=0, day=0, autp=None):#获取当年�
                     yw-=1
                     mw = 12
             elif foundData1 and not foundData2:#月初不停牌，月末停牌
-                dt = (dw1+dw)/2
+                dt = int((dw1+dw)/2)
                 _, _, dt = cld.getWorkdayBackward(yw, mw, dt)
                 foundData, _ = getClosePrice(code, yw, mw, dt)
                 if not foundData:
@@ -134,7 +138,7 @@ def  getClosePriceForward(code, dORy, month=0, day=0, autp=None):#获取当年�
                         foundData, closePrice = getClosePrice(code, yw, mw, dt)
                 return foundData, closePrice, mw, dt
             elif not foundData1 and foundData2:#月初停牌,月末不停牌
-                dt = (dw2+dw)/2
+                dt = int((dw1+dw)/2)
                 _, _, dt = cld.getWorkdayForward(yw, mw, dt)
                 foundData, _ = getClosePrice(code, yw, mw, dt)
                 if not foundData:
@@ -149,7 +153,7 @@ def  getClosePriceForward(code, dORy, month=0, day=0, autp=None):#获取当年�
                         foundData, closePrice = getClosePrice(code, yw, mw, dt)
                 return foundData, closePrice, mw, dt
             else:#月初和月末都没有停牌
-                dt = (dw1+dw)/2
+                dt = int((dw1+dw)/2)
                 _, _, dt = cld.getWorkdayBackward(yw, mw, dt)
                 foundData, _ = getClosePrice(code, yw, mw, dt)
                 if not foundData:
@@ -177,29 +181,29 @@ def getClosePrice(code, dORy, month=0, day=0, autp=None):
         sqlString = "select closeprice from stockprice where code="
         sqlString += code
         sqlString += " and date='"
-        sqlString += date.encode('utf8')
+        sqlString += date
         sqlString += "'"
         try:
             ret = conn.execute(sqlString)
             result = ret.first()
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
         if result is not None and result.closeprice is not None:
             return True, result.closeprice
         else:
-            data = ts.get_k_data(code, start=date, end=date, autype=autp)
+            data = ts.pro_api().daily(ts_code=code+getMarketSign(code), start_date=date, end_date=date)
             if data.empty == False:
                 closeprice = data.values[0, 2]
                 sqlString = "insert into stockprice(code,closeprice,date) values('"
                 sqlString += code
                 sqlString += "',%s,'" %(closeprice)
-                sqlString += date.encode('utf8')
+                sqlString += date
                 sqlString += "')"
                 try:
                     ret = conn.execute(sqlString)
                     log.writeUtfLog(sqlString)
-                except Exception, e:
-                    print e
+                except Exception as e:
+                    print(e)
                 return True, closeprice
     return False, -1
 
@@ -305,7 +309,7 @@ def getStockEPSdiscount(code, year, quarter):#获取扣非EPS
         conn = createDBConnection()
         ret = conn.execute(sqlString)
         result = ret.first()
-    except Exception, e:
+    except Exception as e:
         return False, 0
     if result is None or result.eps_discount== 0.0 or result.eps_discount==sG.sNINF:#如果有eps_discount没有找到数据，则查找扣非总利润计算扣非EPS
         sqlString = "select net_profits_discount from stockreport_sup_"
@@ -325,10 +329,10 @@ def getStockEPSdiscount(code, year, quarter):#获取扣非EPS
             result = ret.first()
             ret1 = conn.execute(sqlString1)
             result1 = ret1.first()
-        except Exception, e:
+        except Exception as e:
             return False, sG.sNINF
         if (result is None or result.net_profits_discount is None) or (result1 is None or result1.gb is None):
-            print code, getStockNameByCode(code), year, u"年", quarter, u"季度", u"stockreport_sup数据库中无此股票DiscountEPS信息!"
+            print(code, getStockNameByCode(code), year, u"年", quarter, u"季度", u"stockreport_sup数据库中无此股票DiscountEPS信息!")
             return False, sG.sNINF
         else:#通过扣非利润计算每股扣非，并填空eps_discount列
             EPSdiscount = result.net_profits_discount / result1.gb
@@ -341,7 +345,7 @@ def getStockEPSdiscount(code, year, quarter):#获取扣非EPS
             sqlString += code
             try:
                 conn.execute(sqlString)
-            except Exception, e:
+            except Exception as e:
                 return False, 0
             return True, EPSdiscount
     else:
@@ -358,10 +362,10 @@ def getStockEPS(code, year, quarter):#获取基本EPS
         conn = createDBConnection()
         ret = conn.execute(sqlString)
         result = ret.first()
-    except Exception, e:
+    except Exception as e:
         return False, 0
     if result is None or result.eps is None:
-        print code, getStockNameByCode(code), year, u"年", quarter, u"季度", u"stockreport数据库中无此股票!"
+        print(code, getStockNameByCode(code), year, u"年", quarter, u"季度", u"stockreport数据库中无此股票!")
         return False, 0
     else:
         return True, result.eps
@@ -376,12 +380,12 @@ def getStockCountQuarter(code, year, quarter):
     try:
         conn = createDBConnection()
         ret = conn.execute(sqlString)
-    except Exception, e:
-        print code, year, '年',quarter,"季度，获取股本数据,asset_debt数据库访问失败！"
+    except Exception as e:
+        print(code, year, '年',quarter,"季度，获取股本数据,asset_debt数据库访问失败！")
         return 0.0
     result = ret.first()
     if result is None or result.gb is None:
-        print code, year, "年",quarter, "季度，asset_debt资产负债表股本数据获取失败！"
+        print(code, year, "年",quarter, "季度，asset_debt资产负债表股本数据获取失败！")
         return 0.0
     else:
         return result.gb
@@ -394,12 +398,12 @@ def getDividenTime(code, year):#取得股权登记日，为分红日的前一天
     try:
         conn = createDBConnection()
         ret = conn.execute(sqlString)
-    except Exception, e:
-        print e
-        print code, year, "年，stockreport_sup数据表:访问失败！"
+    except Exception as e:
+        print(e)
+        print(code, year, "年，stockreport_sup数据表:访问失败！")
     result = ret.first()
     if result is None or result.dividentime is None:
-        print code, year, "年，stockreport_sup表:分红日期数据获取失败,此年可能无分红！"
+        print(code, year, "年，stockreport_sup表:分红日期数据获取失败,此年可能无分红！")
         return False, None
     return True, result.dividentime
 
@@ -411,13 +415,13 @@ def getDistrib(code, year):
     try:
         conn = createDBConnection()
         ret = conn.execute(sqlString)
-    except Exception, e:
-        print e
-        print code, year, "年，stockreport数据表:访问失败！"
+    except Exception as e:
+        print(e)
+        print(code, year, "年，stockreport数据表:访问失败！")
         return False, None
     result = ret.first()
     if result is None or result.distrib is None:
-        print code, year, "年，stockreport表:分红数据获取失败,此年可能无分红！"
+        print(code, year, "年，stockreport表:分红数据获取失败,此年可能无分红！")
         return False, None
     else:
         money, stock = parseDistrib(result.distrib)
@@ -435,7 +439,7 @@ def getStockCount(code, dORy, month=0, day=0):
     gblast = getStockCountQuarter(code,y-1,4)
     # 获取当前季度的股本
     gb = getStockCountQuarter(code, y, quarter)
-    if gblast<>gb:#去年末和当前季度存在股数变化
+    if gblast!=gb:#去年末和当前季度存在股数变化
         found, dividenTime = getDividenTime(code, y - 1)
         if found and dividenTime >= getDateString(y, m, d):  # 去年有分红且当前日期还没有分红送股
             gb = gblast
@@ -527,12 +531,12 @@ def checkStockAssetDebt(code, startYear, endYear):
     try:
         name, yearToMarket,_,_ = getStockBasics(code)
         if yearToMarket==0 : exit(1)
-        print code, name, yearToMarket,"年上市！"
+        print(code, name, yearToMarket,"年上市！")
         if yearToMarket>endYear:
-            print code, name, yearToMarket,"股票上市时间比结束查询时间晚，请重新输入查询结束时间!"
+            print(code, name, yearToMarket,"股票上市时间比结束查询时间晚，请重新输入查询结束时间!")
             return False
         if yearToMarket>startYear:
-            print code, name,"股票上市时间比起始查询时间晚,以上市年份为最早检查年份!"
+            print(code, name,"股票上市时间比起始查询时间晚,以上市年份为最早检查年份!")
             startYear = yearToMarket
         for year in range(startYear, endYear + 1):
             bTableExit=[True, True, True, True] #数据库中资产负债表是否已存在，初始值为True存在
@@ -546,14 +550,14 @@ def checkStockAssetDebt(code, startYear, endYear):
                 conn = createDBConnection()
                 try:
                     ret = conn.execute(sqlString)
-                except Exception, e:
+                except Exception as e:
                     bTableExit[Qt-1]=False
-                    print  code, name, year, "年", Qt, "季度，asset_debt数据表不存在！"
+                    print(code, name, year, "年", Qt, "季度，asset_debt数据表不存在！")
                     continue
                 result = ret.first()
                 if result is None:
                     bDataExit[Qt-1] = False
-                    print  code, name, year, "年", Qt, "季度，asset_debt数据表中无此股票！"
+                    print(code, name, year, "年", Qt, "季度，asset_debt数据表中无此股票！")
                 else:
                     continue
             if bDataExit.count(False)>0:
@@ -563,14 +567,14 @@ def checkStockAssetDebt(code, startYear, endYear):
                 url += "%s" % (year)
                 url += "/displaytype/4.phtml"
                 try:
-                    print "读取新浪财经资产负债表数据......"
-                    request = urllib2.Request(url=url, headers=sG.browserHeaders)
-                    response = urllib2.urlopen(request)
+                    print( "读取新浪财经资产负债表数据......")
+                    request = urllib.Request(url=url, headers=sG.browserHeaders)
+                    response = urllib.urlopen(request)
                     data = response.read()
-                    print "新浪财经资产负债表数据读取完毕!"
+                    print( "新浪财经资产负债表数据读取完毕!")
                     time.sleep(2)
-                except Exception, e:
-                    print  code, name, year, "年，新浪财经资产负债表数据不存在！"
+                except Exception as e:
+                    print(code, name, year, "年，新浪财经资产负债表数据不存在！")
                     continue
                 bs = bs4.BeautifulSoup(data, "lxml")
                 tb = bs.find('table',{'id':'BalanceSheetNewTable0'})
@@ -620,21 +624,21 @@ def checkStockAssetDebt(code, startYear, endYear):
                         sqlString += ")"
                         conn.execute(sqlString)
                         log.writeUtfLog(sqlString.encode('utf8'))
-                        print "已增加", code, name, "数据至", year, "年",i,"季度asset_debt数据表"
-    except Exception,e:
-        print e
+                        print( "已增加", code, name, "数据至", year, "年",i,"季度asset_debt数据表")
+    except Exception as e:
+        print(e)
         exit(1)
 
 def checkStockAssetDebt_BACKUP(code, startYear, endYear):
     try:
         name, yearToMarket,_,_ = getStockBasics(code)
         if yearToMarket==0 : exit(1)
-        print code, name, yearToMarket,"年上市！"
+        print(code, name, yearToMarket,"年上市！")
         if yearToMarket>endYear:
-            print code, name, yearToMarket,"股票上市时间比结束查询时间晚，请重新输入查询结束时间!"
+            print(code, name, yearToMarket,"股票上市时间比结束查询时间晚，请重新输入查询结束时间!")
             return False
         if yearToMarket>startYear:
-            print code, name,"股票上市时间比起始查询时间晚,以上市年份为最早检查年份!"
+            print(code, name,"股票上市时间比起始查询时间晚,以上市年份为最早检查年份!")
             startYear = yearToMarket
         for year in range(startYear, endYear + 1):
             bTableExit=[True, True, True, True] #数据库中资产负债表是否已存在，初始值为True存在
@@ -648,14 +652,14 @@ def checkStockAssetDebt_BACKUP(code, startYear, endYear):
                 conn = createDBConnection()
                 try:
                     ret = conn.execute(sqlString)
-                except Exception, e:
+                except Exception as e:
                     bTableExit[Qt-1]=False
-                    print  code, name, year, "年", Qt, "季度，asset_debt数据表不存在！"
+                    print(code, name, year, "年", Qt, "季度，asset_debt数据表不存在！")
                     continue
                 result = ret.first()
                 if result is None:
                     bDataExit[Qt-1] = False
-                    print  code, name, year, "年", Qt, "季度，asset_debt数据表中无此股票！"
+                    print(code, name, year, "年", Qt, "季度，asset_debt数据表中无此股票！")
                 else:
                     continue
             if bDataExit.count(False)>0:
@@ -664,16 +668,16 @@ def checkStockAssetDebt_BACKUP(code, startYear, endYear):
                 url += "/ctrl/"
                 url += "%s" % (year)
                 url += "/displaytype/4.phtml"
-                print "读取新浪财经资产负债表数据......"
+                print("读取新浪财经资产负债表数据......")
                 data = urllib.urlopen(url).read()
-                print "新浪财经资产负债表数据读取完毕!"
+                print("新浪财经资产负债表数据读取完毕!")
                 time.sleep(2)
                 bs = bs4.BeautifulSoup(data, "lxml")
                 body = bs.find('tbody')
                 try:
                     datebody = body.find_all('tr')[0]
-                except Exception, e:
-                    print  code, name, year, "年", Qt, "季度，新浪财经资产负债表数据不存在！"
+                except Exception as e:
+                    print(code, name, year, "年", Qt, "季度，新浪财经资产负债表数据不存在！")
                     continue
                 year,month,day = splitDateString(datebody.find_all('td')[1].get_text())
                 Qt = 5
@@ -783,9 +787,9 @@ def checkStockAssetDebt_BACKUP(code, startYear, endYear):
                         sqlString += ")"
                         conn.execute(sqlString)
                         log.writeUtfLog(sqlString.encode('utf8'))
-                        print "已增加", code, name, "数据至", year, "年",i,"季度asset_debt数据表"
-    except Exception,e:
-        print e
+                        print("已增加", code, name, "数据至", year, "年",i,"季度asset_debt数据表")
+    except Exception as e:
+        print(e)
         exit(1)
 
 def checkStockReport(code, startYear, endYear):
@@ -816,12 +820,12 @@ def checkStockReport(code, startYear, endYear):
     try:
         name, yearToMarket,_,_ = getStockBasics(code)
         if yearToMarket==0 : exit(1)
-        print code, name, yearToMarket,"年上市！"
+        print(code, name, yearToMarket,"年上市！")
         if yearToMarket>endYear:
-            print code, name, yearToMarket,"股票上市时间比结束查询时间晚，请重新输入查询结束时间!"
+            print(code, name, yearToMarket,"股票上市时间比结束查询时间晚，请重新输入查询结束时间!")
             return False
         if yearToMarket>startYear:
-            print code, name,"股票上市时间比起始查询时间晚,以上市年份为最早检查年份!"
+            print(code, name,"股票上市时间比起始查询时间晚,以上市年份为最早检查年份!")
             startYear = yearToMarket
         for year in range(startYear, endYear + 1):
             #bTableExit=[True, True, True, True] #数据库中stockreport业绩报表是否已存在，初始值为True存在
@@ -837,14 +841,14 @@ def checkStockReport(code, startYear, endYear):
                 conn = createDBConnection()
                 try:
                     ret = conn.execute(sqlString)
-                except Exception, e:
+                except Exception as e:
                     #bTableExit[Qt-1]=False
-                    print  code, name, year, "年", Qt, "季度，stockreport数据表不存在！"
+                    print(code, name, year, "年", Qt, "季度，stockreport数据表不存在！")
                     continue
                 result = ret.first()
                 if result is None:
                     bDataExit[Qt-1] = False
-                    print  code, name, year, "年", Qt, "季度，stockreport数据表中无此股票！"
+                    print(code, name, year, "年", Qt, "季度，stockreport数据表中无此股票！")
                 else:
                     continue
             for Qt in range(1, 5):
@@ -856,14 +860,14 @@ def checkStockReport(code, startYear, endYear):
                 conn = createDBConnection()
                 try:
                     ret = conn.execute(sqlString)
-                except Exception, e:
+                except Exception as e:
                     #bTableSupExist[Qt-1]=False
-                    print  code, name, year, "年", Qt, "季度，stockreport_sup数据表不存在！"
+                    print(code, name, year, "年", Qt, "季度，stockreport_sup数据表不存在！")
                     continue
                 result = ret.first()
                 if result is None:
                     bDataSupExist[Qt-1] = False
-                    print  code, name, year, "年", Qt, "季度，stockreport_sup数据表中无此股票！"
+                    print(code, name, year, "年", Qt, "季度，stockreport_sup数据表中无此股票！")
                 else:
                     continue
             if bDataExit.count(False)>0 or bDataSupExist.count(False)>0:
@@ -873,14 +877,14 @@ def checkStockReport(code, startYear, endYear):
                 url += "%s" %(year)
                 url += "/displaytype/4.phtml"
                 try:
-                    print "读取新浪财经财务指标......"
-                    request = urllib2.Request(url=url, headers=sG.browserHeaders)
-                    response = urllib2.urlopen(request)
+                    print("读取新浪财经财务指标......")
+                    request = urllib.Request(url=url, headers=sG.browserHeaders)
+                    response = urllib.urlopen(request)
                     data = response.read()
-                    print "新浪财经财务指标读取完毕!"
+                    print( "新浪财经财务指标读取完毕!")
                     time.sleep(2)
-                except Exception, e:
-                    print  code, name, year, "年，新浪财经财务指标数据不存在！"
+                except Exception as e:
+                    print(code, name, year, "年，新浪财经财务指标数据不存在！")
                     continue
                 bs = bs4.BeautifulSoup(data,"lxml")
                 table = bs.find('table',{'id':'BalanceSheetNewTable0'})
@@ -930,7 +934,7 @@ def checkStockReport(code, startYear, endYear):
                             sqlString += ")"
                             conn.execute(sqlString)
                             log.writeUtfLog(sqlString.encode('utf8'))
-                            print "已增加", code, name, "数据至", year, "年",i, "季度，stockreport数据表"
+                            print("已增加", code, name, "数据至", year, "年",i, "季度，stockreport数据表")
                 if bDataSupExist.count(False)>0:
                     for i in range(1,Qt+1):
                         if bDataSupExist[i-1]==False:#数据有缺失时，由前代码的逻辑必然数据表存在
@@ -971,9 +975,9 @@ def checkStockReport(code, startYear, endYear):
                             sqlString += ")"
                             conn.execute(sqlString)
                             log.writeUtfLog(sqlString.encode('utf8'))
-                            print "已增加", code, name, "数据至", year, "年",i, "季度，stockreport_sup数据表"
-    except Exception,e:
-        print e
+                            print("已增加", code, name, "数据至", year, "年",i, "季度，stockreport_sup数据表")
+    except Exception as e:
+        print(e)
         exit(1)
     return True, startYear
 
@@ -997,12 +1001,12 @@ def checkStockReport_BACKUP(code, startYear, endYear):
     try:
         name, yearToMarket,_,_ = getStockBasics(code)
         if yearToMarket==0 : exit(1)
-        print code, name, yearToMarket,"年上市！"
+        print(code, name, yearToMarket,"年上市！")
         if yearToMarket>endYear:
-            print code, name, yearToMarket,"股票上市时间比结束查询时间晚，请重新输入查询结束时间!"
+            print(code, name, yearToMarket,"股票上市时间比结束查询时间晚，请重新输入查询结束时间!")
             return False
         if yearToMarket>startYear:
-            print code, name,"股票上市时间比起始查询时间晚,以上市年份为最早检查年份!"
+            print(code, name,"股票上市时间比起始查询时间晚,以上市年份为最早检查年份!")
             startYear = yearToMarket
         for year in range(startYear, endYear + 1):
             #bTableExit=[True, True, True, True] #数据库中stockreport业绩报表是否已存在，初始值为True存在
@@ -1018,14 +1022,14 @@ def checkStockReport_BACKUP(code, startYear, endYear):
                 conn = createDBConnection()
                 try:
                     ret = conn.execute(sqlString)
-                except Exception, e:
+                except Exception as e:
                     #bTableExit[Qt-1]=False
-                    print  code, name, year, "年", Qt, "季度，stockreport数据表不存在！"
+                    print(code, name, year, "年", Qt, "季度，stockreport数据表不存在！")
                     continue
                 result = ret.first()
                 if result is None:
                     bDataExit[Qt-1] = False
-                    print  code, name, year, "年", Qt, "季度，stockreport数据表中无此股票！"
+                    print(code, name, year, "年", Qt, "季度，stockreport数据表中无此股票！")
                 else:
                     continue
             for Qt in range(1, 5):
@@ -1037,14 +1041,14 @@ def checkStockReport_BACKUP(code, startYear, endYear):
                 conn = createDBConnection()
                 try:
                     ret = conn.execute(sqlString)
-                except Exception, e:
+                except Exception as e:
                     #bTableSupExist[Qt-1]=False
-                    print  code, name, year, "年", Qt, "季度，stockreport_sup数据表不存在！"
+                    print(code, name, year, "年", Qt, "季度，stockreport_sup数据表不存在！")
                     continue
                 result = ret.first()
                 if result is None:
                     bDataSupExist[Qt-1] = False
-                    print  code, name, year, "年", Qt, "季度，stockreport_sup数据表中无此股票！"
+                    print(code, name, year, "年", Qt, "季度，stockreport_sup数据表中无此股票！")
                 else:
                     continue
             if bDataExit.count(False)>0 or bDataSupExist.count(False)>0:
@@ -1053,16 +1057,16 @@ def checkStockReport_BACKUP(code, startYear, endYear):
                 url += "/ctrl/"
                 url += "%s" %(year)
                 url += "/displaytype/4.phtml"
-                print "读取新浪财经财务指标......"
+                print("读取新浪财经财务指标......")
                 data = urllib.urlopen(url).read()
-                print "新浪财经财务指标读取完毕!"
+                print("新浪财经财务指标读取完毕!")
                 time.sleep(2)
                 bs = bs4.BeautifulSoup(data,"lxml")
                 body = bs.find('tbody')
                 try:
                     datebody = body.find_all('tr')[0]
-                except Exception, e:
-                    print  code, name, year, "年", Qt, "季度，新浪财经年报数据不存在！"
+                except Exception as e:
+                    print(code, name, year, "年", Qt, "季度，新浪财经年报数据不存在！")
                     continue
                 year,month,day = splitDateString(datebody.find_all('td')[1].get_text())
                 Qt = 5
@@ -1107,7 +1111,7 @@ def checkStockReport_BACKUP(code, startYear, endYear):
                             sqlString += ")"
                             conn.execute(sqlString)
                             log.writeUtfLog(sqlString.encode('utf8'))
-                            print "已增加", code, name, "数据至", year, "年",i, "季度，stockreport数据表"
+                            print("已增加", code, name, "数据至", year, "年",i, "季度，stockreport数据表")
                 if bDataSupExist.count(False)>0:
                     for i in range(1,Qt):
                         if bDataSupExist[i-1]==False:#数据有缺失时，由前代码的逻辑必然数据表存在
@@ -1148,9 +1152,9 @@ def checkStockReport_BACKUP(code, startYear, endYear):
                             sqlString += ")"
                             conn.execute(sqlString)
                             log.writeUtfLog(sqlString.encode('utf8'))
-                            print "已增加", code, name, "数据至", year, "年",i, "季度，stockreport_sup数据表"
-    except Exception,e:
-        print e
+                            print("已增加", code, name, "数据至", year, "年",i, "季度，stockreport_sup数据表")
+    except Exception as e:
+        print(e)
         exit(1)
     return True, startYear
 
@@ -1163,12 +1167,12 @@ def checkStockReportEastMoney(code, startYear, endYear):#EastMoney
     try:
         name, yearToMarket,_,_ = getStockBasics(code)
         if yearToMarket==0 : exit(1)
-        print code, name, yearToMarket,"年上市！"
+        print(code, name, yearToMarket,"年上市！")
         if yearToMarket>endYear:
-            print code, name, yearToMarket,"股票上市时间比结束查询时间晚，请重新输入查询结束时间!"
+            print(code, name, yearToMarket,"股票上市时间比结束查询时间晚，请重新输入查询结束时间!")
             return False
         if yearToMarket>startYear:
-            print code, name,"股票上市时间比起始查询时间晚,以上市年份为最早检查年份!"
+            print(code, name,"股票上市时间比起始查询时间晚,以上市年份为最早检查年份!")
             startYear = yearToMarket
         bNeedWebData = False
         bAccessWebData = False
@@ -1182,7 +1186,7 @@ def checkStockReportEastMoney(code, startYear, endYear):#EastMoney
             ret = conn.execute(sqlString)
             result = ret.first()
             if result is None:
-                print  code, name, year, "年，stockreport数据库中无此股票！"
+                print(code, name, year, "年，stockreport数据库中无此股票！")
                 bNeedWebData = True
             else:
                 continue
@@ -1191,10 +1195,10 @@ def checkStockReportEastMoney(code, startYear, endYear):#EastMoney
                     url = "http://data.eastmoney.com/bbsj/yjbb/" #http://data.eastmoney.com/bbsj/yjbb/600887.html
                     url += code
                     url += ".html"
-                    print "读取东方财富年报数据......"
+                    print("读取东方财富年报数据......")
                     data = urllib.urlopen(url).read()
                     bAccessWebData = True
-                    print "东方财富年报数据读取完毕!"
+                    print("东方财富年报数据读取完毕!")
                     time.sleep(2)
                 bs = bs4.BeautifulSoup(data,"lxml")
                 body = bs.find('body')
@@ -1253,10 +1257,10 @@ def checkStockReportEastMoney(code, startYear, endYear):#EastMoney
                         sqlString += ")"
                         conn.execute(sqlString)
                         log.writeUtfLog(sqlString.encode('utf8'))
-                        print "已增加",code,name,"数据至",year,"年stockreport数据库"
+                        print( "已增加",code,name,"数据至",year,"年stockreport数据库")
                         break
-    except Exception,e:
-        print e
+    except Exception as e:
+        print(e)
         exit(1)
     return True, startYear
 
@@ -1268,14 +1272,14 @@ def getStockBasics(code):
         conn = createDBConnection()
         ret = conn.execute(sqlString)
         result = ret.first()
-    except Exception,e:
-        print e
+    except Exception as e:
+        print(e)
         exit(1)
     if result is None :
-        print  code, "股票基本数据获取失败！"
+        print(code, "股票基本数据获取失败！")
         return "", 0
     elif result.timetomarket == 0:
-        print  code, result.name,"股票上市时间数据为空！"
+        print(code, result.name,"股票上市时间数据为空！")
         return  result.name, 0
     y = int(result.timetomarket / 1E4)
     m = int( (result.timetomarket-y*1E4) / 1E2)
@@ -1310,26 +1314,25 @@ def checkDistrib(code, startYear, endYear):
             try:
                 conn = createDBConnection()
                 ret = conn.execute(sqlString)
-            except Exception, e:
-                print year,"年，分红数据访问出错！"
-                print "checkDistrib（）：数据库访问错！"
+            except Exception as e:
+                print(year,"年，分红数据访问出错！")
+                print("checkDistrib（）：数据库访问错！")
                 continue
             result = ret.first()
             if result is None:
-                print  code, year, "年，stockreport表或stockreport_sup表中无此股票！"
+                print(code, year, "年，stockreport表或stockreport_sup表中无此股票！")
                 continue
             elif result.distrib is None or result.dividenTime is None:
                 name = result.name
-                print  code, name, year, "年，stockreport表分红数据为空或stockreport_sup表分红日期为空！"
+                print(code, name, year, "年，stockreport表分红数据为空或stockreport_sup表分红日期为空！")
                 if bAccessDataFinished == False:
                     url = "http://vip.stock.finance.sina.com.cn/corp/go.php/vISSUE_ShareBonus/stockid/"
                     url += code
                     url += ".phtml"
-                    print "读取新浪财经股票分红数据......"
-                    request = urllib2.Request(url=url, headers=sG.browserHeaders)
-                    response = urllib2.urlopen(request)
+                    print("读取新浪财经股票分红数据......")
+                    response = urllib.request.urlopen(url=url)
                     data = response.read()
-                    print "新浪财经股票分红数据读取完毕！"
+                    print("新浪财经股票分红数据读取完毕！")
                     time.sleep(5)
                     bAccessDataFinished = True
                 bs = bs4.BeautifulSoup(data, "lxml")
@@ -1339,18 +1342,18 @@ def checkDistrib(code, startYear, endYear):
                 tbody = table.find("tbody")
                 try:
                     tds = tbody.find_all("td")
-                except Exception, e:
-                    print  code, name, year, "年，新浪财经分红数据不存在！"
+                except Exception as e:
+                    print(code, name, year, "年，新浪财经分红数据不存在！")
                     continue
                 for i in range(0, len(tds)):
                     if(tds[i].string==u"实施"):
                         y,m,d = splitDateString(tds[i + 2].string)
                         if y<startYear: break
                         if year + 1 == y: # 网上的时间比实际分红时间要晚一年
-                            sg = unicode(tds[i - 3].string)
-                            zg = unicode(tds[i - 2].string)
-                            px = unicode(tds[i - 1].string)
-                            dividenDate = unicode(tds[i + 2].string)
+                            sg = (tds[i - 3].string)
+                            zg = (tds[i - 2].string)
+                            px = (tds[i - 1].string)
+                            dividenDate = (tds[i + 2].string)
                             if (u"0" != sg or u"0" != zg or u"0" != px):
                                 sqlString = "update stockreport_"
                                 sqlString += "%s" % (year)
@@ -1382,9 +1385,9 @@ def checkDistrib(code, startYear, endYear):
                                 sqlString += code.encode('utf8')
                                 ret = conn.execute(sqlString)
                                 log.writeUtfLog(sqlString)
-                            print year, "10派", px, "转", zg, "送", sg, "，", "分红登记日期：", dividenDate.encode('utf8')
-    except Exception,e:
-        print e
+                            print( year, "10派", px, "转", zg, "送", sg, "，", "分红登记日期：", dividenDate.encode('utf8'))
+    except Exception as e:
+        print(e)
         exit(1)
     return True
 
@@ -1418,13 +1421,13 @@ def getFundPrice(code, dORy, month=0, day=0, autp=None):
         sqlString = "select price from fundprice where code='"
         sqlString += code
         sqlString += "' and date='"
-        sqlString += date.encode('utf8')
+        sqlString += date
         sqlString += "'"
         try:
             ret = conn.execute(sqlString)
             result = ret.first()
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
         if result is not None and result.price is not None:
             return True, result.price
         else:
@@ -1434,24 +1437,24 @@ def getFundPrice(code, dORy, month=0, day=0, autp=None):
             url = url + "&edate="
             url = url + date
             url = url + "&rt=0.19110643402290917"
-            data = urllib2.urlopen(url).read()
+            data = urllib.request.urlopen(url).read().decode("utf-8")
             bs = bs4.BeautifulSoup(data, "html.parser")
             try:
                 price = float(bs.find_all("td")[2].get_text())
                 sqlString = "insert into fundprice(code,price,date) values('"
                 sqlString += code
                 sqlString += "',%s,'" % (price)
-                sqlString += date.encode('utf8')
+                sqlString += date
                 sqlString += "')"
                 try:
                     ret = conn.execute(sqlString)
                     log.writeUtfLog(sqlString)
                     return True, price
-                except Exception, e:
-                    print e
+                except Exception as e:
+                    print(e)
                     return False, 0
-            except Exception, e:
-                print e
+            except Exception as e:
+                print(e)
                 return False, 0
     else:
         return False, 0
@@ -1461,9 +1464,8 @@ def checkFundDistrib(code):
     url = "http://fundf10.eastmoney.com/fhsp_"
     url += code
     url += ".html"
-    request = urllib2.Request(url=url, headers=sG.browserHeaders)
-    response = urllib2.urlopen(request)
-    data = response.read()
+    response = urllib.Request.urlopen(url=url)
+    data = response.read().decode("utf-8")
     bs = bs4.BeautifulSoup(data, "lxml")
     tb = bs.find('table', {'class': 'w782 comm cfxq'})
     tbody = tb.find('tbody')
@@ -1484,16 +1486,16 @@ def checkFundDistrib(code):
         try:
             conn = createDBConnection()
             ret = conn.execute(sqlString)
-        except Exception, e:
-            print e
-            print "checkFundDistrib（）：数据库访问错！"
+        except Exception as e:
+            print(e)
+            print("checkFundDistrib（）：数据库访问错！")
             return
         result = ret.fetchall()
         if result:
             for d in distrib:
                 try:
                     result.index((d[0],))
-                except Exception, e:
+                except Exception as e:
                     sqlString = "insert into funddistrib"
                     sqlString += "(code,dateReg,dateDividen,dateBonus,bonus) values('"
                     sqlString += code
@@ -1508,9 +1510,9 @@ def checkFundDistrib(code):
                     try:
                         conn.execute(sqlString)
                         log.writeUtfLog(sqlString.encode('utf8'))
-                    except Exception, e:
-                        print e
-                        print "checkFundDistrib(),基金分红信息插入失败"
+                    except Exception as e:
+                        print(e)
+                        print("checkFundDistrib(),基金分红信息插入失败")
         else:
             for d in distrib:
                 sqlString = "insert into funddistrib"
@@ -1527,9 +1529,9 @@ def checkFundDistrib(code):
                 try:
                     conn.execute(sqlString)
                     log.writeUtfLog(sqlString.encode('utf8'))
-                except Exception, e:
-                    print e
-                    print "checkFundDistrib(),基金分红信息插入失败"
+                except Exception as e:
+                    print(e)
+                    print("checkFundDistrib(),基金分红信息插入失败")
 
 def parseFundDistrib(d):
     distrib = []
@@ -1544,9 +1546,9 @@ def getFundDistrib(code):
     try:
         conn = createDBConnection()
         ret = conn.execute(sqlString)
-    except Exception, e:
-        print e
-        print code, "funddistrib数据表:访问失败！"
+    except Exception as e:
+        print(e)
+        print(code, "funddistrib数据表:访问失败！")
         return False, None
     result = ret.fetchall()
     if result:
@@ -1554,9 +1556,13 @@ def getFundDistrib(code):
         disturb.sort()
         return True, disturb
     else:
-        print code,"funddistrib数据表:分红数据获取失败,基金可能无分红！"
+        print(code,"funddistrib数据表:分红数据获取失败,基金可能无分红！")
         return False, []
 
+def getMarketSign(code):
+    c = code[0]
+    if c in ("0","3"): return ".SZ"
+    if c in ("6"): return ".SH"
 
 
 

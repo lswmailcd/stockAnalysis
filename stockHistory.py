@@ -11,10 +11,10 @@ import matplotlib.pyplot as plt
 import stockTools as sT
 import stockDataChecker as ck
 
-code = "000513"
-REPORTYEARLAST = 2019 #最新年报时间
+code = "000333"
+REPORTYEARLAST = 2020 #最新年报时间
 
-YEARSTART = 2009#统计起始时间
+YEARSTART = 2013#统计起始时间
 DATA2WATCH =[]#指定观察时间点
 #贵州茅台["2018-06-12","2015-05-25","2012-07-13"]
 #五粮液["2018-01-15","2015-06-08","2007-10-15"]
@@ -31,16 +31,16 @@ y, m, d = sT.splitDateString(date)
 LASTYEAR = y-1
 name, yearToMarket, _, _ = sT.getStockBasics(code)
 if yearToMarket == 0:
-    print code, name, u"上市时间不详!"
+    print( code, name, u"上市时间不详!")
     exit(1)
-print code, name
+print( code, name)
 if yearToMarket>=YEARSTART: YEARSTART = yearToMarket+1
 sG.lock.acquire()
-strInfo = raw_input("不检查历史数据继续请按'回车',如需检查请按'c',退出请按'q': ")
+strInfo = input("不检查历史数据继续请按'回车',如需检查请按'c',退出请按'q': ")
 sG.lock.release()
 if strInfo=="q" : exit(0)
 if strInfo=="c" :
-    ck.subprocess(code, 2008, REPORTYEARLAST)
+    ck.subprocess(code, 2008, y)
 
 YEARList = []
 PEList = []
@@ -104,9 +104,9 @@ for year in range(YEARSTART, y+1):
     PEList.append(0 if EPS<=0 else closePrice / EPS)
     PEDiscList.append(0 if epsdic<=0 else closePrice / epsdic)
     PriceList.append(closePrice * totalStock)  # 得到当年总市值
-    print sT.getDateString(year,m2,d2),",BasicPETTM=",PEList[-1],", ","discountPETTM=",PEDiscList[-1],\
+    print( sT.getDateString(year,m2,d2),",BasicPETTM=",PEList[-1],", ","discountPETTM=",PEDiscList[-1],\
                            "stockcount=",totalStock,"priceTotal=", round(PriceList[-1]/10**4,0), ",EPSTTM=",EPS,\
-                           ",EPSDicountTTM=",epsdic
+                           ",EPSDicountTTM=",epsdic)
     drawPE = PEList[-1]
     for dt in DATA2WATCH:
         y1,m1,d1=sT.splitDateString(dt)
@@ -139,8 +139,8 @@ for year in range(YEARSTART, y+1):
                     PriceList.append(closePrice * totalStock)
                     PEList.append(closePrice / EPSTTM)
                     PEDiscList.append(closePrice / EPSdiscountTTM)
-                print dt, ",BasicPETTM=",PEList[-1],", ","discountPETTM=",PEDiscList[-1],"stockcount=",totalStock,\
-                      ",priceTotal=", round(PriceList[-1]/10**4,0), ",EPSTTM=",EPS, ",EPSDicountTTM=",epsdic
+                print( dt, ",BasicPETTM=",PEList[-1],", ","discountPETTM=",PEDiscList[-1],"stockcount=",totalStock,\
+                      ",priceTotal=", round(PriceList[-1]/10**4,0), ",EPSTTM=",EPS, ",EPSDicountTTM=",epsdic)
                 EPSTTMList.append(EPSTTM)
                 EPSTTMdiscountList.append(EPSdiscountTTM)
 
@@ -163,7 +163,7 @@ ax2 = fig.add_subplot(3,1,2)
 ax3 = fig.add_subplot(3,1,3)
 fs = 16
 #fig1
-Graph.drawColumnChat( ax1, YEARList, PriceList, YEARList, PriceList, name.decode('utf8'), u'', u'总市值(亿元)', fs, 0.5)
+Graph.drawColumnChat( ax1, YEARList, PriceList, YEARList, PriceList, name, u'', u'总市值(亿元)', fs, 0.5)
 #fig2
 spct = str(round(PETTM_MEDIAN2NOW*100.0,2))
 spct = spct + u'$\%$'
@@ -176,9 +176,9 @@ fs1 = fs*0.8
 ax2.text(xlim[1]+0.01,quantile[2],'80%:'+str(round(quantile[2],2)),fontsize=fs1,color='green')
 ax2.text(xlim[1]+0.01,quantile[1],"50%:"+str(round(quantile[1],2)),fontsize=fs1,color='orange')
 ax2.text(xlim[1]+0.01,quantile[0],"20%:"+str(round(quantile[0],2)),fontsize=fs1,color='red')
-ax2.axhline(color='red',y=drawPE)
+ax2.axhline(color='cornflowerblue',y=drawPE)
 #fig3
 Graph.drawColumnChat( ax3, YEARList, PEDiscList,YEARList, PEDiscList, u'', u'', u'DiscPE_TTM', fs, 0.5)
-ax3.axhline(color='red',y=PEDiscList[-1])
-print code,name,u"历史图绘制完成"
+ax3.axhline(color='cornflowerblue',y=PEDiscList[-1])
+print( code,name,u"历史图绘制完成")
 plt.show()

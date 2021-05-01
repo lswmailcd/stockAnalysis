@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-import urllib2
+import urllib
 import numpy as np
 import bs4
 import xlrd
@@ -17,14 +16,14 @@ BONUS_CASH = "2" #现金红利
 style_percent = xlwt.easyxf(num_format_str='0.00%')
 
 #!!!!注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！
-STARTYEAR = 2012 #投资起始年
-STARTMONTH = 1 #投资起始月份
+STARTYEAR = 2020 #投资起始年
+STARTMONTH = 12 #投资起始月份
 STARTDAY = 1      #投资起始日期
 
 #定投结束日即是卖出日，目前无法实现定投结束日和卖出日不同。
-ENDYEAR = 2015  #定投结束年
-ENDMONTH = 6  #定投结束月份
-ENDDAY = 1  #定投结束日
+ENDYEAR = 2021  #定投结束年
+ENDMONTH = 4  #定投结束月份
+ENDDAY = 30  #定投结束日
 BUYDAY = 10  #定投日
 INTERVAL  = 1    #定投间隔的月份
 INVESTMONEY = "10000"
@@ -36,8 +35,8 @@ INVESTMONEY = "10000"
 
 
 
-print u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", STARTDAY,u"日\
----",ENDYEAR,u"年",ENDMONTH,u"月", ENDDAY,u"日"
+print( u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", STARTDAY,u"日\
+---",ENDYEAR,u"年",ENDMONTH,u"月", ENDDAY,u"日")
 
 startDate = sT.getDateString(STARTYEAR, STARTMONTH, STARTDAY)
 endDate = sT.getDateString(ENDYEAR, ENDMONTH, ENDDAY)
@@ -55,21 +54,20 @@ for i in range(nrows):
         if code[i] == "" or code[i]=='0.0': continue
         count = count+1
 
-print u"WARNING:请注意基金历史分红情况，默认为红利再投资！"
-str = raw_input("默认红利再投进行计算请按'回车',如需现金分红以进行计算请按'c',退出请按'q': ")
+print(u"WARNING:请注意基金历史分红情况，默认为红利再投资！")
+str = input("默认红利再投进行计算请按'回车',如需现金分红以进行计算请按'c',退出请按'q': ")
 if str=="q" : exit(0)
 stype = BONUS_SHARE #红利再投
 if str=="c" :
     stype = BONUS_CASH #现金分红
 
-str = raw_input("如不进行分红检查请按'回车',如需检查请按'c',退出请按'q': ")
+str = input("如不进行分红检查请按'回车',如需检查请按'c',退出请按'q': ")
 if str=="q" : exit(0)
 if str=="c" :
     print("开始检查基金分红数据......")
     for i in range(count):
         if code[i] == u'': continue
         sT.checkFundDistrib(code[i])
-
     print("基金分红数据检查完成！")
 
 workbook = xlwt.Workbook(encoding = 'ascii')
@@ -91,17 +89,17 @@ for i in range(count):
     url = url + "&sdate=" + startDate + "&edate=" + endDate + "&shdate=" + endDate
     url = url + "&round=" + "%s" %(INTERVAL) + "&dtr=" + "%s" %(BUYDAY) + "&p=" + "0" + "&je=" + INVESTMONEY
     url = url + "&stype=" + stype + "&needfirst=" + "2" + "&jsoncallback=FundDTSY.result"
-    request = urllib2.Request(url=url, headers=sG.browserHeaders)
-    response = urllib2.urlopen(request)
-    data = response.read()
+    response = urllib.request.urlopen(url=url)
+    #response = urllib.urlopen(request)
+    data = response.read().decode('utf-8')
     #data = urllib.urlopen(url).read()
     time.sleep(randint(1,3))
     infoStr = data.split('|')
     if infoStr==['']:
-        print data
+        print(data)
         continue
 
-    name[i] = infoStr[1].decode('utf8')
+    name[i] = infoStr[1]
 
     dictColumnValues = {}
     investTotal = float(infoStr[3].replace(",",""))
@@ -179,16 +177,16 @@ for i in range(count):
     dictColumnValues[u'购买份额'] = shareTotalInvest
     dictColumnValues[u'最大回撤额'] = diffWorst
     dictColumnValues[u'最大回撤额时的收益率'] = diffWorstRate
-    dictColumnValues[u'最大回撤额出现的时间'] = dateWorst.decode("utf8")
+    dictColumnValues[u'最大回撤额出现的时间'] = dateWorst
     dictColumnValues[u'最大收益额'] = diffBest
     dictColumnValues[u'最大收益额时的收益率'] = diffBestRate
-    dictColumnValues[u'最大收益额出现的时间'] = dateBest.decode("utf8")
+    dictColumnValues[u'最大收益额出现的时间'] = dateBest
     dictColumnValues[u'最佳收益率'] = rateBest
     dictColumnValues[u'最佳收益额'] = earnBest
-    dictColumnValues[u'最佳收益时间'] = dateRateBest.decode("utf8")
+    dictColumnValues[u'最佳收益时间'] = dateRateBest
     dictColumnValues[u'最差收益率'] = rateWorst
     dictColumnValues[u'最差收益额'] = lostWorst
-    dictColumnValues[u'最差收益时间'] = dateRateWorst.decode("utf8")
+    dictColumnValues[u'最差收益时间'] = dateRateWorst
     for idx in range(len(ListColumnName)):
         if ListColumnName[idx].find(u'率') != -1:
             #print ListColumnName[idx].encode('utf8')
@@ -196,10 +194,10 @@ for i in range(count):
         else:
             worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]])
 
-    print code[i], name[i], "总收益率：%.2f%%" % (rate * 100.0), "年化收益率：%.2f%%" % (ratePerYear * 100.0)
+    print( code[i], name[i], "总收益率：%.2f%%" % (rate * 100.0), "年化收益率：%.2f%%" % (ratePerYear * 100.0))
 
 workbook.save('.\\data\\dataResult.xls')
-print "Invest result has been wrotten to dataResult.xls"
+print( "Invest result has been wrotten to dataResult.xls")
 
 
 
