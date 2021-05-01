@@ -13,30 +13,30 @@ import stockTools as sT
 import logRecoder as log
 
 def subprocess(code, sYear, eYear):
-    print "*******checking reports*******"
+    print("*******checking reports*******")
     try:
         sT.checkStockReport(code, sYear, eYear)
-    except Exception, e:
-        print e
+    except Exception as e:
+        print(e)
     print("*******checking asset_debt*******")
     try:
         sT.checkStockAssetDebt(code, sYear, eYear)
-    except Exception, e:
-        print e
-    print "*******checking distrib*******"
+    except Exception as e:
+        print(e)
+    print("*******checking distrib*******")
     try:
         sT.checkDistrib(code, sYear, eYear)
-    except Exception, e:
-        print e
+    except Exception as e:
+        print(e)
 
 def process(STARTYEAR, ENDYEAR, FileName):
     str = "*******************stockDataChecker开始检查......*******************"
-    print  str
+    print(str)
     log.writeUtfLog(str)
-    print "Checking year from", STARTYEAR, "to",ENDYEAR
-    print "Reading stock info from .\\data\\"+FileName
+    print("Checking year from", STARTYEAR, "to",ENDYEAR)
+    print("Reading stock info from .\\data\\"+FileName)
     data = xlrd.open_workbook('.\\data\\'+FileName)
-    print "Reading finished!"
+    print("Reading finished!")
     table = data.sheets()[0]
     nrows = table.nrows-1
     a = np.zeros([nrows])
@@ -47,21 +47,21 @@ def process(STARTYEAR, ENDYEAR, FileName):
             code[i] = table.cell(i + 1, 0).value
             if code[i] == "" or code[i]=='0.0': continue
             name[i] = sT.getStockNameByCode(code[i]).decode('utf8')
-            print code[i], name[i]
+            print(code[i], name[i])
             subprocess(code[i], STARTYEAR, ENDYEAR)
             sname, yearToMarket,_,_ = sT.getStockBasics(code[i])
             if yearToMarket == 0:
-                print code[i], name[i], u"上市时间不详!"
+                print( code[i], name[i], u"上市时间不详!")
                 exit(1)
-            print "checking DONE!"
+            print("checking DONE!")
 
     str = "*******************stockDataChecker检查完成！*******************"
-    print str
+    print(str)
     log.writeUtfLog(str)
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:
-        print 'ERROR: The cmd format is stockDataChecker.py startYear endYear'
+        print('ERROR: The cmd format is stockDataChecker.py startYear endYear')
         sys.exit(0)
     os.path.realpath(__file__)
     process(int(sys.argv[1]), int(sys.argv[2]), sys.argv[3])
