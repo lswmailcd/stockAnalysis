@@ -10,14 +10,15 @@ import xlwt
 import time
 import stockDataChecker as ck
 
-STARTYEAR = 2016 #定投起始年
-STARTMONTH = 7  #定投起始月份
+STARTYEAR = 2020 #定投起始年
+STARTMONTH = 12  #定投起始月份
 ENDYEAR = 2021  #定投结束年
-ENDMONTH = 1 #定投结束月份
+ENDMONTH = 4 #定投结束月份
+ENDDAY = 30 #定投卖出日
 BUYDAY=[10] #每月中的定投日期列表
 REPORTYEARLAST = 2020 #最新报表年份
 
-moneyLimit = 10000  #每次定投金额上限，实际金额根据买的股数取整
+moneyLimit = 50000  #每次定投金额上限，实际金额根据买的股数取整
 
 style_percent = xlwt.easyxf(num_format_str='0.00%')
 
@@ -65,9 +66,9 @@ for i in range(count):
     ndividend = 0.0  # 总分红
     nStockTotal = 0  # 总股数
     nStockInvest = 0  # 购买的股数
-    lostMoneyMax = 0  # 最大回撤的损失
+    lostMoneyMax = sT.sG.sINF  # 最大回撤的损失
     lostMoneyMaxCaption = 0  #最大回撤时投入的总资本
-    earnMoneyMax = 0  # 最大收益的利润
+    earnMoneyMax = sT.sG.sNINF  # 最大收益的利润
     earnMoneyMaxCaption = 0  #最大收益时投入的总资本
     dictColumnValues = {}
     lostMoneyMaxTime = ""
@@ -128,7 +129,7 @@ for i in range(count):
         #step = 1
         #if year==STARTYEAR: step=1
         bDistrib = False
-        for month in range(startMonth,endMonth,1):# month in (4,9,10,12)
+        for month in range(startMonth,endMonth,1):
             for tradeDay in BUYDAY:
                 foundData,closePrice,actualMonth, actualDay=sT.getClosePriceBackward(code[i], year, month, tradeDay)
                 #print closePrice,sT.getDateString(year,month,actualDay)
@@ -182,7 +183,7 @@ for i in range(count):
     else:
         year = ENDYEAR
         month = ENDMONTH+1
-    foundData,closePrice,actualMonth, day=sT.getClosePriceBackward(code[i],year, month, 1)
+    foundData,closePrice,actualMonth, day=sT.getClosePriceBackward(code[i],ENDYEAR, ENDMONTH, ENDDAY)
     if foundData==True:
         nCapitalTotal = nStockTotal*closePrice+ndividend
         income = nCapitalTotal-nCapitalInvest
@@ -192,7 +193,7 @@ for i in range(count):
         dictColumnValues[u'名称'] = name[i]
         dictColumnValues[u'投资年数'] = investPeriod
         dictColumnValues[u'投资起始时间'] = sT.getDateString(STARTYEAR,STARTMONTH,1)
-        dictColumnValues[u'卖出股份时间'] = sT.getDateString(year,actualMonth,day)
+        dictColumnValues[u'卖出股份时间'] = sT.getDateString(ENDYEAR,ENDMONTH,ENDDAY)
         dictColumnValues[u'投资总成本'] = nCapitalInvest
         dictColumnValues[u'投资总市值'] = nCapitalTotal
         dictColumnValues[u'投资总收益'] = income
