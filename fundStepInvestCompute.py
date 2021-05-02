@@ -45,8 +45,8 @@ data = xlrd.open_workbook('.\\data\\fundata.xls')
 table = data.sheets()[0]
 nrows = table.nrows-1
 a = np.zeros([nrows])
-code = np.array(a, dtype=np.unicode)
-name = np.array(a, dtype=np.unicode)
+code = np.array(a, dtype=np.compat.unicode)
+name = np.array(a, dtype=np.compat.unicode)
 count  = 0
 for i in range(nrows):
     if table.cell(i + 1, 0).value!="":
@@ -78,7 +78,7 @@ ListColumnName = [u'代码',u'名称',u'定投年数',u'投资收益率',u'投�
                   u'最大回撤额时的收益率',u'最大回撤额', u'最大回撤额出现的时间', \
                   u'最大收益额时的收益率',u'最大收益额', u'最大收益额出现的时间', \
                   u'投资总成本',u'投资总市值',u'投资总收益',u'平均年收益',u'分红',u'总份额', u'购买份额',\
-                  u'定投起始时间',u'卖出基金时间'] #u'定投结束时间'#,
+                  u'定投起始时间',u'卖出基金时间',"投资日"] #u'定投结束时间'#,
 for idx in range(len(ListColumnName)):
     worksheet.write(0, idx, ListColumnName[idx])
 
@@ -187,6 +187,7 @@ for i in range(count):
     dictColumnValues[u'最差收益率'] = rateWorst
     dictColumnValues[u'最差收益额'] = lostWorst
     dictColumnValues[u'最差收益时间'] = dateRateWorst
+    dictColumnValues[u'投资日'] = BUYDAY
     for idx in range(len(ListColumnName)):
         if ListColumnName[idx].find(u'率') != -1:
             #print ListColumnName[idx].encode('utf8')

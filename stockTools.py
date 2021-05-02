@@ -1,5 +1,3 @@
-#coding:utf-8
-
 import pymysql
 pymysql.install_as_MySQLdb()    #手动指定将MySQLdb转给pymysql处理
 from sqlalchemy import create_engine
@@ -568,9 +566,8 @@ def checkStockAssetDebt(code, startYear, endYear):
                 url += "/displaytype/4.phtml"
                 try:
                     print( "读取新浪财经资产负债表数据......")
-                    request = urllib.Request(url=url, headers=sG.browserHeaders)
-                    response = urllib.urlopen(request)
-                    data = response.read()
+                    response = urllib.request.urlopen(url=url)
+                    data = response.read().decode("gbk")
                     print( "新浪财经资产负债表数据读取完毕!")
                     time.sleep(2)
                 except Exception as e:
@@ -602,7 +599,7 @@ def checkStockAssetDebt(code, startYear, endYear):
                         sqlString += "(code,name,yszk,yszk2,ch,ldzc,gdzc,ldfz,gdfz,gb,gdqy) values('"
                         sqlString += code
                         sqlString += "','"
-                        sqlString += name.decode('utf8')
+                        sqlString += name
                         sqlString += "',"
                         sqlString += "%s" % (yszk[Qt-i])
                         sqlString += ","
@@ -623,7 +620,7 @@ def checkStockAssetDebt(code, startYear, endYear):
                         sqlString += "%s" % (gdqy[Qt-i])
                         sqlString += ")"
                         conn.execute(sqlString)
-                        log.writeUtfLog(sqlString.encode('utf8'))
+                        log.writeUtfLog(sqlString)
                         print( "已增加", code, name, "数据至", year, "年",i,"季度asset_debt数据表")
     except Exception as e:
         print(e)
@@ -669,7 +666,7 @@ def checkStockAssetDebt_BACKUP(code, startYear, endYear):
                 url += "%s" % (year)
                 url += "/displaytype/4.phtml"
                 print("读取新浪财经资产负债表数据......")
-                data = urllib.urlopen(url).read()
+                data = urllib.urlopen(url).read().decode("gbk")
                 print("新浪财经资产负债表数据读取完毕!")
                 time.sleep(2)
                 bs = bs4.BeautifulSoup(data, "lxml")
@@ -878,9 +875,9 @@ def checkStockReport(code, startYear, endYear):
                 url += "/displaytype/4.phtml"
                 try:
                     print("读取新浪财经财务指标......")
-                    request = urllib.Request(url=url, headers=sG.browserHeaders)
-                    response = urllib.urlopen(request)
+                    response = urllib.request.urlopen(url=url)
                     data = response.read()
+                    data = data.decode("gbk")
                     print( "新浪财经财务指标读取完毕!")
                     time.sleep(2)
                 except Exception as e:
@@ -920,7 +917,7 @@ def checkStockReport(code, startYear, endYear):
                             sqlString += "(code,name,eps,bvps,roe,net_profits,profits_yoy) values('"
                             sqlString += code
                             sqlString += "','"
-                            sqlString += name.decode('utf8')
+                            sqlString += name
                             sqlString += "',"
                             sqlString += "%s" % (epsadj[Qt-i])
                             sqlString += ","
@@ -933,7 +930,7 @@ def checkStockReport(code, startYear, endYear):
                             sqlString += "%s" % (profits_yoy[Qt-i])
                             sqlString += ")"
                             conn.execute(sqlString)
-                            log.writeUtfLog(sqlString.encode('utf8'))
+                            log.writeUtfLog(sqlString)
                             print("已增加", code, name, "数据至", year, "年",i, "季度，stockreport数据表")
                 if bDataSupExist.count(False)>0:
                     for i in range(1,Qt+1):
@@ -945,7 +942,7 @@ def checkStockReport(code, startYear, endYear):
                             sqlString += "epcf,reservedps,perundps,gpr,roe,roe_w,net_profits_discount) values('"
                             sqlString += code
                             sqlString += "','"
-                            sqlString += name.decode('utf8')
+                            sqlString += name
                             sqlString += "',"
                             sqlString += "%s" % (epsavg[Qt-i])
                             sqlString += ","
@@ -974,7 +971,7 @@ def checkStockReport(code, startYear, endYear):
                             sqlString += "%s" % (net_profits_discount[Qt-i])
                             sqlString += ")"
                             conn.execute(sqlString)
-                            log.writeUtfLog(sqlString.encode('utf8'))
+                            log.writeUtfLog(sqlString)
                             print("已增加", code, name, "数据至", year, "年",i, "季度，stockreport_sup数据表")
     except Exception as e:
         print(e)
@@ -1097,7 +1094,7 @@ def checkStockReport_BACKUP(code, startYear, endYear):
                             sqlString += "(code,name,eps,bvps,roe,net_profits,profits_yoy) values('"
                             sqlString += code
                             sqlString += "','"
-                            sqlString += name.decode('utf8')
+                            sqlString += name
                             sqlString += "',"
                             sqlString += "%s" % (epsadj[Qt-1-i])
                             sqlString += ","
@@ -1110,7 +1107,7 @@ def checkStockReport_BACKUP(code, startYear, endYear):
                             sqlString += "%s" % (profits_yoy[Qt-1-i])
                             sqlString += ")"
                             conn.execute(sqlString)
-                            log.writeUtfLog(sqlString.encode('utf8'))
+                            log.writeUtfLog(sqlString)
                             print("已增加", code, name, "数据至", year, "年",i, "季度，stockreport数据表")
                 if bDataSupExist.count(False)>0:
                     for i in range(1,Qt):
@@ -1122,7 +1119,7 @@ def checkStockReport_BACKUP(code, startYear, endYear):
                             sqlString += "epcf,reservedps,perundps,gpr,roe,roe_w,net_profits_discount) values('"
                             sqlString += code
                             sqlString += "','"
-                            sqlString += name.decode('utf8')
+                            sqlString += name
                             sqlString += "',"
                             sqlString += "%s" % (epsavg[Qt-1-i])
                             sqlString += ","
@@ -1151,7 +1148,7 @@ def checkStockReport_BACKUP(code, startYear, endYear):
                             sqlString += "%s" % (net_profits_discount[Qt-1-i])
                             sqlString += ")"
                             conn.execute(sqlString)
-                            log.writeUtfLog(sqlString.encode('utf8'))
+                            log.writeUtfLog(sqlString)
                             print("已增加", code, name, "数据至", year, "年",i, "季度，stockreport_sup数据表")
     except Exception as e:
         print(e)
@@ -1196,7 +1193,7 @@ def checkStockReportEastMoney(code, startYear, endYear):#EastMoney
                     url += code
                     url += ".html"
                     print("读取东方财富年报数据......")
-                    data = urllib.urlopen(url).read()
+                    data = urllib.urlopen(url).read().decode("gbk")
                     bAccessWebData = True
                     print("东方财富年报数据读取完毕!")
                     time.sleep(2)
@@ -1238,7 +1235,7 @@ def checkStockReportEastMoney(code, startYear, endYear):#EastMoney
                             sqlString += "_4(code,name,eps,bvps,roe,epcf,net_profits,profits_yoy) values('"
                         sqlString += code
                         sqlString += "','"
-                        sqlString += name.decode('utf8')
+                        sqlString += name
                         sqlString += "',"
                         sqlString += "%s" %(eps)
                         sqlString += ","
@@ -1256,7 +1253,7 @@ def checkStockReportEastMoney(code, startYear, endYear):#EastMoney
                         sqlString += "%s" %(profits_yoy)
                         sqlString += ")"
                         conn.execute(sqlString)
-                        log.writeUtfLog(sqlString.encode('utf8'))
+                        log.writeUtfLog(sqlString)
                         print( "已增加",code,name,"数据至",year,"年stockreport数据库")
                         break
     except Exception as e:
@@ -1331,7 +1328,7 @@ def checkDistrib(code, startYear, endYear):
                     url += ".phtml"
                     print("读取新浪财经股票分红数据......")
                     response = urllib.request.urlopen(url=url)
-                    data = response.read()
+                    data = response.read().decode("gbk")
                     print("新浪财经股票分红数据读取完毕！")
                     time.sleep(5)
                     bAccessDataFinished = True
@@ -1362,15 +1359,15 @@ def checkDistrib(code, startYear, endYear):
                                 sqlString += "distrib='10"
                                 if px != u"0":
                                     sqlString += "派"
-                                    sqlString += px.encode('utf8')
+                                    sqlString += px
                                 if zg != u"0":
                                     sqlString += "转"
-                                    sqlString += zg.encode('utf8')
+                                    sqlString += zg
                                 if sg != u"0":
                                     sqlString += "送"
-                                    sqlString += sg.encode('utf8')
+                                    sqlString += sg
                                 sqlString += "' where code="
-                                sqlString += code.encode('utf8')
+                                sqlString += code
                                 ret = conn.execute(sqlString)
                                 log.writeUtfLog(sqlString)
                             if  dividenDate != '--':
@@ -1379,10 +1376,10 @@ def checkDistrib(code, startYear, endYear):
                                 sqlString += "_4 "
                                 sqlString += "set "
                                 sqlString += "dividentime='"
-                                sqlString += dividenDate.encode('utf8')
+                                sqlString += dividenDate
                                 sqlString += "'"
                                 sqlString += "where code="
-                                sqlString += code.encode('utf8')
+                                sqlString += code
                                 ret = conn.execute(sqlString)
                                 log.writeUtfLog(sqlString)
                             print( year, "10派", px, "转", zg, "送", sg, "，", "分红登记日期：", dividenDate.encode('utf8'))
@@ -1437,7 +1434,7 @@ def getFundPrice(code, dORy, month=0, day=0, autp=None):
             url = url + "&edate="
             url = url + date
             url = url + "&rt=0.19110643402290917"
-            data = urllib.request.urlopen(url).read().decode("utf-8")
+            data = urllib.request.urlopen(url).read().decode("gbk")
             bs = bs4.BeautifulSoup(data, "html.parser")
             try:
                 price = float(bs.find_all("td")[2].get_text())
@@ -1464,8 +1461,8 @@ def checkFundDistrib(code):
     url = "http://fundf10.eastmoney.com/fhsp_"
     url += code
     url += ".html"
-    response = urllib.Request.urlopen(url=url)
-    data = response.read().decode("utf-8")
+    response = urllib.request.urlopen(url=url)
+    data = response.read().decode("utf8")
     bs = bs4.BeautifulSoup(data, "lxml")
     tb = bs.find('table', {'class': 'w782 comm cfxq'})
     tbody = tb.find('tbody')
@@ -1500,16 +1497,16 @@ def checkFundDistrib(code):
                     sqlString += "(code,dateReg,dateDividen,dateBonus,bonus) values('"
                     sqlString += code
                     sqlString += "','"
-                    sqlString += d[0].encode('utf8')
+                    sqlString += d[0]
                     sqlString += "','"
-                    sqlString += d[1].encode('utf8')
+                    sqlString += d[1]
                     sqlString += "','"
-                    sqlString += d[3].encode('utf8')
+                    sqlString += d[3]
                     sqlString += "',%s" % (d[2])
                     sqlString += ")"
                     try:
                         conn.execute(sqlString)
-                        log.writeUtfLog(sqlString.encode('utf8'))
+                        log.writeUtfLog(sqlString)
                     except Exception as e:
                         print(e)
                         print("checkFundDistrib(),基金分红信息插入失败")

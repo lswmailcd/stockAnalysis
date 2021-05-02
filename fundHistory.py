@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import urllib2
+import urllib
 import numpy as np
 import bs4
 import xlrd
@@ -19,14 +19,14 @@ BONUS_CASH = "2" #现金红利
 
 #!!!!注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！
 STARTYEAR = 2020 #投资起始年
-STARTMONTH = 1 #投资起始月份
-STARTDAY = 31      #投资起始日期
+STARTMONTH = 12 #投资起始月份
+STARTDAY = 1      #投资起始日期
 
 #定投结束日即是卖出日，目前无法实现定投结束日和卖出日不同。
 ENDYEAR = 2021  #定投结束年
 ENDMONTH = 4 #定投结束月份
-ENDDAY = 2  #定投结束日
-BUYDAY = 10  #定投日
+ENDDAY = 30  #定投结束日
+BUYDAY = 10 #定投日
 INTERVAL  = 1    #定投间隔的月份
 INVESTMONEY = "10000"
 
@@ -34,8 +34,8 @@ data = xlrd.open_workbook('.\\data\\fundata.xls')
 table = data.sheets()[0]
 nrows = table.nrows-1
 a = np.zeros([nrows])
-code = np.array(a, dtype=np.unicode)
-name = np.array(a, dtype=np.unicode)
+code = np.array(a, dtype=np.compat.unicode)
+name = np.array(a, dtype=np.compat.unicode)
 count  = 0
 for i in range(nrows):
     if table.cell(i + 1, 0).value!="":
@@ -43,14 +43,14 @@ for i in range(nrows):
         if code[i] == "" or code[i]=='0.0': continue
         count = count+1
 
-print u"WARNING:请注意基金历史分红情况，默认为红利再投资！"
-str = raw_input("默认红利再投进行计算请按'回车',如需现金分红以进行计算请按'c',退出请按'q': ")
+print( u"WARNING:请注意基金历史分红情况，默认为红利再投资！")
+str = input("默认红利再投进行计算请按'回车',如需现金分红以进行计算请按'c',退出请按'q': ")
 if str=="q" : exit(0)
 stype = BONUS_SHARE #红利再投
 if str=="c" :
     stype = BONUS_CASH #现金分红
 
-str = raw_input("如不进行分红检查请按'回车',如需检查请按'c',退出请按'q': ")
+str = input("如不进行分红检查请按'回车',如需检查请按'c',退出请按'q': ")
 if str=="q" : exit(0)
 if str=="c" :
     print("开始检查基金分红数据......")
@@ -59,8 +59,8 @@ if str=="c" :
         sT.checkFundDistrib(code[i])
     print("基金分红数据检查完成！")
 
-print u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", STARTDAY,u"日\
----",ENDYEAR,u"年",ENDMONTH,u"月", ENDDAY,u"日"
+print( u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", STARTDAY,u"日\
+---",ENDYEAR,u"年",ENDMONTH,u"月", ENDDAY,u"日")
 
 startDate = sT.getDateString(STARTYEAR, STARTMONTH, STARTDAY)
 endDate = sT.getDateString(ENDYEAR, ENDMONTH, ENDDAY)
@@ -71,14 +71,13 @@ for i in range(count):
     url = url + "&sdate=" + startDate + "&edate=" + endDate + "&shdate=" + endDate
     url = url + "&round=" + "%s" % (INTERVAL) + "&dtr=" + "%s" % (BUYDAY) + "&p=" + "0" + "&je=" + INVESTMONEY
     url = url + "&stype=" + stype + "&needfirst=" + "2" + "&jsoncallback=FundDTSY.result"
-    request = urllib2.Request(url=url, headers=sG.browserHeaders)
-    response = urllib2.urlopen(request)
-    data = response.read()
+    response = urllib.request.urlopen(url=url)
+    data = response.read().decode("utf8")
     time.sleep(randint(1, 3))
     infoStr = data.split('|')
-    name[i] = infoStr[1].decode("utf8")
+    name[i] = infoStr[1]
     if infoStr[2] == '0期':
-        print code,infoStr[1],data
+        print( code,infoStr[1],data)
         exit(1)
 
     dictColumnValues = {}
@@ -117,13 +116,13 @@ for i in range(count):
         rate = diff / moneyTotal
         rateList.append(rate*100.0)
 
-    #print(dateList)
+    #print((dateList)
     dataList.append([dateList,rateList])
 
 for i in range(len(dataList)):#日期选择一个日期，坐标轴不能有两种不同的日期表示
     plt.plot(dataList[0][0],dataList[i][1],label=name[i])
 ax = plt.gca()
-ax.yaxis.set_major_locator(mpl.ticker.MultipleLocator(5))
+ax.yaxis.set_major_locator(mpl.ticker.MultipleLocator(1 if sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,STARTDAY, ENDYEAR,ENDMONTH,ENDDAY)<365*3 else 5))
 ax.yaxis.set_major_formatter(mpl.ticker.FormatStrFormatter("%.0f%%"))
 ax.axhline(color='black',y=0)
 mpl.rcParams['font.sans-serif'] = ['SimHei']  # 指定默认字体

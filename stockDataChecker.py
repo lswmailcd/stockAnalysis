@@ -1,5 +1,3 @@
-#coding:utf-8
-
 import sys
 import os
 from sqlalchemy import create_engine
@@ -30,9 +28,8 @@ def subprocess(code, sYear, eYear):
         print(e)
 
 def process(STARTYEAR, ENDYEAR, FileName):
-    str = "*******************stockDataChecker开始检查......*******************"
-    print(str)
-    log.writeUtfLog(str)
+    s = "\n*******************stockDataChecker开始检查......*******************\n"
+    print(s)
     print("Checking year from", STARTYEAR, "to",ENDYEAR)
     print("Reading stock info from .\\data\\"+FileName)
     data = xlrd.open_workbook('.\\data\\'+FileName)
@@ -40,13 +37,13 @@ def process(STARTYEAR, ENDYEAR, FileName):
     table = data.sheets()[0]
     nrows = table.nrows-1
     a = np.zeros([nrows])
-    code = np.array(a, dtype=np.unicode)
-    name = np.array(a, dtype=np.unicode)
+    code = np.array(a, dtype=np.compat.unicode)
+    name = np.array(a, dtype=np.compat.unicode)
     for i in range(nrows):
         if table.cell(i + 1, 0).value!="":
             code[i] = table.cell(i + 1, 0).value
             if code[i] == "" or code[i]=='0.0': continue
-            name[i] = sT.getStockNameByCode(code[i]).decode('utf8')
+            name[i] = sT.getStockNameByCode(code[i])
             print(code[i], name[i])
             subprocess(code[i], STARTYEAR, ENDYEAR)
             sname, yearToMarket,_,_ = sT.getStockBasics(code[i])
@@ -55,9 +52,8 @@ def process(STARTYEAR, ENDYEAR, FileName):
                 exit(1)
             print("checking DONE!")
 
-    str = "*******************stockDataChecker检查完成！*******************"
-    print(str)
-    log.writeUtfLog(str)
+    s = "\n*******************stockDataChecker检查完成！*******************\n"
+    print(s)
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:

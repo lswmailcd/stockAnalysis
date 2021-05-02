@@ -7,6 +7,7 @@ import tushare as ts
 import stockTools as sT
 import xlrd
 import xlwt
+import stockDataChecker as ck
 
 style_percent = xlwt.easyxf(num_format_str='0.00%')
 
@@ -21,13 +22,14 @@ REPORTYEARLAST = 2020 #最新报表年份
 
 nStockInvest = 100     #购买的股数
 
-print u"一次性投资计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月---",ENDYEAR,u"年",ENDMONTH,u"月"
-print u"***请确保已经使用stockDataChecker.py对数据进行检查***"
-str = raw_input("不检查继续请按'回车',如需检查请按'c',退出请按'q': ")
+print( "一次性投资计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月---",ENDYEAR,u"年",ENDMONTH,u"月")
+print( "***请确保已经使用stockDataChecker.py对数据进行检查***")
+str = input("不检查继续请按'回车',如需检查请按'c',退出请按'q': ")
 if str=="q" : exit(0)
 if str=="c" :
     dirName = os.path.dirname(os.path.realpath(__file__))
-    os.system('C:\Users\lsw\Anaconda3\envs\conda27\python ' + dirName + '\\stockDataChecker.py 2008 2020 stockList.xls')
+    ck.process(2008,2020,'stockList.xls')
+    #os.system('python ' + dirName + '\\stockDataChecker.py 2008 2020 stockList.xls')
 
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('InvestResult')
@@ -44,7 +46,7 @@ code = []
 name = []
 count = 0
 for i in range(nrows):
-    if table.cell(i + 1, 0).value<>"" or table.cell(i + 1, 1).value<>"":
+    if table.cell(i + 1, 0).value!="" or table.cell(i + 1, 1).value!="":
         count += 1
         code.append(table.cell(i + 1, 0).value)
         if code[i] == "":
@@ -54,11 +56,9 @@ for i in range(nrows):
             if name[i] == None:
                 code[i] = ""
                 continue
-            else:
-                name[i] = name[i].decode('utf8')
             sname, yearToMarket,_ ,_ = sT.getStockBasics(code[i])
             if yearToMarket == 0:
-                print code[i], name[i], u"上市时间不详!"
+                print( code[i], name[i], u"上市时间不详!")
                 exit(1)
 
 engine = create_engine('mysql://root:0609@127.0.0.1:3306/stockdatabase?charset=utf8', encoding='utf-8')
@@ -72,7 +72,7 @@ for i in range(count):
     if foundData:
         nCapitalInvest = closePrice*nStockInvest
     else:
-        print "ERROR:",code[i],name[i],sT.getDateString(STARTYEAR,STARTMONTH,actualbuyDay),"未找到该股交易信息"
+        print( "ERROR:",code[i],name[i],sT.getDateString(STARTYEAR,STARTMONTH,actualbuyDay),"未找到该股交易信息")
         continue
     ndividend = 0.0  # 总分红
     nStockTotal = nStockInvest  # 最终获得股数，初始为购买的股数
@@ -80,7 +80,7 @@ for i in range(count):
     lostMoneyMaxCaption = nCapitalInvest
     lostMoneyMaxTime =""
     dictColumnValues={}
-    print code[i], name[i]
+    print( code[i], name[i])
     for year in range(STARTYEAR,ENDYEAR+1):
         distribYear = year-1
         bDividen = True
@@ -90,28 +90,28 @@ for i in range(count):
             sqlString += "_4 where code="
             sqlString += code[i]
             ret = conn.execute(sqlString)
-        except Exception, e:
-            print "ERROR: ", code[i], name[i], "connect database failure!"
-            print e
+        except Exception as e:
+            print( "ERROR: ", code[i], name[i], "connect database failure!")
+            print( e)
             exit(1)
         nStockTotalBeforeDividen = nStockTotal
         resultDistrib = ret.first()
         if resultDistrib is None or resultDistrib.distrib is None:
-            print "WARNING:", code[i], name[i], distribYear, u"年分红不详，数据库年报分红数据获取失败！此年可能无分红！"
+            print( "WARNING:", code[i], name[i], distribYear, u"年分红不详，数据库年报分红数据获取失败！此年可能无分红！")
             bDividen = False #无分红
         else:
             bDividen, dividenTime = sT.getDividenTime(code[i], distribYear)
             if bDividen and ( sT.getDateString(STARTYEAR, STARTMONTH, buyDay) <= dividenTime ) \
                 and ( sT.getDateString(ENDYEAR, ENDMONTH, saleDay) > dividenTime ):
-                    print dividenTime, "计算分红"
+                    print( dividenTime, "计算分红")
                     # 计算分红送转
                     bdis, r, s = sT.getDistrib(code[i], distribYear)
                     # 分红计算
                     ndividend += nStockTotal * r
                     # 送转增加股本计算
-                    #print "增加股本", nStockTotal * s
+                    #print( "增加股本", nStockTotal * s
                     nStockTotal += nStockTotal * s
-                    print year, "年，每10股分红：", 10 * r, "送转股数：", 10 * s
+                    print( year, "年，每10股分红：", 10 * r, "送转股数：", 10 * s)
         #计算回撤
         if year==STARTYEAR:
             startMonth = STARTMONTH
@@ -157,20 +157,20 @@ for i in range(count):
         dictColumnValues[u'最大回撤'] = lostMoneyMax
         dictColumnValues[u'最大回撤时的收益率'] = round(lostMoneyMax/lostMoneyMaxCaption,4)
         dictColumnValues[u'最大回撤出现的时间'] = lostMoneyMaxTime
-        print u'时长：',dictColumnValues[u'投资时长（年）'],u'年,'\
+        print( u'时长：',dictColumnValues[u'投资时长（年）'],u'年,'\
               u'投资收益率:',"%.2f%%" %(dictColumnValues[u'投资收益率']*100),\
-              u',最大回撤时的收益率:',"%.2f%%" %(dictColumnValues[u'最大回撤时的收益率']*100)
+              u',最大回撤时的收益率:',"%.2f%%" %(dictColumnValues[u'最大回撤时的收益率']*100))
         for idx in range(len(ListColumnName)):
             if ListColumnName[idx].find(u'率') != -1:
                 worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]], style_percent)
             else:
                 worksheet.write(i+1, idx, dictColumnValues[ListColumnName[idx]])
     else:
-        print u"获取卖出日价格失败！",year, saleMonth, saleDay
+        print( u"获取卖出日价格失败！",year, saleMonth, saleDay)
 
 workbook.save('.\\data\\InvestResult.xls')
-print "Invest result has been wrotten to InvestResult.xls"
-print u"请确认已使用stockDataChecker.py进行数据检查！"
+print( "Invest result has been wrotten to InvestResult.xls")
+print( u"请确认已使用stockDataChecker.py进行数据检查！")
 
 
 
