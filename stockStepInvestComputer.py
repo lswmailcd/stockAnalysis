@@ -15,7 +15,7 @@ STARTMONTH = 12  #定投起始月份
 ENDYEAR = 2021  #定投结束年
 ENDMONTH = 4 #定投结束月份
 ENDDAY = 30 #定投卖出日
-BUYDAY=[10] #每月中的定投日期列表
+BUYDAY=(10,) #每月中的定投日期列表
 REPORTYEARLAST = 2020 #最新报表年份
 
 moneyLimit = 50000  #每次定投金额上限，实际金额根据买的股数取整
@@ -24,8 +24,8 @@ style_percent = xlwt.easyxf(num_format_str='0.00%')
 
 print( u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月---",ENDYEAR,u"年",ENDMONTH,u"月")
 print( u"***请确保已经使用stockDataChecker.py对数据进行检查***")
-str = input("不检查继续请按'回车',如需检查请按'c',退出请按'q': ")
-if str=="q" : exit(0)
+s = input("不检查继续请按'回车',如需检查请按'c',退出请按'q': ")
+if s=="q" : exit(0)
 
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('StepInvestResult')
@@ -54,7 +54,7 @@ for i in range(nrows):
         if yearToMarket == 0:
             print( code[count], name[count], u"上市时间不详!")
             exit(1)
-        if str == "c":
+        if s == "c":
             ck.subprocess(code[count], 2008, REPORTYEARLAST)
         count += 1
 
@@ -217,7 +217,7 @@ for i in range(count):
         dictColumnValues[u'最差收益额'] = worstLost
         dictColumnValues[u'最佳收益时间'] = bestRateTime
         dictColumnValues[u'最差收益时间'] = worstRateTime
-        s = "-".join(BUYDAY)
+        s = "-".join([str(x) for x in BUYDAY])
         dictColumnValues[u'投资日'] = s
         print( u'时长：',dictColumnValues[u'投资年数'],u'年 ',\
               u'投资收益率:',"%.2f%%" %(dictColumnValues[u'投资收益率']*100), \
