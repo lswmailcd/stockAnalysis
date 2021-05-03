@@ -9,8 +9,21 @@ import bs4
 import stockGlobalSpace as sG
 import logRecoder as log
 from stockCalender import stockCalender
+import pandas as pd
 
-ts.set_token('af19674c38f5c197b7bfc96e5353166998c66717ae9e82b6cc371ca2')
+
+def createTushare():
+    try:
+        if  sG.Tushare is None:
+            ts.set_token('af19674c38f5c197b7bfc96e5353166998c66717ae9e82b6cc371ca2')
+            sG.Tushare = ts.pro_api()
+            return sG.Tushare
+        else:
+            return sG.Tushare
+    except Exception as e:
+        print(e)
+        exit(1)
+
 
 def createCalender():
     try:
@@ -189,20 +202,21 @@ def getClosePrice(code, dORy, month=0, day=0, autp=None):
         if result is not None and result.closeprice is not None:
             return True, result.closeprice
         else:
-            data = ts.pro_api().daily(ts_code=code+getMarketSign(code), start_date=date, end_date=date)
-            if data.empty == False:
-                closeprice = data.values[0, 2]
-                sqlString = "insert into stockprice(code,closeprice,date) values('"
-                sqlString += code
-                sqlString += "',%s,'" %(closeprice)
-                sqlString += date
-                sqlString += "')"
-                try:
-                    ret = conn.execute(sqlString)
-                    log.writeUtfLog(sqlString)
-                except Exception as e:
-                    print(e)
-                return True, closeprice
+            return False, -1
+            # data = createTushare().daily(ts_code=code+getMarketSign(code), start_date=date, end_date=date)
+            # if data.empty == False:
+            #     closeprice = data.values[0, 2]
+            #     sqlString = "insert into stockprice(code,closeprice,date) values('"
+            #     sqlString += code
+            #     sqlString += "',%s,'" %(closeprice)
+            #     sqlString += date
+            #     sqlString += "')"
+            #     try:
+            #         ret = conn.execute(sqlString)
+            #         log.writeUtfLog(sqlString)
+            #     except Exception as e:
+            #         print(e)
+            #     return True, closeprice
     return False, -1
 
 
@@ -1382,7 +1396,7 @@ def checkDistrib(code, startYear, endYear):
                                 sqlString += code
                                 ret = conn.execute(sqlString)
                                 log.writeUtfLog(sqlString)
-                            print( year, "10派", px, "转", zg, "送", sg, "，", "分红登记日期：", dividenDate.encode('utf8'))
+                            print( year, "10派", px, "转", zg, "送", sg, "，", "分红登记日期：", dividenDate)
     except Exception as e:
         print(e)
         exit(1)
@@ -1394,7 +1408,7 @@ def splitDateString(date):
     day = date[8:]
     return int(year), int(month), int(day)
 
-def getDateString(year, month, day):
+def getDateString(year, month, day, short=False):
     date = "%s" % (year)
     date += "-"
     if month < 10:
@@ -1404,6 +1418,7 @@ def getDateString(year, month, day):
     if day < 10:
         date += "0"
     date += "%s" % (day)
+    if short: date = date.replace("-","")
     return date
 
 def getFundPrice(code, dORy, month=0, day=0, autp=None):
@@ -1560,6 +1575,70 @@ def getMarketSign(code):
     c = code[0]
     if c in ("0","3"): return ".SZ"
     if c in ("6"): return ".SH"
+
+def checkStockPrice(code, sDate, eDate):
+    sDateTu, eDateTu = sDate.replace("-", ""), eDate.replace("-", "")
+
+    if sDate>eDate:
+        print("checkStockPrice:查询时间有错！开始时间为{},结束时间为{}".format(sDate,eDate))
+
+    conn = createDBConnection()
+    sqlStringMin = "select * from stockprice where code={} order by date asc limit 1".format(code)
+
+    listPriceDF = []
+    try:
+        ret = conn.execute(sqlStringMin)
+        r = ret.first()
+        if r:
+            dateMin = r.date
+            sqlStringMax = "select * from stockprice where code={} order by date desc limit 1".format(code)
+            ret = conn.execute(sqlStringMax)
+            dateMax = ret.first().date
+            if sDate < dateMin:
+                y, m, d = splitDateString(dateMin)
+                y, m, d = createCalender().getPrevDay(y, m, d)
+                date = getDateString(y, m, d, short=True)
+                dfPriceMin = createTushare().daily(ts_code=code + getMarketSign(code), start_date=sDateTu, end_date=date)
+                if not dfPriceMin.empty:
+                    listPriceDF.append(dfPriceMin.loc[:, ['ts_code', 'close', 'trade_date']])
+                else:
+                    print("checkStockPrice:无法获取股票{}价格,开始时间为{},结束时间为{}的价格信息！".format(code,sDateTu,date))
+                    return
+            if dateMax < eDate:
+                y, m, d = splitDateString(dateMax)
+                y, m, d = createCalender().getNextDay(y, m, d)
+                date = getDateString(y, m, d, short=True)
+                dfPriceMax = createTushare().daily(ts_code=code + getMarketSign(code), start_date=date, end_date=eDateTu)
+                if not dfPriceMax.empty:
+                    listPriceDF.append(dfPriceMax.loc[:, ['ts_code', 'close', 'trade_date']])
+                else:
+                    print("checkStockPrice:无法获取股票{}价格,开始时间为{},结束时间为{}的价格信息！".format(code,date,eDateTu))
+                    return
+        else:#数据库没有任何该股票数据,向tushare获取数据
+            dfPrice = createTushare().daily(ts_code=code + getMarketSign(code), start_date=sDateTu, end_date=eDateTu)
+            if not dfPrice.empty:
+                listPriceDF.append(dfPrice.loc[:,['ts_code', 'close', 'trade_date']])
+            else:
+                print("checkStockPrice:无法获取股票{}价格,开始时间为{},结束时间为{}的价格信息！".format(code,sDateTu,eDateTu))
+                return
+    except Exception as e:
+        print(e)
+        exit(1)
+
+    if listPriceDF:
+        dfPrice = pd.concat(listPriceDF)
+
+        data=""
+        for row in dfPrice.iterrows():
+            data += "('{}',{},'{}-{}-{}'),".format(row[1][0][:-3],row[1][1],row[1][2][:4],row[1][2][4:6],row[1][2][6:])
+        sqlString = "insert into stockprice(code,closeprice,date) values{}".format(data[:-1])
+        try:
+            conn.execute(sqlString)
+            print(sqlString[:100]+"**********batch insert from tushare*********")
+            log.writeUtfLog(sqlString[:100]+"**********batch insert from tushare*********")
+        except Exception as e:
+            print(e)
+            print("checkStockPrice(),股价信息插入失败！")
 
 
 
