@@ -98,75 +98,47 @@ def getStockType(code):
     return ret.first().stockType
 
 
-def  getClosePriceForward(code, dORy, month=0, day=0, autp=None):#获取当年此月或此月以前最近的收盘价
-    cld = createCalender()
+def  getClosePriceForward(code, dORy, month=0, day=0):#获取当年此月或此月以前最近的收盘价
     if month==0:#输入的日期在dORy中，以字符串形式输入
-        y,m,d = splitDateString(dORy)
+        date = dORy
     else:
-        y=dORy; m=month; d=day
-    name, my, mm, md = getStockBasics(code)
-    if not cld.validDate(y, m, d) or getDateString(my,mm,md)>getDateString(y,m,d): return False,-1, m, d
+        date = getDateString(dORy, month, day)
 
-    yw, mw, dw = cld.getWorkdayForward(y, m, d)
-    foundData, closePrice = getClosePrice(code, yw, mw, dw, autp)
-    if foundData == False: #工作日找不到数据，该月可能出现了停牌或放假
-        while not foundData:
-            _, _, dw1 = cld.getWorkdayBackward(yw, mw, 1)
-            foundData1, _ = getClosePrice(code, yw, mw, dw1)
-            _,_,dw2=cld.getWorkdayForward(yw,mw,cld.getLastDay(yw, mw))
-            foundData2, _ = getClosePrice(code, yw, mw, dw2)
-            if (not foundData1) and (not foundData2): #整月停牌,检查前一月是否停牌
-                mw -= 1
-                if mw<=0 :
-                    yw-=1
-                    mw = 12
-            elif foundData1 and not foundData2:#月初不停牌，月末停牌
-                dt = int((dw1+dw)/2)
-                _, _, dt = cld.getWorkdayBackward(yw, mw, dt)
-                foundData, _ = getClosePrice(code, yw, mw, dt)
-                if not foundData:
-                    while not foundData:
-                        dt -= 1
-                        foundData, closePrice = getClosePrice(code, yw, mw, dt)
-                else:
-                    dt = dw
-                    foundData = False
-                    while not foundData:
-                        dt -= 1
-                        foundData, closePrice = getClosePrice(code, yw, mw, dt)
-                return foundData, closePrice, mw, dt
-            elif not foundData1 and foundData2:#月初停牌,月末不停牌
-                dt = int((dw1+dw)/2)
-                _, _, dt = cld.getWorkdayForward(yw, mw, dt)
-                foundData, _ = getClosePrice(code, yw, mw, dt)
-                if not foundData:
-                    while not foundData:
-                        dt += 1
-                        foundData, closePrice = getClosePrice(code, yw, mw, dt)
-                else:
-                    dt = dw
-                    foundData = False
-                    while not foundData:
-                        dt -= 1
-                        foundData, closePrice = getClosePrice(code, yw, mw, dt)
-                return foundData, closePrice, mw, dt
-            else:#月初和月末都没有停牌
-                dt = int((dw1+dw)/2)
-                _, _, dt = cld.getWorkdayBackward(yw, mw, dt)
-                foundData, _ = getClosePrice(code, yw, mw, dt)
-                if not foundData:
-                    while not foundData:
-                        dt -= 1
-                        foundData, closePrice = getClosePrice(code, yw, mw, dt)
-                else:
-                    dt = dw
-                    foundData = False
-                    while not foundData:
-                        dt -= 1
-                        foundData, closePrice = getClosePrice(code, yw, mw, dt)
-                return foundData, closePrice, mw, dt
+    sqlString = "select min(date) as sd, max(date) as ed from stockprice where code='{}'".format(code)
+    conn = createDBConnection()
+    try:
+        ret = conn.execute(sqlString)
+        r = ret.first()
+    except Exception as e:
+        print(e,"数据表stockprice访问出错！")
+        return False, -1, None
+
+    if date<r.sd:
+        print("获取的日期小于{}，请检查是否获得最新股价数据！".format(r.sd,r.ed))
+        return False, -1, None
     else:
-        return foundData, closePrice, mw, dw
+        if date >r.ed: date=r.ed
+        sqlString = "select closeprice, date from stockprice where code='{}' and date='{}'".format(code, date)
+        try:
+            ret = conn.execute(sqlString)
+            r = ret.first()
+        except Exception as e:
+            print(e, "数据表stockprice访问出错！")
+            return False, -1, None
+        if r:
+            return True, r.closeprice, r.date
+        else:#所找股票价格的日期不在stockprice当前股票价格日期中
+            sqlString = "select closeprice, date from stockprice where code='{}' and date<'{}' order by date desc limit 1".format(code, date)
+            try:
+                ret = conn.execute(sqlString)
+                r = ret.first()
+            except Exception as e:
+                print(e, "数据表stockprice访问出错！")
+                return False, -1, None
+            if r:
+                return True, r.closeprice, r.date
+
+    return False, -1, None
 
 def getClosePrice(code, dORy, month=0, day=0, autp=None):
     if month==0:#输入的日期在dORy中，以字符串形式输入
@@ -190,40 +162,50 @@ def getClosePrice(code, dORy, month=0, day=0, autp=None):
             return True, result.closeprice
         else:
             return False, -1
-            # data = createTushare().daily(ts_code=code+getMarketSign(code), start_date=date, end_date=date)
-            # if data.empty == False:
-            #     closeprice = data.values[0, 2]
-            #     sqlString = "insert into stockprice(code,closeprice,date) values('"
-            #     sqlString += code
-            #     sqlString += "',%s,'" %(closeprice)
-            #     sqlString += date
-            #     sqlString += "')"
-            #     try:
-            #         ret = conn.execute(sqlString)
-            #         log.writeUtfLog(sqlString)
-            #     except Exception as e:
-            #         print(e)
-            #     return True, closeprice
     return False, -1
 
 
-def  getClosePriceBackward(code, dORy, month=0, day=0, autp=None): #获取此日或此日后该月最近的一个交易日的收盘价
-    foundData = False
+def  getClosePriceBackward(code, dORy, month=0, day=0): #获取此日或此日后该月最近的一个交易日的收盘价
     if month==0:#输入的日期在dORy中，以字符串形式输入
-        y,m,d = createCalender().splitDateString(dORy)
+        date = dORy
     else:
-        y=dORy; m=month; d=day
-    while foundData==False and createCalender().validDate(y,m,d):
-        date = getDateString(y, m, d)
-        foundData, closeprice = getClosePrice(code, date )
-        if not foundData:
-            m1, d1 = m, d
-            y, m, d = createCalender().getNextWorkday(y,m,d)
-            if m1==m and d1==d: break
-    if foundData == True:
-        return foundData, closeprice, m, d
+        date = getDateString(dORy, month, day)
+
+    sqlString = "select min(date) as sd, max(date) as ed from stockprice where code='{}'".format(code)
+    conn = createDBConnection()
+    try:
+        ret = conn.execute(sqlString)
+        r = ret.first()
+    except Exception as e:
+        print(e,"数据表stockprice访问出错！")
+        return False, -1, None
+
+    if date>r.ed:
+        print("获取的日期不在时间范围：{}---{}内，请检查是否获得最新股价数据！".format(r.sd,r.ed))
+        return False, -1, None
     else:
-        return foundData, -1, m, d
+        if date<r.sd: date = r.sd
+        sqlString = "select closeprice,date from stockprice where code='{}' and date='{}'".format(code, date)
+        try:
+            ret = conn.execute(sqlString)
+            r = ret.first()
+        except Exception as e:
+            print(e, "数据表stockprice访问出错！")
+            return False, -1, None
+        if r:
+            return True, r.closeprice, r.date
+        else:#所找股票价格的日期不在stockprice当前股票价格日期中
+            sqlString = "select closeprice, date from stockprice where code='{}' and date>'{}' order by date asc limit 1".format(code, date)
+            try:
+                ret = conn.execute(sqlString)
+                r = ret.first()
+            except Exception as e:
+                print(e, "数据表stockprice访问出错！")
+                return False, -1, None
+            if r:
+                return True, r.closeprice, r.date
+
+    return False, -1, None
 
 def getStockEPSTTM(code, year, quarter):
     if quarter == 4:
@@ -1390,10 +1372,13 @@ def checkDistrib(code, startYear, endYear):
     return True
 
 def splitDateString(date):
-    year = date[:4]
-    month = date[5:7]
-    day = date[8:]
-    return int(year), int(month), int(day)
+    if date:
+        year = date[:4]
+        month = date[5:7]
+        day = date[8:]
+        return int(year), int(month), int(day)
+    else:
+        return 0,0,0
 
 def getDateString(year, month, day, short=False):
     date = "%s" % (year)

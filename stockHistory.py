@@ -11,10 +11,10 @@ import matplotlib.pyplot as plt
 import stockTools as sT
 import stockDataChecker as ck
 
-code = "000333"
+code = "300003"
 REPORTYEARLAST = 2020 #最新年报时间
 
-YEARSTART = 2013#统计起始时间
+YEARSTART = 2009#统计起始时间
 DATA2WATCH =[]#指定观察时间点
 #贵州茅台["2018-06-12","2015-05-25","2012-07-13"]
 #五粮液["2018-01-15","2015-06-08","2007-10-15"]
@@ -98,9 +98,10 @@ for year in range(YEARSTART, y+1):
     EPSTTMdiscountList.append(epsdic)
     print(strInfo)
     if year>LASTYEAR:
-        _, closePrice, _, _ = sT.getClosePriceForward(code, date )
+        _, closePrice, dRet = sT.getClosePriceForward(code, date )
     else:
-        _, closePrice, m2, d2 = sT.getClosePriceForward(code, year, 12, 31)
+        _, closePrice, dRet = sT.getClosePriceForward(code, year, 12, 31)
+    y2, m2, d2 = sT.splitDateString(dRet)
     PEList.append(0 if EPS<=0 else closePrice / EPS)
     PEDiscList.append(0 if epsdic<=0 else closePrice / epsdic)
     PriceList.append(closePrice * totalStock)  # 得到当年总市值

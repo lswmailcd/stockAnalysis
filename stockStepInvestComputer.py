@@ -3,17 +3,16 @@
 import os
 from sqlalchemy import create_engine
 import numpy as np
-import tushare as ts
 import stockTools as sT
 import xlrd
 import xlwt
 import time
 import stockDataChecker as ck
 
-STARTYEAR = 2020 #定投起始年
-STARTMONTH = 12  #定投起始月份
-ENDYEAR = 2021  #定投结束年
-ENDMONTH = 4 #定投结束月份
+STARTYEAR = 2010 #定投起始年
+STARTMONTH = 1  #定投起始月份
+ENDYEAR = 2015  #定投结束年
+ENDMONTH = 5 #定投结束月份
 ENDDAY = 30 #定投卖出日
 BUYDAY=(10,) #每月中的定投日期列表
 REPORTYEARLAST = 2020 #最新报表年份
@@ -131,14 +130,14 @@ for i in range(count):
         bDistrib = False
         for month in range(startMonth,endMonth,1):
             for tradeDay in BUYDAY:
-                foundData,closePrice,actualMonth, actualDay=sT.getClosePriceBackward(code[i], year, month, tradeDay)
-                #print( closePrice,sT.getDateString(year,month,actualDay)
+                foundData,closePrice, actualDate=sT.getClosePriceBackward(code[i], year, month, tradeDay)
+                actY, actM, actD = sT.splitDateString(actualDate)
                 if foundData==False:
                     print( "WARNING:",year, month, u"获取连网股价失败！可能此月股票停牌，暂停定投！")
                     continue
                 # 如果该月是分红月，且不是最后一年就计算此年的分红配送（最后一年年报可能未出）
                 # 如果价格日期大于分红登记日期表示已经除权除息，则需要计算分红送转后再计算回撤
-                if (month == m and actualDay>d or month == m+1 and bDistrib==False) and year <= REPORTYEARLAST:
+                if (month == m and actD>d or month == m+1 and bDistrib==False) and year <= REPORTYEARLAST:
                     bDistrib = True
                     #print( year,month,actualDay, "计算分红" , y,m,d
                     # 计算分红送转
@@ -159,7 +158,7 @@ for i in range(count):
                 nCapitalInvest += nCapitalInvestThisMonth  #本月投入成本
                 profit = nStockTotal*closePrice+ndividend-nCapitalInvest
                 rate = profit/nCapitalInvest
-                tradeDate = sT.getDateString(year, month, actualDay)
+                tradeDate = sT.getDateString(year, month, actD)
                 if lostMoneyMax>profit:#由于计算时只计算检查日时的最大回撤，可能有比检查日回撤更大的时候，尤其是最后卖出时。
                     lostMoneyMax = profit
                     lostMoneyMaxCaption = nCapitalInvest
@@ -183,12 +182,13 @@ for i in range(count):
     else:
         year = ENDYEAR
         month = ENDMONTH+1
-    foundData,closePrice,actualMonth, day=sT.getClosePriceBackward(code[i],ENDYEAR, ENDMONTH, ENDDAY)
+    foundData,closePrice, actualDate=sT.getClosePriceBackward(code[i],ENDYEAR, ENDMONTH, ENDDAY)
+    actY, actM, actD = sT.splitDateString(actualDate)
     if foundData==True:
         nCapitalTotal = nStockTotal*closePrice+ndividend
         income = nCapitalTotal-nCapitalInvest
         incomeRate = income/nCapitalInvest
-        investPeriod = round(sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,1,year,actualMonth,day)/365.0, 2)
+        investPeriod = round(sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,1,year,actM, actD)/365.0, 2)
         dictColumnValues[u'代码'] = code[i]
         dictColumnValues[u'名称'] = name[i]
         dictColumnValues[u'投资年数'] = investPeriod
@@ -228,7 +228,7 @@ for i in range(count):
             else:
                 worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]])
     else:
-        print( u"获取卖出日价格失败！",year, month, day)
+        print( u"获取卖出日价格失败！",actY, actM, actD)
 workbook.save('.\\data\\StepInvestResult.xls')
 print( "Invest result has been wrotten to StepInvestResult.xls")
 print( u"请确认已使用stockDataChecker.py进行数据检查！")
