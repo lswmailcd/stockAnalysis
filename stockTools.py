@@ -55,35 +55,22 @@ def createDBConnection():
 def parseDistrib(distrib):#返回每股分红金额和转送股数
     nMoney = 0.0
     nStock = 0.0
+    listSZ=[]
     if distrib!=None:
-        iPos0 = distrib.find("派")
-        iPos1 = distrib.find("转")
-        iPos2 = distrib.find("送")
-        if iPos1>iPos2:
-            temp = iPos1
-            iPos1 = iPos2
-            iPos2 = temp
-        if iPos0!=-1: #有分红
-            if iPos1==-1 and iPos2==-1: #无转送
-                nMoney = float(distrib[iPos0+3:])
-            elif iPos1!=-1 and iPos2==-1: #有转无送
-                nMoney = float(distrib[iPos0+3:iPos1])
-                nStock = float(distrib[iPos1+3:])
-            elif iPos1==-1 and iPos2!=-1: #无转有送
-                nMoney = float(distrib[iPos0+3:iPos2])
-                nStock = float(distrib[iPos2+3:])
-            else:#有转有送
-                nMoney = float(distrib[iPos0+3:iPos1])
-                nStock = float(distrib[iPos1+3:iPos2])
-                nStock += float(distrib[iPos2+3:])
-        else:#无分红
-            if iPos1 != -1 and iPos2 == -1:  # 有转无送
-                nStock = float(distrib[iPos1+3:])
-            elif iPos1 == -1 and iPos2 != -1:  # 无转有送
-                nStock = float(distrib[iPos2+3:])
-            else:  # 有转有送
-                nStock = float(distrib[iPos1+3:iPos2])
-                nStock += float(distrib[iPos2+3:])
+        d = distrib.replace("派","-")
+        d = d.replace("送", "-")
+        d = d.replace("转", "-")
+        dlist = d.split("-")
+        dlist =[float(x) for x in dlist]
+
+        pos = distrib.find("派")
+        if pos!=-1: nMoney = dlist[1]
+
+        listSZ.append(distrib.find("送"))
+        listSZ.append(distrib.find("转"))
+        if listSZ.count(-1) == 1: nStock=dlist[-1]
+        elif listSZ.count(-1) == 0: nStock = sum(dlist[-2:])
+
         #计算每股分红送转情况
         nMoney /=10.0
         nStock /=10.0
@@ -1602,8 +1589,8 @@ def checkStockPrice(code, sDate, eDate):
                 if not dfPriceMin.empty:
                     listPriceDF.append(dfPriceMin.loc[:, ['ts_code', 'close', 'trade_date']])
                 else:
-                    print("checkStockPrice:无法获取股票{}价格,开始时间为{},结束时间为{}的价格信息！".format(code,sDateTu,date))
-                    return
+                    print("checkStockPrice:无法获取股票 {} 价格,开始时间为 {},结束时间为 {} 的价格信息！"\
+                          .format(getStockNameByCode(code),sDateTu,date))
             if dateMax < eDate:
                 y, m, d = splitDateString(dateMax)
                 y, m, d = createCalender().getNextDay(y, m, d)
@@ -1612,15 +1599,15 @@ def checkStockPrice(code, sDate, eDate):
                 if not dfPriceMax.empty:
                     listPriceDF.append(dfPriceMax.loc[:, ['ts_code', 'close', 'trade_date']])
                 else:
-                    print("checkStockPrice:无法获取股票{}价格,开始时间为{},结束时间为{}的价格信息！".format(code,date,eDateTu))
-                    return
+                    print("checkStockPrice:无法获取股票 {} 价格,开始时间为 {},结束时间为 {} 的价格信息！"\
+                          .format(getStockNameByCode(code),date,eDateTu))
         else:#数据库没有任何该股票数据,向tushare获取数据
             dfPrice = createTushare().daily(ts_code=code + getMarketSign(code), start_date=sDateTu, end_date=eDateTu)
             if not dfPrice.empty:
                 listPriceDF.append(dfPrice.loc[:,['ts_code', 'close', 'trade_date']])
             else:
-                print("checkStockPrice:无法获取股票{}价格,开始时间为{},结束时间为{}的价格信息！".format(code,sDateTu,eDateTu))
-                return
+                print("checkStockPrice:无法获取股票 {} 价格,开始时间为 {},结束时间为 {} 的价格信息！"\
+                      .format(getStockNameByCode(code),sDateTu,eDateTu))
     except Exception as e:
         print(e)
         exit(1)
@@ -1638,7 +1625,7 @@ def checkStockPrice(code, sDate, eDate):
             log.writeUtfLog(sqlString[:100]+"**********batch insert from tushare*********")
         except Exception as e:
             print(e)
-            print("checkStockPrice(),股价信息插入失败！")
+            print("checkStockPrice():股价信息插入失败！")
 
 
 
