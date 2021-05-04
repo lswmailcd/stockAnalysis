@@ -109,6 +109,9 @@ def  getClosePriceForward(code, dORy, month=0, day=0):#获取当年此月或此�
     try:
         ret = conn.execute(sqlString)
         r = ret.first()
+        if r.sd is None:
+            print("getClosePriceBackward()出错！，请检查 {} 股票价格是否存在！".format(code))
+            exit(1)
     except Exception as e:
         print(e,"数据表stockprice访问出错！")
         return False, -1, None
@@ -176,6 +179,9 @@ def  getClosePriceBackward(code, dORy, month=0, day=0): #获取此日或此日�
     try:
         ret = conn.execute(sqlString)
         r = ret.first()
+        if r.sd is None:
+            print("getClosePriceBackward()出错！，请检查 {} 股票价格是否存在！".format(code))
+            exit(1)
     except Exception as e:
         print(e,"数据表stockprice访问出错！")
         return False, -1, None
@@ -1549,25 +1555,22 @@ def getMarketSign(code):
     if c in ("6"): return ".SH"
 
 def checkStockPrice(code, sDate, eDate):
+    if sDate>eDate:
+        print("checkStockPrice:查询时间有错！开始时间为 {},结束时间为 {}".format(sDate,eDate))
+        return
+
     sDateTu, eDateTu = sDate.replace("-", ""), eDate.replace("-", "")
 
-    if sDate>eDate:
-        print("checkStockPrice:查询时间有错！开始时间为{},结束时间为{}".format(sDate,eDate))
-
     conn = createDBConnection()
-    sqlStringMin = "select * from stockprice where code={} order by date asc limit 1".format(code)
+    sqlStringMin = "select min(date) as dateMin, max(date) as dateMax from stockprice where code={}".format(code)
 
     listPriceDF = []
     try:
         ret = conn.execute(sqlStringMin)
         r = ret.first()
-        if r:
-            dateMin = r.date
-            sqlStringMax = "select * from stockprice where code={} order by date desc limit 1".format(code)
-            ret = conn.execute(sqlStringMax)
-            dateMax = ret.first().date
-            if sDate < dateMin:
-                y, m, d = splitDateString(dateMin)
+        if r.dateMin:
+            if sDate < r.dateMin:
+                y, m, d = splitDateString(r.dateMin)
                 y, m, d = createCalender().getPrevDay(y, m, d)
                 date = getDateString(y, m, d, short=True)
                 dfPriceMin = createTushare().daily(ts_code=code + getMarketSign(code), start_date=sDateTu, end_date=date)
@@ -1576,8 +1579,8 @@ def checkStockPrice(code, sDate, eDate):
                 else:
                     print("checkStockPrice:无法获取股票 {} 价格,开始时间为 {},结束时间为 {} 的价格信息！"\
                           .format(getStockNameByCode(code),sDateTu,date))
-            if dateMax < eDate:
-                y, m, d = splitDateString(dateMax)
+            if r.dateMax < eDate:
+                y, m, d = splitDateString(r.dateMax)
                 y, m, d = createCalender().getNextDay(y, m, d)
                 date = getDateString(y, m, d, short=True)
                 dfPriceMax = createTushare().daily(ts_code=code + getMarketSign(code), start_date=date, end_date=eDateTu)

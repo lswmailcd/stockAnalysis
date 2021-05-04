@@ -26,11 +26,6 @@ def subprocess(code, sYear, eYear):
         sT.checkDistrib(code, sYear, eYear)
     except Exception as e:
         print(e)
-    print("*******checking price*******")
-    try:
-        sT.checkStockPrice(code, sT.getDateString(sYear,1,1), sT.getDateString(eYear,12,31))
-    except Exception as e:
-        print(e)
 
     print("*******checking DONE*******")
 

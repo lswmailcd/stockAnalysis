@@ -9,15 +9,15 @@ import xlwt
 import time
 import stockDataChecker as ck
 
-STARTYEAR = 2010 #定投起始年
-STARTMONTH = 1  #定投起始月份
-ENDYEAR = 2015  #定投结束年
-ENDMONTH = 5 #定投结束月份
+STARTYEAR = 2020 #定投起始年
+STARTMONTH = 12  #定投起始月份
+ENDYEAR = 2021  #定投结束年
+ENDMONTH = 4 #定投结束月份
 ENDDAY = 30 #定投卖出日
 BUYDAY=(10,) #每月中的定投日期列表
 REPORTYEARLAST = 2020 #最新报表年份
 
-moneyLimit = 50000  #每次定投金额上限，实际金额根据买的股数取整
+moneyLimit = 10000  #每次定投金额上限，实际金额根据买的股数取整
 
 style_percent = xlwt.easyxf(num_format_str='0.00%')
 
@@ -53,6 +53,8 @@ for i in range(nrows):
         if yearToMarket == 0:
             print( code[count], name[count], u"上市时间不详!")
             exit(1)
+        sT.checkStockPrice(code[count], sT.getDateString(STARTYEAR, STARTMONTH, 1), \
+                           sT.getDateString(ENDYEAR, ENDMONTH, ENDDAY))
         if s == "c":
             ck.subprocess(code[count], 2008, REPORTYEARLAST)
         count += 1

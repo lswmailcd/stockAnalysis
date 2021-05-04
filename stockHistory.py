@@ -33,7 +33,7 @@ name, yearToMarket, _, _ = sT.getStockBasics(code)
 if yearToMarket == 0:
     print( code, name, u"上市时间不详!")
     exit(1)
-print( code, name)
+print( "{}:{},上市年份{}年".format(code, name, yearToMarket))
 if yearToMarket>=YEARSTART: YEARSTART = yearToMarket+1
 sG.lock.acquire()
 strInfo = input("不检查历史数据继续请按'回车',如需检查请按'c',退出请按'q': ")
@@ -41,6 +41,8 @@ sG.lock.release()
 if strInfo=="q" : exit(0)
 if strInfo=="c" :
     ck.subprocess(code, 2008, y)
+
+sT.checkStockPrice(code, sT.getDateString(YEARSTART,1,1), sT.getDateString(y,12,31))
 
 YEARList = []
 PEList = []
