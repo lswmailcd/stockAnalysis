@@ -187,7 +187,7 @@ def  getClosePriceBackward(code, dORy, month=0, day=0): #获取此日或此日�
         return False, -1, None
 
     if date>r.ed:
-        print("获取的日期不在时间范围：{}---{}内，请检查是否获得最新股价数据！".format(r.sd,r.ed))
+        print("获取的日期{}不在时间范围：{}---{}内，请检查是否获得最新股价数据！".format(date, r.sd, r.ed))
         return False, -1, None
     else:
         if date<r.sd: date = r.sd
@@ -1427,7 +1427,7 @@ def getFundPrice(code, dORy, month=0, day=0, autp=None):
             url = url + "&edate="
             url = url + date
             url = url + "&rt=0.19110643402290917"
-            data = urllib.request.urlopen(url).read().decode("gbk")
+            data = urllib.request.urlopen(url).read().decode("utf8")
             bs = bs4.BeautifulSoup(data, "html.parser")
             try:
                 price = float(bs.find_all("td")[2].get_text())

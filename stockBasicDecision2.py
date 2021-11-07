@@ -92,11 +92,11 @@ try:
                 worksheet.write(stockNumValid, 3,  eps[i])
                 worksheet.write(stockNumValid, 4, pe[i]*discountRate)
             #print code[i], name[i], pe[i]
-except Exception, e:
+except Exception as e:
     workbook.save('.\\data\\stockBasicToday.xls')
     normalEnd = False
-    print "ERROR: stock basic info has been wrotten to excel files patially!"
-    print e
+    print("ERROR: stock basic info has been wrotten to excel files patially!")
+    print(e)
 if normalEnd:
     workbook.save('.\\data\\stockBasicToday.xls')
-    print "stock basic info has been wrotten to excel files"
+    print("stock basic info has been wrotten to excel files")

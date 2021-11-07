@@ -17,7 +17,7 @@ def getClosePrice(d):
     return ustr[d:d1]
 
 #分月统计各类股票和基金的累积净值
-date = time.strftime('%Y-%m-%d',time.localtime(time.time()))#"2018-05-31"#
+date = "2021-01-29"#time.strftime('%Y-%m-%d',time.localtime(time.time()))#"2018-05-31"#
 y,m,d=sT.splitDateString(date)
 #注意：此程序不要使用MYSQL数据进行查询股票的定义，会使查询股票顺序无法控制！！！！！！！！！！
 data = xlrd.open_workbook('.\\data\\data.xls')
@@ -58,7 +58,7 @@ for i in range(count):
                 y, m, d = sT.createCalender().getPrevWorkday(y, m, d)
                 dateToSearch = sT.getDateString(y, m, d)
     elif market[i]!="fund":
-        found,closePrice,am,actualDay = sT.getClosePriceForward( code[i],date, autp=None )
+        found,closePrice,am,actualDay = sT.getClosePriceForward( code[i],date )
         dateToSearch = sT.getDateString(y, am, actualDay)
         if found==True:
             foundData = 1

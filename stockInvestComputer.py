@@ -11,12 +11,12 @@ import stockDataChecker as ck
 
 style_percent = xlwt.easyxf(num_format_str='0.00%')
 
-STARTYEAR = 2021 #投资起始年
-STARTMONTH = 2#投资起始月份
-buyDay = 26    #投资起始日期
-ENDYEAR = 2021  #投资结束年
-ENDMONTH = 3  #投资结束月份
-saleDay = 31  #投资结束日期
+STARTYEAR = 2010 #投资起始年
+STARTMONTH = 6#投资起始月份
+buyDay = 1    #投资起始日期
+ENDYEAR = 2014  #投资结束年
+ENDMONTH = 6  #投资结束月份
+saleDay = 29  #投资结束日期
 checkDay = 10  #回撤检查日
 REPORTYEARLAST = 2020 #最新报表年份
 
@@ -68,11 +68,11 @@ for i in range(count):
         worksheet.write(i + 1, 0, "")
         continue
     foundData = False
-    foundData,closePrice,tm, actualbuyDay=sT.getClosePriceForward(code[i], STARTYEAR , STARTMONTH, buyDay)
+    foundData,closePrice,actualbuyDate=sT.getClosePriceForward(code[i], STARTYEAR , STARTMONTH, buyDay)
     if foundData:
         nCapitalInvest = closePrice*nStockInvest
     else:
-        print( "ERROR:",code[i],name[i],sT.getDateString(STARTYEAR,STARTMONTH,actualbuyDay),"未找到该股交易信息")
+        print( "ERROR:",code[i],name[i],actualbuyDate,"未找到该股交易信息")
         continue
     ndividend = 0.0  # 总分红
     nStockTotal = nStockInvest  # 最终获得股数，初始为购买的股数
@@ -122,7 +122,7 @@ for i in range(count):
         else:
             endMonth = 13
         for m in range(startMonth,endMonth):
-            foundData, price, tm, d = sT.getClosePriceForward( code[i], year, m, checkDay )
+            foundData, price, date = sT.getClosePriceForward( code[i], year, m, checkDay )
             if foundData:
                 if bDividen and (sT.getDateString(year, m, checkDay) <= dividenTime ):
                     lost = nStockTotalBeforeDividen * price + ndividend - nCapitalInvest
@@ -131,9 +131,9 @@ for i in range(count):
                 if lostMoneyMax > lost:#由于计算时只计算检查日时的最大回撤，可能有比检查日回撤更大的时候，尤其是最后卖出时。
                     lostMoneyMax = lost
                     lostMoneyMaxCaption = nCapitalInvest
-                    lostMoneyMaxTime = sT.getDateString(year, m, d)
+                    lostMoneyMaxTime = date
 
-    foundData,closePrice,saleMonth, actualsaleDay=sT.getClosePriceBackward(code[i], ENDYEAR, ENDMONTH, saleDay)
+    foundData,closePrice,date=sT.getClosePriceBackward(code[i], ENDYEAR, ENDMONTH, saleDay)
     #year = ENDYEAR
     if foundData==True:
         nCapitalTotal = nStockTotal*closePrice+ndividend
@@ -144,7 +144,7 @@ for i in range(count):
         dictColumnValues[u'名称'] = name[i]
         dictColumnValues[u'投资时长（年）'] = investPeriod
         dictColumnValues[u'投资起始时间'] = sT.getDateString(STARTYEAR,STARTMONTH,buyDay)
-        dictColumnValues[u'卖出股份时间'] = sT.getDateString(year,saleMonth,actualsaleDay)
+        dictColumnValues[u'卖出股份时间'] = date #sT.getDateString(year,saleMonth,actualsaleDay)
         dictColumnValues[u'投资总成本'] = nCapitalInvest
         dictColumnValues[u'投资总市值'] = nCapitalTotal
         dictColumnValues[u'投资总收益'] = income

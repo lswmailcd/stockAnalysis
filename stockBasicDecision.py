@@ -12,9 +12,10 @@ from sqlalchemy import create_engine
 import stockTools as st
 
 discountRate = 0.0395
-date = "2021-02-10"#time.strftime('%Y-%m-%d',time.localtime(time.time()))#"2017-11-13"
+date = "2021-11-03"#time.strftime('%Y-%m-%d',time.localtime(time.time()))#"2017-11-13"
+filename = '.\\data\\stockPETTM.xls'
 workbook = xlwt.Workbook(encoding = 'ascii')
-worksheet = workbook.add_sheet('stockPETTM')
+worksheet = workbook.add_sheet(date)
 worksheet.write(0, 0, u"代码")
 worksheet.write(0, 1, u"名称")
 worksheet.write(0, 2, u"市盈率")
@@ -28,7 +29,7 @@ code = []
 name = []
 for i in range(stockNum):
     code.append(data[i][0])
-    name.append(data[i][1].decode('utf8'))
+    name.append(data[i][1])
 normalEnd = True
 stockNumValid = 0
 start = False
@@ -36,18 +37,12 @@ try:
     for i in range(stockNum):
         if start == False and code[i] != "000001":
             continue
+        st.checkStockPrice(code[i], date, date)
         start = True
         found, price = st.getClosePrice(code[i], date )
+        #print(code[i],name[i])
         if found:
-            # sqlString = 'select eps from stockprofit_2018_4 where code=' + code[i]
-            # ret = conn.execute(sqlString)
-            # if ret.rowcount!=0:
-            #     eps = ret.first().eps
-            #     if eps<=0: continue
-            # else:
-            #     pe = -1000
-            #     continue
-            sqlString = 'select eps from stockprofit_2019_3 where code=' + code[i]
+            sqlString = 'select eps from stockprofit_2020_3 where code=' + code[i]
             ret = conn.execute(sqlString)
             if ret.rowcount!=0:
                 epsSub2 = ret.first().eps
@@ -55,7 +50,7 @@ try:
             else:
                 pe = -1000
                 continue
-            sqlString = 'select eps from stockprofit_2019_4 where code=' + code[i]
+            sqlString = 'select eps from stockprofit_2020_4 where code=' + code[i]
             ret = conn.execute(sqlString)
             if ret.rowcount!=0:
                 epsSub1 = ret.first().eps
@@ -63,7 +58,7 @@ try:
             else:
                 pe = -1000
                 continue
-            sqlString = 'select eps from stockprofit_2020_3 where code=' + code[i]
+            sqlString = 'select eps from stockprofit_2021_3 where code=' + code[i]
             ret = conn.execute(sqlString)
             if ret.rowcount!=0:
                 epsLatest = ret.first().eps
@@ -79,12 +74,11 @@ try:
                 worksheet.write(stockNumValid, 1, name[i])
                 worksheet.write(stockNumValid, 2, pe)
                 worksheet.write(stockNumValid, 3,  eps)
-            #print code[i], name[i], pe
-except Exception, e:
-    workbook.save('.\\data\\stockPETTM.xls')
+except Exception as e:
+    workbook.save(filename)
     normalEnd = False
-    print "ERROR: stock basic info has been wrotten to excel files partially!"
-    print e
+    print("ERROR: stock basic info has been wrotten to excel file partially!")
+    print(e)
 if normalEnd:
-    workbook.save('.\\data\\stockPETTM.xls')
-    print "stock basic info has been wrotten to excel files"
+    workbook.save(filename)
+    print("stock basic info has been wrotten to excel file.")

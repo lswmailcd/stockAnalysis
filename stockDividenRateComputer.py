@@ -9,8 +9,9 @@ import xlrd
 import xlwt
 import stockDataChecker as ck
 
-date="2019-01-25"
-dividenYear = 2017
+date="2014-12-31"
+y,m,d = sT.splitDateString(date)
+dividenYear = y+1
 moneyInvest = 10000.0
 
 print u"***请确保已经使用stockDataChecker.py对数据进行检查***"
@@ -72,7 +73,7 @@ for i in range(nrows):
         bDividen = False  # 无分红
     else:
         # 计算分红送转
-        r, s = sT.getDistrib(resultDistrib.distrib)
+        r, s = sT.getDistrib(resultDistrib.distrib, distribYear)
         dividenTotal += r*nStock
         print code[i], name[i], "distrib=",r,"股息率: %.2f%%" %(r/price*100.0)
 
