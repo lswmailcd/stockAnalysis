@@ -1509,16 +1509,16 @@ def checkFundDistrib(code):
                 sqlString += "(code,dateReg,dateDividen,dateBonus,bonus) values('"
                 sqlString += code
                 sqlString += "','"
-                sqlString += d[0].encode('utf8')
+                sqlString += d[0]
                 sqlString += "','"
-                sqlString += d[1].encode('utf8')
+                sqlString += d[1]
                 sqlString += "','"
-                sqlString += d[3].encode('utf8')
+                sqlString += d[3]
                 sqlString += "',%s" % (d[2])
                 sqlString += ")"
                 try:
                     conn.execute(sqlString)
-                    log.writeUtfLog(sqlString.encode('utf8'))
+                    log.writeUtfLog(sqlString)
                 except Exception as e:
                     print(e)
                     print("checkFundDistrib(),基金分红信息插入失败")
