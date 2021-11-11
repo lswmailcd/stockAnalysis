@@ -9,17 +9,18 @@ import xlwt
 import time
 import stockDataChecker as ck
 
-STARTYEAR = 2020 #定投起始年
-STARTMONTH = 12  #定投起始月份
+STARTYEAR = 2021 #定投起始年
+STARTMONTH = 1  #定投起始月份
 ENDYEAR = 2021  #定投结束年
-ENDMONTH = 4 #定投结束月份
-ENDDAY = 30 #定投卖出日
+ENDMONTH = 11 #定投结束月份
+ENDDAY = 9 #定投卖出日
 BUYDAY=(10,) #每月中的定投日期列表
 REPORTYEARLAST = 2020 #最新报表年份
 
 moneyLimit = 10000  #每次定投金额上限，实际金额根据买的股数取整
 
 style_percent = xlwt.easyxf(num_format_str='0.00%')
+style_finance = xlwt.easyxf(num_format_str='￥#,##0.00')
 
 print( u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月---",ENDYEAR,u"年",ENDMONTH,u"月")
 print( u"***请确保已经使用stockDataChecker.py对数据进行检查***")
@@ -227,6 +228,12 @@ for i in range(count):
         for idx in range(len(ListColumnName)):
             if ListColumnName[idx].find(u'率') != -1:
                 worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]], style_percent)
+            elif ListColumnName[idx].find(u'投资总成本')!=-1 or ListColumnName[idx].find(u'投资总市值')!=-1 \
+                or ListColumnName[idx].find(u'投资总收益')!=-1 or ListColumnName[idx].find(u'平均年收益')!=-1 \
+                or ListColumnName[idx].find(u'分红')!=-1 or ListColumnName[idx].find(u'最佳收益额')!=-1 \
+                or ListColumnName[idx].find(u'最差收益额') != -1 or ListColumnName[idx].find(u'最大回撤额') != -1 \
+                or ListColumnName[idx].find(u'最大收益额') != -1:
+                worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]], style_finance)
             else:
                 worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]])
     else:
