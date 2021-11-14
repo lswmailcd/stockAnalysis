@@ -33,8 +33,6 @@ SALEYEAR = 2015  #卖出年
 SALEMONTH = 5  #卖出月份
 SALEDAY = 29  #卖出日
 
-
-
 print( u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", BUYDAY,u"日\
 ---",ENDYEAR,u"年",ENDMONTH,u"月", BUYDAY,u"日")
 
@@ -86,6 +84,7 @@ ListColumnName = [u'代码',u'名称',u'定投年数',u'持有年数',u'投资�
 for idx in range(len(ListColumnName)):
     worksheet.write(0, idx, ListColumnName[idx])
 
+lsStockInfo=[]
 for i in range(count):
     foundData = 0
     if code[i] == u'' : continue
@@ -216,19 +215,24 @@ for i in range(count):
     dictColumnValues[u'最差收益额'] = lostWorst
     dictColumnValues[u'最差收益时间'] = dateRateWorst
     dictColumnValues[u'投资日'] = BUYDAY
+
+    lsStockInfo.append( (dictColumnValues[u'投资收益率'], dictColumnValues) )
+
+lsStockInfo.sort( reverse=True )
+for i, stockInfo in enumerate(lsStockInfo):
     for idx in range(len(ListColumnName)):
         if ListColumnName[idx].find(u'率') != -1:
-            #print ListColumnName[idx].encode('utf8')
-            worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]], style_percent)
+            worksheet.write(i + 1, idx, stockInfo[1][ListColumnName[idx]], style_percent)
         elif ListColumnName[idx].find(u'投资总成本') != -1 or ListColumnName[idx].find(u'投资总市值') != -1 \
                 or ListColumnName[idx].find(u'投资总收益') != -1 or ListColumnName[idx].find(u'平均年收益') != -1 \
                 or ListColumnName[idx].find(u'分红') != -1 or ListColumnName[idx].find(u'最佳收益额') != -1 \
                 or ListColumnName[idx].find(u'最差收益额') != -1 or ListColumnName[idx].find(u'最大回撤额') != -1 \
                 or ListColumnName[idx].find(u'最大收益额') != -1:
-            worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]], style_finance)
+            worksheet.write(i + 1, idx, stockInfo[1][ListColumnName[idx]], style_finance)
         else:
-            worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]])
+            worksheet.write(i + 1, idx, stockInfo[1][ListColumnName[idx]])
 
+    rate = stockInfo[0]; ratePerYear=stockInfo[1][u'投资年化复合收益率']
     print( code[i], name[i], "总收益率：%.2f%%" % (rate * 100.0), "年化收益率：%.2f%%" % (ratePerYear * 100.0))
 
 workbook.save('.\\data\\dataResult.xls')
