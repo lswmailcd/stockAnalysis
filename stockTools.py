@@ -168,7 +168,7 @@ def getClosePrice(code, dORy, month=0, day=0, autp=None):
     return False, -1
 
 
-def  getClosePriceBackward(code, dORy, month=0, day=0): #获取此日或此日后该月最近的一个交易日的收盘价
+def  getClosePriceBackward(code, dORy, month=0, day=0): #获取此日或此日后最近的一个交易日的收盘价
     if month==0:#输入的日期在dORy中，以字符串形式输入
         date = dORy
     else:

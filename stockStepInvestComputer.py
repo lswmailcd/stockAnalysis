@@ -9,11 +9,11 @@ import xlwt
 import time
 import stockDataChecker as ck
 
-STARTYEAR = 2021 #定投起始年
-STARTMONTH = 1  #定投起始月份
-ENDYEAR = 2021  #定投结束年
-ENDMONTH = 11 #定投结束月份
-ENDDAY = 9 #定投卖出日
+STARTYEAR = 2011 #定投起始年
+STARTMONTH = 2  #定投起始月份
+ENDYEAR = 2015  #定投结束年
+ENDMONTH = 5 #定投结束月份
+ENDDAY = 29 #定投卖出日
 BUYDAY=(10,) #每月中的定投日期列表
 REPORTYEARLAST = 2020 #最新报表年份
 
@@ -23,6 +23,7 @@ style_percent = xlwt.easyxf(num_format_str='0.00%')
 style_finance = xlwt.easyxf(num_format_str='￥#,##0.00')
 
 print( u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月---",ENDYEAR,u"年",ENDMONTH,u"月")
+print("定投日期列表：",BUYDAY)
 print( u"***请确保已经使用stockDataChecker.py对数据进行检查***")
 s = input("不检查继续请按'回车',如需检查请按'c',退出请按'q': ")
 if s=="q" : exit(0)
@@ -84,6 +85,7 @@ for i in range(count):
     worstRateTime = ""
     bestRateTime = ""
     print( code[i],name[i])
+    bFirstInvest = True
     for year in range(STARTYEAR,ENDYEAR+1):
         # 检查本年分红送配情况
         distribYear = year-1
@@ -135,6 +137,11 @@ for i in range(count):
             for tradeDay in BUYDAY:
                 foundData,closePrice, actualDate=sT.getClosePriceBackward(code[i], year, month, tradeDay)
                 actY, actM, actD = sT.splitDateString(actualDate)
+                #如果得到的不是当年当月的日期，则说明股票没有正常交易，此月停止定投
+                if actY>year or actM>month: continue
+                if bFirstInvest:
+                    firstInvestYear = actY; firstInvestMonth = actM; firstInvestDay = actD
+                    bFirstInvest = False
                 if foundData==False:
                     print( "WARNING:",year, month, u"获取连网股价失败！可能此月股票停牌，暂停定投！")
                     continue
@@ -191,11 +198,11 @@ for i in range(count):
         nCapitalTotal = nStockTotal*closePrice+ndividend
         income = nCapitalTotal-nCapitalInvest
         incomeRate = income/nCapitalInvest
-        investPeriod = round(sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,1,year,actM, actD)/365.0, 2)
+        investPeriod = round(sT.createCalender().dayDiff(firstInvestYear,firstInvestMonth,firstInvestDay,year,actM, actD)/365.0, 2)
         dictColumnValues[u'代码'] = code[i]
         dictColumnValues[u'名称'] = name[i]
         dictColumnValues[u'投资年数'] = investPeriod
-        dictColumnValues[u'投资起始时间'] = sT.getDateString(STARTYEAR,STARTMONTH,1)
+        dictColumnValues[u'投资起始时间'] = sT.getDateString(firstInvestYear,firstInvestMonth,firstInvestDay)
         dictColumnValues[u'卖出股份时间'] = sT.getDateString(ENDYEAR,ENDMONTH,ENDDAY)
         dictColumnValues[u'投资总成本'] = nCapitalInvest
         dictColumnValues[u'投资总市值'] = nCapitalTotal
