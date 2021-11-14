@@ -9,11 +9,11 @@ import xlwt
 import time
 import stockDataChecker as ck
 
-STARTYEAR = 2011 #定投起始年
+STARTYEAR = 2021 #定投起始年
 STARTMONTH = 2  #定投起始月份
-ENDYEAR = 2015  #定投结束年
-ENDMONTH = 5 #定投结束月份
-ENDDAY = 29 #定投卖出日
+ENDYEAR = 2021 #定投结束年
+ENDMONTH = 11 #定投结束月份
+ENDDAY = 12 #定投卖出日
 BUYDAY=(10,) #每月中的定投日期列表
 REPORTYEARLAST = 2020 #最新报表年份
 
@@ -61,7 +61,7 @@ for i in range(nrows):
             ck.subprocess(code[count], 2008, REPORTYEARLAST)
         count += 1
 
-
+lsFundInfo=[]
 engine = create_engine('mysql://root:0609@127.0.0.1:3306/stockdatabase?charset=utf8', encoding='utf-8')
 conn = engine.connect()
 for i in range(count):
@@ -229,22 +229,28 @@ for i in range(count):
         dictColumnValues[u'最差收益时间'] = worstRateTime
         s = "-".join([str(x) for x in BUYDAY])
         dictColumnValues[u'投资日'] = s
+        lsFundInfo.append((dictColumnValues[u'投资收益率'], dictColumnValues))
+
         print( u'时长：',dictColumnValues[u'投资年数'],u'年 ',\
               u'投资收益率:',"%.2f%%" %(dictColumnValues[u'投资收益率']*100), \
               u'投资年化复合收益率:', "%.2f%%" % (dictColumnValues[u'投资年化复合收益率'] * 100))
-        for idx in range(len(ListColumnName)):
-            if ListColumnName[idx].find(u'率') != -1:
-                worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]], style_percent)
-            elif ListColumnName[idx].find(u'投资总成本')!=-1 or ListColumnName[idx].find(u'投资总市值')!=-1 \
-                or ListColumnName[idx].find(u'投资总收益')!=-1 or ListColumnName[idx].find(u'平均年收益')!=-1 \
-                or ListColumnName[idx].find(u'分红')!=-1 or ListColumnName[idx].find(u'最佳收益额')!=-1 \
-                or ListColumnName[idx].find(u'最差收益额') != -1 or ListColumnName[idx].find(u'最大回撤额') != -1 \
-                or ListColumnName[idx].find(u'最大收益额') != -1:
-                worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]], style_finance)
-            else:
-                worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]])
     else:
         print( u"获取卖出日价格失败！",actY, actM, actD)
+
+lsFundInfo.sort( reverse=True )
+for i, fundInfo in enumerate(lsFundInfo):
+    for idx in range(len(ListColumnName)):
+        if ListColumnName[idx].find(u'率') != -1:
+            worksheet.write(i + 1, idx, fundInfo[1][ListColumnName[idx]], style_percent)
+        elif ListColumnName[idx].find(u'投资总成本')!=-1 or ListColumnName[idx].find(u'投资总市值')!=-1 \
+             or ListColumnName[idx].find(u'投资总收益')!=-1 or ListColumnName[idx].find(u'平均年收益')!=-1 \
+             or ListColumnName[idx].find(u'分红')!=-1 or ListColumnName[idx].find(u'最佳收益额')!=-1 \
+             or ListColumnName[idx].find(u'最差收益额') != -1 or ListColumnName[idx].find(u'最大回撤额') != -1 \
+             or ListColumnName[idx].find(u'最大收益额') != -1:
+            worksheet.write(i + 1, idx, fundInfo[1][ListColumnName[idx]], style_finance)
+        else:
+            worksheet.write(i + 1, idx, fundInfo[1][ListColumnName[idx]])
+
 workbook.save('.\\data\\StepInvestResult.xls')
 print( "Invest result has been wrotten to StepInvestResult.xls")
 print( u"请确认已使用stockDataChecker.py进行数据检查！")
