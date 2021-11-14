@@ -1449,14 +1449,15 @@ def getFundPrice(code, dORy, month=0, day=0, autp=None):
     else:
         return False, 0
 
-def checkFundDistrib(code):
-    #获取基金分红数据，用于计算份额变动
+def checkFundDistribSplit(code):
+    #获取基金分红数据和基金份额拆分数据，用于计算份额变动
     url = "http://fundf10.eastmoney.com/fhsp_"
     url += code
     url += ".html"
     response = urllib.request.urlopen(url=url)
     data = response.read().decode("utf8")
     bs = bs4.BeautifulSoup(data, "lxml")
+    # 获取基金分红数据
     tb = bs.find('table', {'class': 'w782 comm cfxq'})
     tbody = tb.find('tbody')
     rows = tbody.find_all('tr')
@@ -1478,7 +1479,7 @@ def checkFundDistrib(code):
             ret = conn.execute(sqlString)
         except Exception as e:
             print(e)
-            print("checkFundDistrib（）：数据库访问错！")
+            print("checkFundDistribSplit（）：funddistrib数据表访问错！")
             return
         result = ret.fetchall()
         if result:
@@ -1502,7 +1503,7 @@ def checkFundDistrib(code):
                         log.writeUtfLog(sqlString)
                     except Exception as e:
                         print(e)
-                        print("checkFundDistrib(),基金分红信息插入失败")
+                        print("checkFundDistribSplit(),基金分红信息插入失败")
         else:
             for d in distrib:
                 sqlString = "insert into funddistrib"
@@ -1521,7 +1522,92 @@ def checkFundDistrib(code):
                     log.writeUtfLog(sqlString)
                 except Exception as e:
                     print(e)
-                    print("checkFundDistrib(),基金分红信息插入失败")
+                    print("checkFundDistribSplit(),基金分红信息插入失败")
+
+    #获取基金份额拆分数据
+    tb = bs.find('table', {'class': 'w782 comm fhxq'})
+    tbody = tb.find('tbody')
+    rows = tbody.find_all('tr')
+    splitShare = []
+    for row in rows:
+        cells = row.find_all('td')
+        if u"暂无拆分信息" in cells[0].get_text(): break
+        ratio = cells[3].get_text().split(':')
+        splitShare.append( (cells[1].get_text(), float(ratio[1])/float(ratio[0])) )
+
+    if splitShare:
+        #检查数据库中份额拆分数据是否完整，不完整则填充
+        sqlString = "select splitdate from fundsharesplit where code="
+        sqlString += code
+        try:
+            conn = createDBConnection()
+            ret = conn.execute(sqlString)
+        except Exception as e:
+            print(e)
+            print("checkFundDistribSplit（）：fundsharesplit数据表访问错！")
+            return
+        result = ret.fetchall()
+        if result:
+            for s in splitShare:
+                try:
+                    result.index((s[0],))
+                except Exception as e:
+                    sqlString = "insert into fundsharesplit"
+                    sqlString += "(code,splitdate,ratio) values('"
+                    sqlString += code
+                    sqlString += "','"
+                    sqlString += s[0]
+                    sqlString += "','"
+                    sqlString += s[1]
+                    sqlString += ")"
+                    try:
+                        conn.execute(sqlString)
+                        log.writeUtfLog(sqlString)
+                    except Exception as e:
+                        print(e)
+                        print("checkFundDistribSplit(),基金拆分信息插入失败")
+        else:
+            for s in splitShare:
+                sqlString = "insert into fundsharesplit"
+                sqlString += "(code,splitdate,ratio) values('"
+                sqlString += code
+                sqlString += "','"
+                sqlString += s[0]
+                sqlString += "',"
+                sqlString += '{}'.format(s[1])
+                sqlString += ")"
+                try:
+                    conn.execute(sqlString)
+                    log.writeUtfLog(sqlString)
+                except Exception as e:
+                    print(e)
+                    print("checkFundDistribSplit(),基金拆分信息插入失败")
+
+def getFundShareSplit(code):
+    sqlString = "select splitdate, ratio from fundsharesplit where code="
+    sqlString += code
+    try:
+        conn = createDBConnection()
+        ret = conn.execute(sqlString)
+    except Exception as e:
+        print(e)
+        print(code, "fundsharesplit数据表:访问失败！")
+        return False, None
+    result = ret.fetchall()
+    if result:
+        shareSplit = parseFundShareSplit(result)
+        shareSplit.sort()
+        return True, shareSplit
+    else:
+        print(code,"fundsharesplit数据表:分红数据获取失败,基金可能无分红！")
+        return False, []
+
+def parseFundShareSplit(s):
+    shareSplit = []
+    for e in s:
+        shareSplit.append((e.splitdate, e.ratio))
+
+    return shareSplit
 
 def parseFundDistrib(d):
     distrib = []

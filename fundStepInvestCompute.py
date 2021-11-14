@@ -14,16 +14,17 @@ from random import randint
 BONUS_SHARE = "1" #红利再投
 BONUS_CASH = "2" #现金红利
 style_percent = xlwt.easyxf(num_format_str='0.00%')
+style_finance = xlwt.easyxf(num_format_str='￥#,##0.00')
 
 #!!!!注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！
-STARTYEAR = 2020 #投资起始年
-STARTMONTH = 12 #投资起始月份
+STARTYEAR = 2021 #投资起始年
+STARTMONTH = 2 #投资起始月份
 STARTDAY = 1      #投资起始日期
 
 #定投结束日即是卖出日，目前无法实现定投结束日和卖出日不同。
 ENDYEAR = 2021  #定投结束年
-ENDMONTH = 4  #定投结束月份
-ENDDAY = 30  #定投结束日
+ENDMONTH = 11  #定投结束月份
+ENDDAY = 12  #定投结束日,卖
 BUYDAY = 10  #定投日
 INTERVAL  = 1    #定投间隔的月份
 INVESTMONEY = "10000"
@@ -64,11 +65,11 @@ if str=="c" :
 str = input("如不进行分红检查请按'回车',如需检查请按'c',退出请按'q': ")
 if str=="q" : exit(0)
 if str=="c" :
-    print("开始检查基金分红数据......")
+    print("开始检查基金分红和份额拆分数据......")
     for i in range(count):
         if code[i] == u'': continue
-        sT.checkFundDistrib(code[i])
-    print("基金分红数据检查完成！")
+        sT.checkFundDistribSplit(code[i])
+    print("基金分红和份额拆分数据检查完成！")
 
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('dataResult')
@@ -112,10 +113,18 @@ for i in range(count):
     d0 = startDate
     #获取基金分红数据，用于计算份额变动（红利再投）或分红情况（现金红利）
     _, distrib = sT.getFundDistrib(code[i])
+    # 获取基金拆分数据，用于计算份额变动
+    _, shareSplit = sT.getFundShareSplit(code[i])
+    shareSplit=[s for s in shareSplit if s[0]>startDate]
     for s in details:
         t = s.split("~")#t[0]:日期,t[1]:价格,t[2]:本金,t[3]:份额
         p = t[0].replace(",","").find("星")
         date = t[0].replace(",","")[:p]
+        #print(date)
+        if shareSplit!=[] and shareSplit[0][0]<=date:#拥有的份额按比例拆分
+            shareTotalInvest *= shareSplit[0][1]
+            shareTotal *= shareSplit[0][1]
+            del shareSplit[0]
         share = float(t[3].replace(",",""))
         shareTotalInvest += share
         shareTotal += share
@@ -192,6 +201,12 @@ for i in range(count):
         if ListColumnName[idx].find(u'率') != -1:
             #print ListColumnName[idx].encode('utf8')
             worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]], style_percent)
+        elif ListColumnName[idx].find(u'投资总成本') != -1 or ListColumnName[idx].find(u'投资总市值') != -1 \
+                or ListColumnName[idx].find(u'投资总收益') != -1 or ListColumnName[idx].find(u'平均年收益') != -1 \
+                or ListColumnName[idx].find(u'分红') != -1 or ListColumnName[idx].find(u'最佳收益额') != -1 \
+                or ListColumnName[idx].find(u'最差收益额') != -1 or ListColumnName[idx].find(u'最大回撤额') != -1 \
+                or ListColumnName[idx].find(u'最大收益额') != -1:
+            worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]], style_finance)
         else:
             worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]])
 
