@@ -1430,7 +1430,7 @@ def getFundPrice(code, dORy, month=0, day=0, autp=None):
             data = urllib.request.urlopen(url).read().decode("utf8")
             bs = bs4.BeautifulSoup(data, "html.parser")
             try:
-                price = float(bs.find_all("td")[2].get_text())
+                price = float(bs.find_all("td")[1].get_text())#取得单位净值
                 sqlString = "insert into fundprice(code,price,date) values('"
                 sqlString += code
                 sqlString += "',%s,'" % (price)
@@ -1599,7 +1599,7 @@ def getFundShareSplit(code):
         shareSplit.sort()
         return True, shareSplit
     else:
-        print(code,"fundsharesplit数据表:分红数据获取失败,基金可能无分红！")
+        print(code,"fundsharesplit数据表:份额拆分数据获取失败,基金可能无拆分！")
         return False, []
 
 def parseFundShareSplit(s):

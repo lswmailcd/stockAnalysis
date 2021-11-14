@@ -16,31 +16,34 @@ BONUS_CASH = "2" #现金红利
 style_percent = xlwt.easyxf(num_format_str='0.00%')
 style_finance = xlwt.easyxf(num_format_str='￥#,##0.00')
 
-#!!!!注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！
-STARTYEAR = 2021 #投资起始年
-STARTMONTH = 2 #投资起始月份
-STARTDAY = 1      #投资起始日期
-
-#定投结束日即是卖出日，目前无法实现定投结束日和卖出日不同。
-ENDYEAR = 2021  #定投结束年
-ENDMONTH = 11  #定投结束月份
-ENDDAY = 12  #定投结束日,卖
+print("***注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！***")
 BUYDAY = 10  #定投日
+
+STARTYEAR = 2011 #定投起始年
+STARTMONTH = 2 #定投起始月份
+
+ENDYEAR = 2015  #定投结束年
+ENDMONTH = 5  #定投结束月份
+
 INTERVAL  = 1    #定投间隔的月份
 INVESTMONEY = "10000"
 
-#定投结束日即是卖出日，目前无法实现定投结束日和卖出日不同。
-#SALEYEAR = 2015  #卖出年
-#SALEMONTH = 6  #卖出月份
-#SALEDAY = 1  #卖出日
+#卖出日
+SALEYEAR = 2015  #卖出年
+SALEMONTH = 5  #卖出月份
+SALEDAY = 29  #卖出日
 
 
 
-print( u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", STARTDAY,u"日\
----",ENDYEAR,u"年",ENDMONTH,u"月", ENDDAY,u"日")
+print( u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", BUYDAY,u"日\
+---",ENDYEAR,u"年",ENDMONTH,u"月", BUYDAY,u"日")
 
-startDate = sT.getDateString(STARTYEAR, STARTMONTH, STARTDAY)
-endDate = sT.getDateString(ENDYEAR, ENDMONTH, ENDDAY)
+print( u"持有计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", BUYDAY,u"日\
+---",SALEYEAR,u"年",SALEMONTH,u"月", SALEDAY,u"日")
+
+startDate = sT.getDateString(STARTYEAR, STARTMONTH, BUYDAY)
+endDate = sT.getDateString(ENDYEAR, ENDMONTH, BUYDAY)
+saleDate = sT.getDateString(SALEYEAR, SALEMONTH, SALEDAY)
 
 data = xlrd.open_workbook('.\\data\\fundata.xls')
 table = data.sheets()[0]
@@ -73,13 +76,13 @@ if str=="c" :
 
 workbook = xlwt.Workbook(encoding = 'ascii')
 worksheet = workbook.add_sheet('dataResult')
-ListColumnName = [u'代码',u'名称',u'定投年数',u'投资收益率',u'投资年化复合收益率',\
+ListColumnName = [u'代码',u'名称',u'定投年数',u'持有年数',u'投资收益率',u'投资年化复合收益率',\
                   u'最佳收益率',u'最佳收益额',u'最佳收益时间',\
                   u'最差收益率',u'最差收益额',u'最差收益时间',\
                   u'最大回撤额时的收益率',u'最大回撤额', u'最大回撤额出现的时间', \
                   u'最大收益额时的收益率',u'最大收益额', u'最大收益额出现的时间', \
                   u'投资总成本',u'投资总市值',u'投资总收益',u'平均年收益',u'分红',u'总份额', u'购买份额',\
-                  u'定投起始时间',u'卖出基金时间',"投资日"] #u'定投结束时间'#,
+                  u'定投起始时间',u'定投结束时间',u'卖出基金时间',"投资日"]
 for idx in range(len(ListColumnName)):
     worksheet.write(0, idx, ListColumnName[idx])
 
@@ -87,7 +90,7 @@ for i in range(count):
     foundData = 0
     if code[i] == u'' : continue
     url = "http://fund.eastmoney.com/data/FundInvestCaculator_AIPDatas.aspx?fcode=" + code[i]
-    url = url + "&sdate=" + startDate + "&edate=" + endDate + "&shdate=" + endDate
+    url = url + "&sdate=" + startDate + "&edate=" + endDate + "&shdate=" + saleDate
     url = url + "&round=" + "%s" %(INTERVAL) + "&dtr=" + "%s" %(BUYDAY) + "&p=" + "0" + "&je=" + INVESTMONEY
     url = url + "&stype=" + stype + "&needfirst=" + "2" + "&jsoncallback=FundDTSY.result"
     response = urllib.request.urlopen(url=url)
@@ -104,18 +107,21 @@ for i in range(count):
 
     dictColumnValues = {}
     investTotal = float(infoStr[3].replace(",",""))
-    totalValue = float(infoStr[5].replace(",",""))
     details = infoStr[7][:-3].split("_")
+    firstInvest = details[0]
+    t = firstInvest.split("~")  # t[0]:日期,t[1]:价格,t[2]:本金,t[3]:份额
+    p = t[0].replace(",", "").find("星")
+    actualStartDate = t[0].replace(",", "")[:p]
 
     moneyTotal, shareTotalInvest, shareTotal, diffWorst, diffBest, dateWorse, dateBest, diffWorstRate, diffBestRate, \
     rateWorst, rateBest, dateRateWorst, dateRateBest, bonusTotal, lostWorst, earnBest = \
     0.0, 0.0, 0.0, 0.0, 0.0, "", "", 0.0,0.0, 0.0,0.0,"", "", 0.0, 0.0, 0.0
-    d0 = startDate
+    d0 = actualStartDate
     #获取基金分红数据，用于计算份额变动（红利再投）或分红情况（现金红利）
     _, distrib = sT.getFundDistrib(code[i])
     # 获取基金拆分数据，用于计算份额变动
     _, shareSplit = sT.getFundShareSplit(code[i])
-    shareSplit=[s for s in shareSplit if s[0]>startDate]
+    shareSplit=[s for s in shareSplit if s[0]>actualStartDate]
     for s in details:
         t = s.split("~")#t[0]:日期,t[1]:价格,t[2]:本金,t[3]:份额
         p = t[0].replace(",","").find("星")
@@ -166,20 +172,33 @@ for i in range(count):
     # print(shareTotal*sT.getFundPrice(code[i], endDate)[1]-moneyTotal)
     # print(totalValue==shareTotal*sT.getFundPrice(code[i], endDate)[1],investTotal==moneyTotal )
     # print shareTotal, totalValue/sT.getFundPrice(code[i], endDate)[1]
-    rate = (totalValue-investTotal)/investTotal#float(infoStr[6][:-1])/100.0
-    investPeriod = round(sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,STARTDAY,ENDYEAR,ENDMONTH,ENDDAY)/365.0, 2)
-    ratePerYear = round(((rate + 1) ** (1.0 / investPeriod) - 1), 4)
+    for s in shareSplit:
+        if s[0] <= saleDate:  # 拥有的份额按比例拆分
+            shareTotalInvest *= s[1]
+            shareTotal *= s[1]
+        else:
+            break
+    #计算卖出日总市值
+    totalValue = shareTotal*sT.getFundPrice(code[i], saleDate)[1]
+    rate = (totalValue-moneyTotal)/moneyTotal
+    #定投时长
+    y,m,d=sT.splitDateString(actualStartDate)
+    investPeriod = round(sT.createCalender().dayDiff(y,m,d,ENDYEAR,ENDMONTH,BUYDAY)/365.0, 2)
+    # 持有时长
+    earnPeriod = round(sT.createCalender().dayDiff(y,m,d,SALEYEAR,SALEMONTH,SALEDAY)/365.0, 2)
+    ratePerYear = round(((rate + 1) ** (1.0 / earnPeriod) - 1), 4)
     dictColumnValues[u'代码'] = code[i]
     dictColumnValues[u'名称'] = name[i]
     dictColumnValues[u'定投年数'] = investPeriod
-    dictColumnValues[u'定投起始时间'] = startDate
-    #dictColumnValues[u'定投结束时间'] = endDate
-    dictColumnValues[u'卖出基金时间'] = endDate
+    dictColumnValues[u'定投起始时间'] = actualStartDate
+    dictColumnValues[u'定投结束时间'] = endDate
+    dictColumnValues[u'持有年数'] = earnPeriod
+    dictColumnValues[u'卖出基金时间'] = saleDate
     dictColumnValues[u'投资总成本'] = moneyTotal
     dictColumnValues[u'投资总市值'] = moneyTotal*(1+rate)
     dictColumnValues[u'投资总收益'] = moneyTotal*rate
     dictColumnValues[u'分红'] = bonusTotal
-    dictColumnValues[u'平均年收益'] = round(dictColumnValues[u'投资总收益'] / investPeriod, 2)
+    dictColumnValues[u'平均年收益'] = round(dictColumnValues[u'投资总收益'] / earnPeriod, 2)
     dictColumnValues[u'投资收益率'] = round(rate, 4)
     dictColumnValues[u'投资年化复合收益率'] = ratePerYear
     dictColumnValues[u'总份额'] = shareTotal
