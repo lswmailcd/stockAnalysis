@@ -10,13 +10,14 @@ import xlwt
 import stockDataChecker as ck
 
 style_percent = xlwt.easyxf(num_format_str='0.00%')
+style_finance = xlwt.easyxf(num_format_str='￥#,##0.00')
 
-STARTYEAR = 2010 #投资起始年
-STARTMONTH = 6#投资起始月份
-buyDay = 1    #投资起始日期
-ENDYEAR = 2014  #投资结束年
-ENDMONTH = 6  #投资结束月份
-saleDay = 29  #投资结束日期
+STARTYEAR = 2011 #投资起始年
+STARTMONTH = 2#投资起始月份
+buyDay = 10    #投资起始日期
+ENDYEAR = 2021  #投资结束年
+ENDMONTH = 2  #投资结束月份
+saleDay = 26  #投资结束日期
 checkDay = 10  #回撤检查日
 REPORTYEARLAST = 2020 #最新报表年份
 
@@ -63,6 +64,7 @@ for i in range(nrows):
 
 engine = create_engine('mysql://root:0609@127.0.0.1:3306/stockdatabase?charset=utf8', encoding='utf-8')
 conn = engine.connect()
+lsStockInfo = []
 for i in range(count):
     if code[i] == "" or code[i]=='0.0':
         worksheet.write(i + 1, 0, "")
@@ -103,7 +105,7 @@ for i in range(count):
             bDividen, dividenTime = sT.getDividenTime(code[i], distribYear)
             if bDividen and ( sT.getDateString(STARTYEAR, STARTMONTH, buyDay) <= dividenTime ) \
                 and ( sT.getDateString(ENDYEAR, ENDMONTH, saleDay) > dividenTime ):
-                    print( dividenTime, "计算分红")
+                    #print( dividenTime, "计算分红")
                     # 计算分红送转
                     bdis, r, s = sT.getDistrib(code[i], distribYear)
                     # 分红计算
@@ -157,16 +159,24 @@ for i in range(count):
         dictColumnValues[u'最大回撤'] = lostMoneyMax
         dictColumnValues[u'最大回撤时的收益率'] = round(lostMoneyMax/lostMoneyMaxCaption,4)
         dictColumnValues[u'最大回撤出现的时间'] = lostMoneyMaxTime
+        lsStockInfo.append((dictColumnValues[u'投资收益率'], dictColumnValues))
         print( u'时长：',dictColumnValues[u'投资时长（年）'],u'年,'\
               u'投资收益率:',"%.2f%%" %(dictColumnValues[u'投资收益率']*100),\
               u',最大回撤时的收益率:',"%.2f%%" %(dictColumnValues[u'最大回撤时的收益率']*100))
-        for idx in range(len(ListColumnName)):
-            if ListColumnName[idx].find(u'率') != -1:
-                worksheet.write(i + 1, idx, dictColumnValues[ListColumnName[idx]], style_percent)
-            else:
-                worksheet.write(i+1, idx, dictColumnValues[ListColumnName[idx]])
+
+lsStockInfo.sort(reverse=True)
+for i, stockInfo in enumerate(lsStockInfo):
+    for idx in range(len(ListColumnName)):
+        if ListColumnName[idx].find(u'率') != -1:
+            worksheet.write(i + 1, idx, stockInfo[1][ListColumnName[idx]], style_percent)
+        elif ListColumnName[idx].find(u'投资总成本') != -1 or ListColumnName[idx].find(u'投资总市值') != -1 \
+             or ListColumnName[idx].find(u'投资总收益') != -1 or ListColumnName[idx].find(u'平均年收益') != -1 \
+             or ListColumnName[idx].find(u'分红') != -1:
+            worksheet.write(i + 1, idx, stockInfo[1][ListColumnName[idx]], style_finance)
+        else:
+            worksheet.write(i+1, idx, stockInfo[1][ListColumnName[idx]])
     else:
-        print( u"获取卖出日价格失败！",year, saleMonth, saleDay)
+        print( u"获取卖出日价格失败！",year, ENDMONTH, saleDay)
 
 workbook.save('.\\data\\InvestResult.xls')
 print( "Invest result has been wrotten to InvestResult.xls")
