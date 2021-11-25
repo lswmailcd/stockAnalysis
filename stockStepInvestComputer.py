@@ -11,11 +11,15 @@ import stockDataChecker as ck
 import Graph as g
 
 STARTYEAR = 2011 #定投起始年
-STARTMONTH = 2  #定投起始月份
+STARTMONTH = 1 #定投起始月份
 
-ENDYEAR = 2015 #定投结束年
-ENDMONTH = 5 #定投结束月份
-ENDDAY = 29 #投资卖出日
+ENDYEAR = 2015  #定投结束年
+ENDMONTH = 5  #定投结束月份
+
+#卖出日
+SALEYEAR = 2015  #卖出年
+SALEMONTH = 5  #卖出月份
+SALEDAY = 29  #卖出日
 
 BUYDAY=(10,) #每月中的定投日期列表
 REPORTYEARLAST = 2020 #最新报表年份
@@ -60,7 +64,7 @@ for i in range(nrows):
             print( code[count], name[count], u"上市时间不详!")
             exit(1)
         sT.checkStockPrice(code[count], sT.getDateString(STARTYEAR, STARTMONTH, 1), \
-                           sT.getDateString(ENDYEAR, ENDMONTH, ENDDAY))
+                           sT.getDateString(SALEYEAR, SALEMONTH, SALEDAY))
         if s == "c":
             ck.subprocess(code[count], 2008, REPORTYEARLAST)
         count += 1
@@ -147,7 +151,7 @@ for i in range(count):
                 if foundData and nCapitalInvest!=0:
                     profit = nStockTotal * price + ndividend - nCapitalInvest
                     rate = profit / nCapitalInvest
-                    rateList.append(rate*100.0)
+                    rateList.append(rate)
                 else:#如果当日没有开市或刚开始定投
                     rateList.append( 0.0 if rateList==[] else rateList[-1] )
                 foundData,closePrice, actualDate=sT.getClosePriceBackward(code[i], year, month, tradeDay)
@@ -201,15 +205,27 @@ for i in range(count):
                     bestRateTime = tradeDate
                     bestEarn = profit
 
-    if ENDMONTH==12:
-        year = ENDYEAR+1
-        month = 1
-    else:
-        year = ENDYEAR
-        month = ENDMONTH+1
-    foundData,closePrice, actualDate=sT.getClosePriceBackward(code[i], ENDYEAR, ENDMONTH, ENDDAY)
+    # if ENDMONTH==12:
+    #     year = ENDYEAR+1
+    #     month = 1
+    # else:
+    #     year = ENDYEAR
+    #     month = ENDMONTH+1
+    foundData,closePrice, actualDate=sT.getClosePriceBackward(code[i], SALEYEAR, SALEMONTH, SALEDAY)
     actY, actM, actD = sT.splitDateString(actualDate)
     if foundData==True:
+        if dateList[-1]<actualDate:
+            lsDistrib=[]
+            for year in range(ENDYEAR-1, actY):
+                found1, m, s = sT.getDistrib(code[i], year)
+                found2, time = sT.getDividenTime(code[i], year)
+                if found1 and found2: lsDistrib.append((m,s,time))
+            for db in lsDistrib:
+                if dateList[-1]<=db[2]<actualDate:
+                    # 分红计算
+                    ndividend += nStockTotal * db[0]
+                    # 送转增加股本计算
+                    nStockTotal += nStockTotal * db[1]
         nCapitalTotal = nStockTotal*closePrice+ndividend
         income = nCapitalTotal-nCapitalInvest
         incomeRate = income/nCapitalInvest
@@ -245,7 +261,7 @@ for i in range(count):
         s = "-".join([str(x) for x in BUYDAY])
         dictColumnValues[u'投资日'] = s
         lsStockInfo.append((dictColumnValues[u'投资收益率'], dictColumnValues))
-        rateList.append(dictColumnValues[u'投资收益率']*100.0)
+        rateList.append(dictColumnValues[u'投资收益率'])
         dateList.append(actualDate)
         dataList.append([dateList,rateList])
         print( u'时长：',dictColumnValues[u'投资年数'],u'年 ',\
@@ -272,8 +288,8 @@ workbook.save('.\\data\\StepInvestResult.xls')
 print( "Invest result has been wrotten to StepInvestResult.xls")
 print( u"请确认已使用stockDataChecker.py进行数据检查！")
 
-title="{}至{}股票定投收益图".format(sT.getDateString(STARTYEAR,STARTMONTH,BUYDAY[0]), sT.getDateString(ENDYEAR,ENDMONTH,ENDDAY))
-yScale = 1 if sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,BUYDAY[0], ENDYEAR,ENDMONTH,ENDDAY)<365*3 else 5
+title="{}至{}股票定投收益图,卖出日{}".format(sT.getDateString(STARTYEAR,STARTMONTH,BUYDAY[0]), sT.getDateString(ENDYEAR,ENDMONTH,BUYDAY[-1]), actualDate)
+yScale = 5 if sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,BUYDAY[0], ENDYEAR,ENDMONTH,BUYDAY[0])<365*3 else 10
 xList = dataList[0][0]
 yList = [d[1] for d in dataList]
 g.drawRateChat(xList, yList, yScale, name, title )

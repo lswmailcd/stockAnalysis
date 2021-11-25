@@ -405,11 +405,11 @@ def getDistrib(code, year):
     except Exception as e:
         print(e)
         print(code, year, "年，stockreport数据表:访问失败！")
-        return False, None
+        return False, None, None
     result = ret.first()
     if result is None or result.distrib is None:
         print(code, year, "年，stockreport表:分红数据获取失败,此年可能无分红！")
-        return False, None
+        return False, None, None
     else:
         money, stock = parseDistrib(result.distrib)
         return True, money, stock

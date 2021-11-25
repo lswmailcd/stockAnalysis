@@ -19,10 +19,6 @@ style_finance = xlwt.easyxf(num_format_str='￥#,##0.00')
 
 print("\n***注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！***\n")
 
-BUYDAY = 10  #定投日
-INTERVAL  = 1    #定投间隔的月份
-INVESTMONEY = "5000"
-
 STARTYEAR = 2016 #定投起始年
 STARTMONTH = 1 #定投起始月份
 
@@ -34,6 +30,9 @@ SALEYEAR = 2021  #卖出年
 SALEMONTH = 2  #卖出月份
 SALEDAY = 26  #卖出日
 
+BUYDAY = 10  #定投日
+INTERVAL  = 1    #定投间隔的月份
+INVESTMONEY = "5000"
 
 
 print( u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", BUYDAY,u"日\
