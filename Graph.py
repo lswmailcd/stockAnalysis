@@ -41,4 +41,18 @@ def autolabel(rects, ax, fs, bIntDisp, bPercent):
         if bPercent: h = h + '$\%$'
         if height<0: height = 0
         ax.text(rect.get_x() + rect.get_width() / 2., height, h, ha='center', va='bottom', fontsize=fs)
-    return
+
+def  drawRateChat( XList, YList, yScale, labelList, title ):
+    for yList,name in zip(YList, labelList):  # 日期选择一个日期，坐标轴不能有两种不同的日期表示
+        yList = [y*100.0 for y in yList]
+        plt.plot(XList, yList, label=name)
+    ax = plt.gca()
+    ax.set_title(title, fontsize=20)
+    ax.yaxis.set_major_locator(mpl.ticker.MultipleLocator(yScale))
+    ax.yaxis.set_major_formatter(mpl.ticker.FormatStrFormatter("%.0f%%"))
+    ax.axhline(color='black', y=0)
+    mpl.rcParams['font.sans-serif'] = ['SimHei']  # 指定默认字体
+    plt.legend(loc=0, ncol=len(XList), mode="expand", borderaxespad=0.0)
+    plt.gcf().autofmt_xdate()
+    plt.grid(True)
+    plt.show()

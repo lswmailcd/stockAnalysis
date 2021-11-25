@@ -10,28 +10,31 @@ import stockGlobalSpace as sG
 import bs4
 import re
 from random import randint
+import Graph as g
 
 BONUS_SHARE = "1" #红利再投
 BONUS_CASH = "2" #现金红利
 style_percent = xlwt.easyxf(num_format_str='0.00%')
 style_finance = xlwt.easyxf(num_format_str='￥#,##0.00')
 
-print("***注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！***")
+print("\n***注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！***\n")
+
 BUYDAY = 10  #定投日
-
-STARTYEAR = 2011 #定投起始年
-STARTMONTH = 2 #定投起始月份
-
-ENDYEAR = 2015  #定投结束年
-ENDMONTH = 5  #定投结束月份
-
 INTERVAL  = 1    #定投间隔的月份
-INVESTMONEY = "10000"
+INVESTMONEY = "5000"
+
+STARTYEAR = 2016 #定投起始年
+STARTMONTH = 1 #定投起始月份
+
+ENDYEAR = 2019  #定投结束年
+ENDMONTH = 1  #定投结束月份
 
 #卖出日
-SALEYEAR = 2015  #卖出年
-SALEMONTH = 5  #卖出月份
-SALEDAY = 29  #卖出日
+SALEYEAR = 2021  #卖出年
+SALEMONTH = 2  #卖出月份
+SALEDAY = 26  #卖出日
+
+
 
 print( u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", BUYDAY,u"日\
 ---",ENDYEAR,u"年",ENDMONTH,u"月", BUYDAY,u"日")
@@ -84,7 +87,8 @@ ListColumnName = [u'代码',u'名称',u'定投年数',u'持有年数',u'投资�
 for idx in range(len(ListColumnName)):
     worksheet.write(0, idx, ListColumnName[idx])
 
-lsStockInfo=[]
+lsInfo=[]
+dataList=[]
 for i in range(count):
     foundData = 0
     if code[i] == u'' : continue
@@ -112,6 +116,7 @@ for i in range(count):
     p = t[0].replace(",", "").find("星")
     actualStartDate = t[0].replace(",", "")[:p]
 
+    rateList, dateList = [], []
     moneyTotal, shareTotalInvest, shareTotal, diffWorst, diffBest, dateWorse, dateBest, diffWorstRate, diffBestRate, \
     rateWorst, rateBest, dateRateWorst, dateRateBest, bonusTotal, lostWorst, earnBest = \
     0.0, 0.0, 0.0, 0.0, 0.0, "", "", 0.0,0.0, 0.0,0.0,"", "", 0.0, 0.0, 0.0
@@ -125,6 +130,7 @@ for i in range(count):
         t = s.split("~")#t[0]:日期,t[1]:价格,t[2]:本金,t[3]:份额
         p = t[0].replace(",","").find("星")
         date = t[0].replace(",","")[:p]
+        dateList.append(date)
         #print(date)
         if shareSplit!=[] and shareSplit[0][0]<=date:#拥有的份额按比例拆分
             shareTotalInvest *= shareSplit[0][1]
@@ -146,6 +152,7 @@ for i in range(count):
         moneyTotal = moneyTotal + float(t[2].replace(",",""))
         diff = float(t[1])*shareTotal - moneyTotal
         rate = diff/moneyTotal
+        rateList.append(rate)
         #print(float(t[1]))
         #print('diff=', diff, 'shareTotal=', shareTotal, 'date', date)
         if diff<diffWorst:
@@ -171,15 +178,37 @@ for i in range(count):
     # print(shareTotal*sT.getFundPrice(code[i], endDate)[1]-moneyTotal)
     # print(totalValue==shareTotal*sT.getFundPrice(code[i], endDate)[1],investTotal==moneyTotal )
     # print shareTotal, totalValue/sT.getFundPrice(code[i], endDate)[1]
+
+    #计算定投结束日至卖出日之间的拆分和红利
+    dateSet = set()
     for s in shareSplit:
-        if s[0] <= saleDate:  # 拥有的份额按比例拆分
-            shareTotalInvest *= s[1]
-            shareTotal *= s[1]
-        else:
-            break
+        dateSet.add(s[0])
+    for d in distrib:
+        dateSet.add(d[0])
+    lsDate = [ d for d in dateSet]
+    lsDate.sort()
+    for d in lsDate:
+        if endDate<=d<=saleDate:
+            for s in shareSplit:
+                if d == s[0]:
+                    shareTotalInvest *= s[1]
+                    shareTotal *= s[1]
+                    break
+            for db in distrib:
+                if d == db[0]:
+                    disMoney = shareTotal * db[1]
+                    if stype == BONUS_SHARE:  # 红利再投
+                        shareTotal += disMoney / sT.getFundPrice(code[i], db[2])[1]
+                    else:  # 现金红利
+                        bonusTotal += disMoney
+                    break
+
     #计算卖出日总市值
     totalValue = shareTotal*sT.getFundPrice(code[i], saleDate)[1]
     rate = (totalValue-moneyTotal)/moneyTotal
+    dateList.append(saleDate)
+    rateList.append(rate)
+    dataList.append([dateList, rateList])
     #定投时长
     y,m,d=sT.splitDateString(actualStartDate)
     investPeriod = round(sT.createCalender().dayDiff(y,m,d,ENDYEAR,ENDMONTH,BUYDAY)/365.0, 2)
@@ -216,27 +245,34 @@ for i in range(count):
     dictColumnValues[u'最差收益时间'] = dateRateWorst
     dictColumnValues[u'投资日'] = BUYDAY
 
-    lsStockInfo.append( (dictColumnValues[u'投资收益率'], dictColumnValues) )
+    lsInfo.append( (dictColumnValues[u'投资收益率'], dictColumnValues) )
 
-lsStockInfo.sort( reverse=True )
-for i, stockInfo in enumerate(lsStockInfo):
+
+lsInfo.sort( reverse=True )
+for i, Info in enumerate(lsInfo):
     for idx in range(len(ListColumnName)):
         if ListColumnName[idx].find(u'率') != -1:
-            worksheet.write(i + 1, idx, stockInfo[1][ListColumnName[idx]], style_percent)
+            worksheet.write(i + 1, idx, Info[1][ListColumnName[idx]], style_percent)
         elif ListColumnName[idx].find(u'投资总成本') != -1 or ListColumnName[idx].find(u'投资总市值') != -1 \
                 or ListColumnName[idx].find(u'投资总收益') != -1 or ListColumnName[idx].find(u'平均年收益') != -1 \
                 or ListColumnName[idx].find(u'分红') != -1 or ListColumnName[idx].find(u'最佳收益额') != -1 \
                 or ListColumnName[idx].find(u'最差收益额') != -1 or ListColumnName[idx].find(u'最大回撤额') != -1 \
                 or ListColumnName[idx].find(u'最大收益额') != -1:
-            worksheet.write(i + 1, idx, stockInfo[1][ListColumnName[idx]], style_finance)
+            worksheet.write(i + 1, idx, Info[1][ListColumnName[idx]], style_finance)
         else:
-            worksheet.write(i + 1, idx, stockInfo[1][ListColumnName[idx]])
+            worksheet.write(i + 1, idx, Info[1][ListColumnName[idx]])
 
-    rate = stockInfo[0]; ratePerYear=stockInfo[1][u'投资年化复合收益率']
+    rate = Info[0]; ratePerYear=Info[1][u'投资年化复合收益率']
     print( code[i], name[i], "总收益率：%.2f%%" % (rate * 100.0), "年化收益率：%.2f%%" % (ratePerYear * 100.0))
 
 workbook.save('.\\data\\dataResult.xls')
 print( "Invest result has been wrotten to dataResult.xls")
+
+title="{}至{}基金定投收益图,卖出时间{}".format(startDate, endDate,saleDate)
+yScale = 1 if sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,BUYDAY, ENDYEAR,ENDMONTH,BUYDAY)<365*3 else 5
+xList = dataList[0][0]
+yList = [d[1] for d in dataList]
+g.drawRateChat(xList, yList, yScale, name, title )
 
 
 

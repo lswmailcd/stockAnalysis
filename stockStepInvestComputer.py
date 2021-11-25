@@ -8,13 +8,14 @@ import xlrd
 import xlwt
 import time
 import stockDataChecker as ck
+import Graph as g
 
 STARTYEAR = 2011 #定投起始年
 STARTMONTH = 2  #定投起始月份
 
-ENDYEAR = 2011 #定投结束年
-ENDMONTH = 2 #定投结束月份
-ENDDAY = 26 #投资卖出日
+ENDYEAR = 2015 #定投结束年
+ENDMONTH = 5 #定投结束月份
+ENDDAY = 29 #投资卖出日
 
 BUYDAY=(10,) #每月中的定投日期列表
 REPORTYEARLAST = 2020 #最新报表年份
@@ -64,6 +65,7 @@ for i in range(nrows):
             ck.subprocess(code[count], 2008, REPORTYEARLAST)
         count += 1
 
+dataList=[]
 lsStockInfo=[]
 engine = create_engine('mysql://root:0609@127.0.0.1:3306/stockdatabase?charset=utf8', encoding='utf-8')
 conn = engine.connect()
@@ -89,6 +91,7 @@ for i in range(count):
     bestRateTime = ""
     print( code[i],name[i])
     bFirstInvest = True
+    rateList, dateList = [], []
     for year in range(STARTYEAR,ENDYEAR+1):
         # 检查本年分红送配情况
         distribYear = year-1
@@ -138,6 +141,15 @@ for i in range(count):
         bDistrib = False
         for month in range(startMonth,endMonth,1):
             for tradeDay in BUYDAY:
+                #计算收益率
+                dateList.append(sT.getDateString(year,month,tradeDay))
+                foundData, price = sT.getClosePrice(code[i], year, month, tradeDay)
+                if foundData and nCapitalInvest!=0:
+                    profit = nStockTotal * price + ndividend - nCapitalInvest
+                    rate = profit / nCapitalInvest
+                    rateList.append(rate*100.0)
+                else:#如果当日没有开市或刚开始定投
+                    rateList.append( 0.0 if rateList==[] else rateList[-1] )
                 foundData,closePrice, actualDate=sT.getClosePriceBackward(code[i], year, month, tradeDay)
                 actY, actM, actD = sT.splitDateString(actualDate)
                 #如果得到的不是当年当月的日期，则说明股票没有正常交易，此月停止定投
@@ -159,7 +171,7 @@ for i in range(count):
                     ndividend += nStockTotal * r
                     # 送转增加股本计算
                     nStockTotal += nStockTotal * s
-                    print( year, "年，每10股分红：", 10*r, "送转股数：", 10*s )
+                    #print( year, "年，每10股分红：", 10*r, "送转股数：", 10*s )
                 nStockThisMonth = int(moneyLimit/closePrice/100)*100 #买入股数，如结果为560股则买入500股
                 nStockInvest += nStockThisMonth #总计购入股本
                 if nStockThisMonth==0: nStockThisMonth = 100 #至少保证买入100股
@@ -233,7 +245,9 @@ for i in range(count):
         s = "-".join([str(x) for x in BUYDAY])
         dictColumnValues[u'投资日'] = s
         lsStockInfo.append((dictColumnValues[u'投资收益率'], dictColumnValues))
-
+        rateList.append(dictColumnValues[u'投资收益率']*100.0)
+        dateList.append(actualDate)
+        dataList.append([dateList,rateList])
         print( u'时长：',dictColumnValues[u'投资年数'],u'年 ',\
               u'投资收益率:',"%.2f%%" %(dictColumnValues[u'投资收益率']*100), \
               u'投资年化复合收益率:', "%.2f%%" % (dictColumnValues[u'投资年化复合收益率'] * 100))
@@ -257,6 +271,13 @@ for i, stockInfo in enumerate(lsStockInfo):
 workbook.save('.\\data\\StepInvestResult.xls')
 print( "Invest result has been wrotten to StepInvestResult.xls")
 print( u"请确认已使用stockDataChecker.py进行数据检查！")
+
+title="{}至{}股票定投收益图".format(sT.getDateString(STARTYEAR,STARTMONTH,BUYDAY[0]), sT.getDateString(ENDYEAR,ENDMONTH,ENDDAY))
+yScale = 1 if sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,BUYDAY[0], ENDYEAR,ENDMONTH,ENDDAY)<365*3 else 5
+xList = dataList[0][0]
+yList = [d[1] for d in dataList]
+g.drawRateChat(xList, yList, yScale, name, title )
+
 
 
 
