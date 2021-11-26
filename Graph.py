@@ -52,7 +52,7 @@ def  drawRateChat( XList, YList, yScale, labelList, title ):
     ax.yaxis.set_major_formatter(mpl.ticker.FormatStrFormatter("%.0f%%"))
     ax.axhline(color='black', y=0)
     mpl.rcParams['font.sans-serif'] = ['SimHei']  # 指定默认字体
-    plt.legend(loc=0, ncol=len(XList), mode="expand", borderaxespad=0.0)
+    plt.legend(loc=0, ncol=6, mode="expand", borderaxespad=0.0)
     plt.gcf().autofmt_xdate()
     plt.grid(True)
     plt.show()
