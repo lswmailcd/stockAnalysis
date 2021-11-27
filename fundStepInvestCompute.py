@@ -19,22 +19,22 @@ style_finance = xlwt.easyxf(num_format_str='￥#,##0.00')
 
 print("\n***注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！***\n")
 
-STARTYEAR = 2011 #定投起始年
-STARTMONTH = 2 #定投起始月份
+STARTYEAR = 2014 #定投起始年
+STARTMONTH = 6 #定投起始月份
 
-ENDYEAR = 2015  #定投结束年
-ENDMONTH = 5  #定投结束月份
+ENDYEAR = 2019  #定投结束年
+ENDMONTH = 12  #定投结束月份
 
 
 #卖出日
-SALEYEAR = 2015  #卖出年
-SALEMONTH = 5  #卖出月份
-SALEDAY = 29  #卖出日
+SALEYEAR = 2019  #卖出年
+SALEMONTH = 12  #卖出月份
+SALEDAY = 27  #卖出日
 
 ENDDAY = 28 #定投结束与月底，考虑2月份，则结束日定在28号
 BUYDAY = 10  #定投日
 INTERVAL  = 1    #定投间隔的月份
-INVESTMONEY = "5000"
+INVESTMONEY = "10000"
 
 
 print( u"定投计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", BUYDAY,u"日\
@@ -74,6 +74,7 @@ if str=="c" :
     for i in range(count):
         if code[i] == u'': continue
         sT.checkFundDistribSplit(code[i])
+        #print(code[i])
     print("基金分红和份额拆分数据检查完成！")
 
 workbook = xlwt.Workbook(encoding = 'ascii')
@@ -205,6 +206,10 @@ for i in range(count):
                     break
 
     #计算卖出日总市值
+    found, price = sT.getFundPrice(code[i], saleDate)
+    if not found:
+        print("无法获得 {} {}的基金净值".format(name[i], saleDate))
+        exit(1)
     totalValue = shareTotal*sT.getFundPrice(code[i], saleDate)[1]
     rate = (totalValue-moneyTotal)/moneyTotal
     dateList.append(saleDate)
