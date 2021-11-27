@@ -51,7 +51,7 @@ def  drawRateChat( XList, YList, yScale, labelList, title ):
     ax.yaxis.set_major_locator(mpl.ticker.MultipleLocator(yScale))
     ax.yaxis.set_major_formatter(mpl.ticker.FormatStrFormatter("%.0f%%"))
     ax.axhline(color='black', y=0)
-    ax.axhline(color='red', y=12.5)
+    ax.axhline(color='red', y=12)
     ax.axhline(color='red', y=60)
     ax.axhline(color='red', y=100)
     mpl.rcParams['font.sans-serif'] = ['SimHei']  # 指定默认字体
