@@ -19,17 +19,17 @@ style_finance = xlwt.easyxf(num_format_str='￥#,##0.00')
 
 print("\n***注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！***\n")
 
-STARTYEAR = 2014 #定投起始年
-STARTMONTH = 6 #定投起始月份
+STARTYEAR = 2009 #定投起始年
+STARTMONTH = 1 #定投起始月份
 
-ENDYEAR = 2019  #定投结束年
-ENDMONTH = 12  #定投结束月份
+ENDYEAR = 2014  #定投结束年
+ENDMONTH = 6  #定投结束月份
 
 
 #卖出日
-SALEYEAR = 2019  #卖出年
-SALEMONTH = 12  #卖出月份
-SALEDAY = 27  #卖出日
+SALEYEAR = 2014  #卖出年
+SALEMONTH = 6  #卖出月份
+SALEDAY = 30  #卖出日
 
 ENDDAY = 28 #定投结束与月底，考虑2月份，则结束日定在28号
 BUYDAY = 10  #定投日
@@ -46,6 +46,7 @@ print( u"持有计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", BUYDAY
 startDate = sT.getDateString(STARTYEAR, STARTMONTH, BUYDAY)
 endDate = sT.getDateString(ENDYEAR, ENDMONTH, ENDDAY)
 saleDate = sT.getDateString(SALEYEAR, SALEMONTH, SALEDAY)
+if endDate>saleDate: endDate=saleDate
 
 data = xlrd.open_workbook('.\\data\\fundata.xls')
 table = data.sheets()[0]
@@ -119,7 +120,7 @@ for i in range(count):
     actualStartDate = t[0].replace(",", "")[:p]
 
     rateList, dateList = [], []
-    moneyTotal, shareTotalInvest, shareTotal, diffWorst, diffBest, dateWorse, dateBest, diffWorstRate, diffBestRate, \
+    moneyTotal, shareTotalInvest, shareTotal, diffWorst, diffBest, dateWorst, dateBest, diffWorstRate, diffBestRate, \
     rateWorst, rateBest, dateRateWorst, dateRateBest, bonusTotal, lostWorst, earnBest = \
     0.0, 0.0, 0.0, 0.0, 0.0, "", "", 0.0,0.0, 0.0,0.0,"", "", 0.0, 0.0, 0.0
     d0 = actualStartDate
@@ -279,6 +280,8 @@ yScale = 5
 xList = dataList[0][0]
 yList = [d[1] for d in dataList]
 g.drawRateChat(xList, yList, yScale, name, title )
+
+
 
 
 
