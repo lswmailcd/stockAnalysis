@@ -10,16 +10,16 @@ import time
 import stockDataChecker as ck
 import Graph as g
 
-STARTYEAR = 2011 #定投起始年
+STARTYEAR = 2016 #定投起始年
 STARTMONTH = 1 #定投起始月份
 
-ENDYEAR = 2015  #定投结束年
-ENDMONTH = 5  #定投结束月份
+ENDYEAR = 2021  #定投结束年
+ENDMONTH = 2  #定投结束月份
 
 #卖出日
-SALEYEAR = 2015  #卖出年
-SALEMONTH = 5  #卖出月份
-SALEDAY = 29  #卖出日
+SALEYEAR = 2021  #卖出年
+SALEMONTH = 2  #卖出月份
+SALEDAY = 26  #卖出日
 
 BUYDAY=(10,) #每月中的定投日期列表
 REPORTYEARLAST = 2020 #最新报表年份
@@ -289,10 +289,12 @@ print( "Invest result has been wrotten to StepInvestResult.xls")
 print( u"请确认已使用stockDataChecker.py进行数据检查！")
 
 title="{}至{}股票定投收益图,卖出日{}".format(sT.getDateString(STARTYEAR,STARTMONTH,BUYDAY[0]), sT.getDateString(ENDYEAR,ENDMONTH,BUYDAY[-1]), actualDate)
-yScale = 5 if sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,BUYDAY[0], ENDYEAR,ENDMONTH,BUYDAY[0])<365*3 else 10
+yScale = 10
 xList = dataList[0][0]
 yList = [d[1] for d in dataList]
 g.drawRateChat(xList, yList, yScale, name, title )
+
+
 
 
 
