@@ -19,17 +19,19 @@ style_finance = xlwt.easyxf(num_format_str='￥#,##0.00')
 
 print("\n***注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！***\n")
 
-STARTYEAR = 2016 #定投起始年
-STARTMONTH = 1 #定投起始月份
+STARTYEAR = 2011 #定投起始年
+STARTMONTH = 2 #定投起始月份
 
-ENDYEAR = 2019  #定投结束年
-ENDMONTH = 1  #定投结束月份
+ENDYEAR = 2015  #定投结束年
+ENDMONTH = 5  #定投结束月份
+
 
 #卖出日
-SALEYEAR = 2021  #卖出年
-SALEMONTH = 2  #卖出月份
-SALEDAY = 26  #卖出日
+SALEYEAR = 2015  #卖出年
+SALEMONTH = 5  #卖出月份
+SALEDAY = 29  #卖出日
 
+ENDDAY = 28 #定投结束与月底，考虑2月份，则结束日定在28号
 BUYDAY = 10  #定投日
 INTERVAL  = 1    #定投间隔的月份
 INVESTMONEY = "5000"
@@ -42,7 +44,7 @@ print( u"持有计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", BUYDAY
 ---",SALEYEAR,u"年",SALEMONTH,u"月", SALEDAY,u"日")
 
 startDate = sT.getDateString(STARTYEAR, STARTMONTH, BUYDAY)
-endDate = sT.getDateString(ENDYEAR, ENDMONTH, BUYDAY)
+endDate = sT.getDateString(ENDYEAR, ENDMONTH, ENDDAY)
 saleDate = sT.getDateString(SALEYEAR, SALEMONTH, SALEDAY)
 
 data = xlrd.open_workbook('.\\data\\fundata.xls')
@@ -268,7 +270,7 @@ workbook.save('.\\data\\dataResult.xls')
 print( "Invest result has been wrotten to dataResult.xls")
 
 title="{}至{}基金定投收益图,卖出时间{}".format(startDate, endDate,saleDate)
-yScale = 1 if sT.createCalender().dayDiff(STARTYEAR,STARTMONTH,BUYDAY, ENDYEAR,ENDMONTH,BUYDAY)<365*3 else 5
+yScale = 5
 xList = dataList[0][0]
 yList = [d[1] for d in dataList]
 g.drawRateChat(xList, yList, yScale, name, title )
