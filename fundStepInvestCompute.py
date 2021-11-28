@@ -19,17 +19,17 @@ style_finance = xlwt.easyxf(num_format_str='￥#,##0.00')
 
 print("\n***注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！***\n")
 
-STARTYEAR = 2009 #定投起始年
+STARTYEAR = 2019 #定投起始年
 STARTMONTH = 1 #定投起始月份
 
-ENDYEAR = 2014  #定投结束年
-ENDMONTH = 6  #定投结束月份
+ENDYEAR = 2019  #定投结束年
+ENDMONTH = 1  #定投结束月份
 
 
 #卖出日
-SALEYEAR = 2014  #卖出年
-SALEMONTH = 6  #卖出月份
-SALEDAY = 30  #卖出日
+SALEYEAR = 2021  #卖出年
+SALEMONTH = 11  #卖出月份
+SALEDAY = 26  #卖出日
 
 ENDDAY = 28 #定投结束与月底，考虑2月份，则结束日定在28号
 BUYDAY = 10  #定投日
@@ -182,29 +182,107 @@ for i in range(count):
     # print(totalValue==shareTotal*sT.getFundPrice(code[i], endDate)[1],investTotal==moneyTotal )
     # print shareTotal, totalValue/sT.getFundPrice(code[i], endDate)[1]
 
-    #计算定投结束日至卖出日之间的拆分和红利
-    dateSet = set()
-    for s in shareSplit:
-        dateSet.add(s[0])
-    for d in distrib:
-        dateSet.add(d[0])
-    lsDate = [ d for d in dateSet]
-    lsDate.sort()
-    for d in lsDate:
-        if endDate<=d<=saleDate:
-            for s in shareSplit:
-                if d == s[0]:
-                    shareTotalInvest *= s[1]
-                    shareTotal *= s[1]
-                    break
-            for db in distrib:
-                if d == db[0]:
-                    disMoney = shareTotal * db[1]
-                    if stype == BONUS_SHARE:  # 红利再投
-                        shareTotal += disMoney / sT.getFundPrice(code[i], db[2])[1]
-                    else:  # 现金红利
-                        bonusTotal += disMoney
-                    break
+    # 计算定投结束日至卖出日之间每月的市值
+    if code[i] == u'' : continue
+    url = "http://fund.eastmoney.com/data/FundInvestCaculator_AIPDatas.aspx?fcode=" + code[i]
+    url = url + "&sdate=" + endDate + "&edate=" + saleDate + "&shdate=" + saleDate
+    url = url + "&round=" + "%s" %(INTERVAL) + "&dtr=" + "%s" %(BUYDAY) + "&p=" + "0" + "&je=" + INVESTMONEY
+    url = url + "&stype=" + stype + "&needfirst=" + "2" + "&jsoncallback=FundDTSY.result"
+    response = urllib.request.urlopen(url=url)
+    #response = urllib.urlopen(request)
+    data = response.read().decode('utf-8')
+    #data = urllib.urlopen(url).read()
+    time.sleep(randint(1,3))
+    infoStr = data.split('|')
+    if infoStr==['']:
+        print(data)
+        continue
+
+    name[i] = infoStr[1]
+
+    dictColumnValues = {}
+    investTotal = float(infoStr[3].replace(",",""))
+    details = infoStr[7][:-3].split("_")
+    firstInvest = details[0]
+    t = firstInvest.split("~")  # t[0]:日期,t[1]:价格,t[2]:本金,t[3]:份额
+    p = t[0].replace(",", "").find("星")
+    ownStartDate = t[0].replace(",", "")[:p]
+
+    # moneyTotal, shareTotalInvest, shareTotal, diffWorst, diffBest, dateWorst, dateBest, diffWorstRate, diffBestRate, \
+    # rateWorst, rateBest, dateRateWorst, dateRateBest, bonusTotal, lostWorst, earnBest = \
+    # 0.0, 0.0, 0.0, 0.0, 0.0, "", "", 0.0,0.0, 0.0,0.0,"", "", 0.0, 0.0, 0.0
+    d0 = ownStartDate
+    #获取基金分红数据，用于计算份额变动（红利再投）或分红情况（现金红利）
+    _, distrib = sT.getFundDistrib(code[i])
+    # 获取基金拆分数据，用于计算份额变动
+    _, shareSplit = sT.getFundShareSplit(code[i])
+    shareSplit=[s for s in shareSplit if s[0]>ownStartDate]
+    for s in details:
+        t = s.split("~")#t[0]:日期,t[1]:价格,t[2]:本金,t[3]:份额
+        p = t[0].replace(",","").find("星")
+        date = t[0].replace(",","")[:p]
+        dateList.append(date)
+        #print(date)
+        if shareSplit!=[] and shareSplit[0][0]<=date:#拥有的份额按比例拆分
+            shareTotalInvest *= shareSplit[0][1]
+            shareTotal *= shareSplit[0][1]
+            del shareSplit[0]
+        for d in distrib:#d[0]:登记及除息日，d[1]:每份分红金额,d[2]:红利发放日，红利再投资日
+            if d0<=d[0]<date:
+                disMoney = shareTotal*d[1]
+                if stype == BONUS_SHARE:#红利再投
+                    shareTotal += disMoney/sT.getFundPrice(code[i], d[2])[1]
+                else:#现金红利
+                    bonusTotal += disMoney
+
+        d0 = date
+
+        #moneyTotal = moneyTotal + float(t[2].replace(",",""))
+        diff = float(t[1])*shareTotal - moneyTotal
+        rate = diff/moneyTotal
+        rateList.append(rate)
+        if diff<diffWorst:
+            diffWorst = diff
+            dateWorst = t[0]
+            diffWorstRate = rate
+            #print('diffWorse=',diffWorse,'dateWorse',dateWorse)
+        if diff>diffBest:
+            diffBest = diff
+            dateBest = t[0]
+            diffBestRate = rate
+            #print('diffBest=', diffBest, 'dateBest', dateBest)
+        if rateWorst>rate:
+            rateWorst = rate
+            dateRateWorst = t[0]
+            lostWorst = diff
+        if rateBest<rate:
+            rateBest = rate
+            dateRateBest = t[0]
+            earnBest = diff
+
+    # #计算定投结束日至卖出日之间的拆分和红利
+    # dateSet = set()
+    # for s in shareSplit:
+    #     dateSet.add(s[0])
+    # for d in distrib:
+    #     dateSet.add(d[0])
+    # lsDate = [ d for d in dateSet]
+    # lsDate.sort()
+    # for d in lsDate:
+    #     if endDate<=d<=saleDate:
+    #         for s in shareSplit:
+    #             if d == s[0]:
+    #                 shareTotalInvest *= s[1]
+    #                 shareTotal *= s[1]
+    #                 break
+    #         for db in distrib:
+    #             if d == db[0]:
+    #                 disMoney = shareTotal * db[1]
+    #                 if stype == BONUS_SHARE:  # 红利再投
+    #                     shareTotal += disMoney / sT.getFundPrice(code[i], db[2])[1]
+    #                 else:  # 现金红利
+    #                     bonusTotal += disMoney
+    #                 break
 
     #计算卖出日总市值
     found, price = sT.getFundPrice(code[i], saleDate)
