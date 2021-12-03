@@ -292,7 +292,7 @@ title="{}至{}股票定投收益图,卖出日{}".format(sT.getDateString(STARTYE
 yScale = 10
 xList = dataList[0][0]
 yList = [d[1] for d in dataList]
-g.drawRateChat(xList, yList, yScale, name, title )
+g.drawRateChat(xList, yList, name, title )
 
 
 

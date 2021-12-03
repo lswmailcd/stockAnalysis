@@ -1,4 +1,7 @@
 import pymysql
+
+import stockTools
+
 pymysql.install_as_MySQLdb()    #手动指定将MySQLdb转给pymysql处理
 from sqlalchemy import create_engine
 import tushare as ts
@@ -1700,6 +1703,115 @@ def checkStockPrice(code, sDate, eDate):
         except Exception as e:
             print(e)
             print("checkStockPrice():股价信息插入失败！")
+
+def checkFundPrice(code, sDate, eDate):#暂时无法使用
+    if sDate>eDate:
+        print("checkFundPrice:查询时间有错！开始时间为 {},结束时间为 {}".format(sDate,eDate))
+        return
+    y1,m1,d1 = splitDateString(sDate)
+    y2,m2,d2 = splitDateString(eDate)
+    dayNum = (int(createCalender().dayDiff(y1,m1,d1,y2,m2,d2)/7)+1)*5
+    conn = createDBConnection()
+    sqlStringMin = "select min(date) as dateMin, max(date) as dateMax from fundprice where code={}".format(code)
+
+    try:
+        ret = conn.execute(sqlStringMin)
+        r = ret.first()
+        priceList = []
+        priceList1 = []
+        priceList2 = []
+        if r.dateMin:
+            if sDate < r.dateMin:
+                y, m, d = splitDateString(r.dateMin)
+                y, m, d = createCalender().getPrevDay(y, m, d)
+                date = getDateString(y, m, d, short=True)
+                url = "http://fund.eastmoney.com/f10/F10DataApi.aspx?type=lsjz&code=" + code
+                url = url + "&page=1&per=100&sdate="
+                url = url + sDate
+                url = url + "&edate="
+                url = url + date
+                url = url + "&rt=0.19110643402290917"
+                data = urllib.request.urlopen(url).read().decode("utf8")
+                bs = bs4.BeautifulSoup(data, "html.parser")
+                # 获取基金净值数据
+                tb = bs.find('table', {'class': 'w782 comm lsjz'})
+                tbody = tb.find('tbody')
+                rows = tbody.find_all('tr')
+                for row in rows:
+                    cells = row.find_all('td')
+                    day = cells[0].get_text()
+                    price = float(cells[1].get_text())
+                    priceList1.append([code,price,day])
+                if priceList1.empty:
+                    print("checkFundPrice:无法获取基金 {} 价格,开始时间为 {},结束时间为 {} 的价格信息！"\
+                          .format(code,sDate,date))
+            if r.dateMax < eDate:
+                y, m, d = splitDateString(r.dateMax)
+                y, m, d = createCalender().getNextDay(y, m, d)
+                date = getDateString(y, m, d, short=True)
+                url = "http://fund.eastmoney.com/f10/F10DataApi.aspx?type=lsjz&code=" + code
+                url = url + "&page=1&per="
+                url = url + str(dayNum)
+                url = url + "sdate="
+                url = url + sDate
+                url = url + "&edate="
+                url = url + date
+                url = url + "&rt=0.19110643402290917"
+                data = urllib.request.urlopen(url).read().decode("utf8")
+                bs = bs4.BeautifulSoup(data, "html.parser")
+                # 获取基金净值数据
+                tb = bs.find('table', {'class': 'w782 comm lsjz'})
+                tbody = tb.find('tbody')
+                rows = tbody.find_all('tr')
+                for row in rows:
+                    cells = row.find_all('td')
+                    day = cells[0].get_text()
+                    price = float(cells[1].get_text())
+                    priceList2.append([code,price,day])
+                if priceList2.empty:
+                    print("checkFundPrice:无法获取基金 {} 价格,开始时间为 {},结束时间为 {} 的价格信息！"\
+                          .format(code,date,eDate))
+        else:#数据库没有任何该股票数据,向tushare获取数据
+            url = "http://fund.eastmoney.com/f10/F10DataApi.aspx?type=lsjz&code=" + code
+            url = url + "&page=1&per="
+            url = url + str(100)
+            url = url + "sdate="
+            url = url + sDate
+            url = url + "&edate="
+            url = url + eDate
+            url = url + "&rt=0.19110643402290917"
+            data = urllib.request.urlopen(url).read().decode("utf8")
+            bs = bs4.BeautifulSoup(data, "html.parser")
+            # 获取基金净值数据
+            tb = bs.find('table', {'class': 'w782 comm lsjz'})
+            tbody = tb.find('tbody')
+            rows = tbody.find_all('tr')
+            for row in rows:
+                cells = row.find_all('td')
+                day = cells[0].get_text()
+                price = float(cells[1].get_text())
+                priceList.append([code, price, day])
+            if priceList.empty:
+                print("checkFundPrice:无法获取基金 {} 价格,开始时间为 {},结束时间为 {} 的价格信息！"\
+                      .format(code,sDate, eDate))
+    except Exception as e:
+        print(e)
+        exit(1)
+
+    priceList.extend(priceList1)
+    priceList.extend(priceList2)
+    if not priceList.empty :
+        data=""
+        for priceInfo in priceList:
+            data += "('{}',{},'{}'),".format(code, priceInfo[1], priceInfo[2])
+        sqlString = "insert into fundprice(code,closeprice,date) values{}".format(data[:-1])
+        try:
+            conn.execute(sqlString)
+            print(sqlString[:100]+"**********batch insert from eastmoney*********")
+            log.writeUtfLog(sqlString[:100]+"**********batch insert from eastmoney*********")
+        except Exception as e:
+            print(e)
+            print("checkFundPrice():基金净值信息插入失败！")
 
 
 

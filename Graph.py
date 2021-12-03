@@ -42,12 +42,17 @@ def autolabel(rects, ax, fs, bIntDisp, bPercent):
         if height<0: height = 0
         ax.text(rect.get_x() + rect.get_width() / 2., height, h, ha='center', va='bottom', fontsize=fs)
 
-def  drawRateChat( XList, YList, yScale, labelList, title ):
+def  drawRateChat( XList, YList, labelList, title ):
+    yScaleMaxList,yScaleMinList=[],[]
     for yList,name in zip(YList, labelList):  # 日期选择一个日期，坐标轴不能有两种不同的日期表示
         yList = [y*100.0 for y in yList]
+        yScaleMaxList.append(max(yList))
+        yScaleMinList.append(min(yList))
         plt.plot(XList, yList, label=name)
     ax = plt.gca()
     ax.set_title(title, fontsize=20)
+    minY, maxY = min(yScaleMinList), max(yScaleMaxList)
+    yScale = 5 if (maxY - minY)<300.0 else 10
     ax.yaxis.set_major_locator(mpl.ticker.MultipleLocator(yScale))
     ax.yaxis.set_major_formatter(mpl.ticker.FormatStrFormatter("%.0f%%"))
     ax.axhline(color='black', y=0)
