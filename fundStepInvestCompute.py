@@ -30,7 +30,7 @@ INVESTMONEY = "5000"
 #卖出日
 SALEYEAR = 2021 #卖出年
 SALEMONTH = 12  #卖出月份
-SALEDAY = 2 #卖出日
+SALEDAY = 3 #卖出日
 
 
 ENDDAY = 28 #定投结束与月底，考虑2月份，则结束日定在28号
@@ -360,7 +360,8 @@ try:
     workbook.save('.\\data\\dataResult.xls')
 except Exception as e:
     print(e)
-    str = input("文件检查无误请按'回车'！")
+    str = input("文件检查无误请按'ok'！")
+    while str!='ok': str = input("文件检查无误请输入'ok'！")
     workbook.save('.\\data\\dataResult.xls')
 print( "Invest result has been wrotten to dataResult.xls")
 
@@ -368,7 +369,8 @@ title="{}至{}基金定投收益图,卖出时间{}".format(startDate, endDate,sa
 yScale = 5
 xList = dataList[0][0]
 yList = [d[1] for d in dataList]
-g.drawRateChat(xList, yList, name, title )
+dir = ".\\data\\"+title+".png"
+g.drawRateChat(xList, yList, name, title)
 
 
 

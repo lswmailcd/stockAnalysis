@@ -10,16 +10,16 @@ import time
 import stockDataChecker as ck
 import Graph as g
 
-STARTYEAR = 2016 #定投起始年
+STARTYEAR = 2021 #定投起始年
 STARTMONTH = 1 #定投起始月份
 
 ENDYEAR = 2021  #定投结束年
-ENDMONTH = 2  #定投结束月份
+ENDMONTH = 11  #定投结束月份
 
 #卖出日
-SALEYEAR = 2021  #卖出年
-SALEMONTH = 2  #卖出月份
-SALEDAY = 26  #卖出日
+SALEYEAR = 2021 #卖出年
+SALEMONTH = 12  #卖出月份
+SALEDAY = 2 #卖出日
 
 BUYDAY=(10,) #每月中的定投日期列表
 REPORTYEARLAST = 2020 #最新报表年份
@@ -44,7 +44,7 @@ ListColumnName = [u'代码',u'名称',u'投资年数',u'投资收益率',u'投�
                   u'最大回撤额时的收益率',u'最大回撤额', u'最大回撤额出现的时间', \
                   u'最大收益额时的收益率',u'最大收益额', u'最大收益额出现的时间', \
                   u'投资总成本',u'投资总市值',u'投资总收益',u'平均年收益',u'分红',u'总股本',u'购买股本',\
-                  u'投资起始时间',u'卖出股份时间',u"每月最小投资额",u"每月最大投资额","投资日"]
+                  u'定投起始时间',u'定投结束时间',u'卖出股份时间',u"每月最小投资额",u"每月最大投资额","投资日"]
 for idx in range(len(ListColumnName)):
     worksheet.write(0, idx, ListColumnName[idx])
 
@@ -97,37 +97,37 @@ for i in range(count):
     bFirstInvest = True
     rateList, dateList = [], []
     for year in range(STARTYEAR,ENDYEAR+1):
-        # 检查本年分红送配情况
-        distribYear = year-1
-        try:
-            sqlString = "select distrib from stockreport_"
-            sqlString += "%s" % (distribYear)
-            sqlString += "_4 where code="
-            sqlString += code[i]
-            ret = conn.execute(sqlString)
-            resultDistrib = ret.first()
-            if resultDistrib is None or resultDistrib.distrib is None:
-                print( "WARNING:", code[i], name[i], distribYear, u"年，数据库年报分红数据获取失败！此年可能无分红！")
-                m = -1  # 无分红，则分红月m的值置为-1
-            else:
-                try:
-                    sqlString = "select dividenTime from stockreport_sup_"
-                    sqlString += "%s" % (distribYear)
-                    sqlString += "_4 where code="
-                    sqlString += code[i]
-                    ret = conn.execute(sqlString)
-                    resultDividenDate = ret.first()
-                    if resultDividenDate.dividenTime is None:
-                        m = -1
-                    else:
-                        y, m, d = sT.splitDateString(resultDividenDate.dividenTime)
-                except Exception as e:
-                    print( "ERROR: ", code[i], name[i], "connect database failure!")
-                    print( e)
-                    exit(1)
-        except Exception as e:
-            print( "WARNING: ", code[i], name[i], distribYear,"年stockreport数据表不存在！")
-            m=-1
+        # # 检查本年分红送配情况
+        # distribYear = year-1
+        # try:
+        #     sqlString = "select distrib from stockreport_"
+        #     sqlString += "%s" % (distribYear)
+        #     sqlString += "_4 where code="
+        #     sqlString += code[i]
+        #     ret = conn.execute(sqlString)
+        #     resultDistrib = ret.first()
+        #     if resultDistrib is None or resultDistrib.distrib is None:
+        #         print( "WARNING:", code[i], name[i], distribYear, u"年，数据库年报分红数据获取失败！此年可能无分红！")
+        #         m = -1  # 无分红，则分红月m的值置为-1
+        #     else:
+        #         try:
+        #             sqlString = "select dividenTime from stockreport_sup_"
+        #             sqlString += "%s" % (distribYear)
+        #             sqlString += "_4 where code="
+        #             sqlString += code[i]
+        #             ret = conn.execute(sqlString)
+        #             resultDividenDate = ret.first()
+        #             if resultDividenDate.dividenTime is None:
+        #                 m = -1
+        #             else:
+        #                 y, m, d = sT.splitDateString(resultDividenDate.dividenTime)
+        #         except Exception as e:
+        #             print( "ERROR: ", code[i], name[i], "connect database failure!")
+        #             print( e)
+        #             exit(1)
+        # except Exception as e:
+        #     print( "WARNING: ", code[i], name[i], distribYear,"年stockreport数据表不存在！")
+        #     m=-1
 
         #逐月定投计算
         nStockThisYear = 0
@@ -166,11 +166,13 @@ for i in range(count):
                     continue
                 # 如果该月是分红月，且不是最后一年就计算此年的分红配送（最后一年年报可能未出）
                 # 如果价格日期大于分红登记日期表示已经除权除息，则需要计算分红送转后再计算回撤
-                if (month == m and actD>d or month == m+1 and bDistrib==False) and year <= REPORTYEARLAST:
+                _, dividenDate = sT.getDividenTime(code[i], year-1)
+                y, m, d = sT.splitDateString(dividenDate)
+                if (month == m and actD>d or month == m+1 and bDistrib==False) and year <= REPORTYEARLAST+1:
                     bDistrib = True
                     #print( year,month,actualDay, "计算分红" , y,m,d
                     # 计算分红送转
-                    r, s = sT.parseDistrib(resultDistrib.distrib)
+                    _, r, s = sT.getDistrib(code[i], year-1)
                     # 分红计算
                     ndividend += nStockTotal * r
                     # 送转增加股本计算
@@ -233,7 +235,8 @@ for i in range(count):
         dictColumnValues[u'代码'] = code[i]
         dictColumnValues[u'名称'] = name[i]
         dictColumnValues[u'投资年数'] = investPeriod
-        dictColumnValues[u'投资起始时间'] = sT.getDateString(firstInvestYear,firstInvestMonth,firstInvestDay)
+        dictColumnValues[u'定投起始时间'] = sT.getDateString(firstInvestYear,firstInvestMonth,firstInvestDay)
+        dictColumnValues[u'定投结束时间'] = sT.getDateString(ENDYEAR, ENDMONTH, BUYDAY[-1])
         dictColumnValues[u'卖出股份时间'] = sT.getDateString(actY,actM,actD)
         dictColumnValues[u'投资总成本'] = nCapitalInvest
         dictColumnValues[u'投资总市值'] = nCapitalTotal
@@ -284,7 +287,13 @@ for i, stockInfo in enumerate(lsStockInfo):
         else:
             worksheet.write(i + 1, idx, stockInfo[1][ListColumnName[idx]])
 
-workbook.save('.\\data\\StepInvestResult.xls')
+try:
+    workbook.save('.\\data\\StepInvestResult.xls')
+except Exception as e:
+    print(e)
+    str = input("文件检查无误请输入'ok'！")
+    while str!='ok': str = input("文件检查无误请输入'ok'！")
+    workbook.save('.\\data\\StepInvestResult.xls')
 print( "Invest result has been wrotten to StepInvestResult.xls")
 print( u"请确认已使用stockDataChecker.py进行数据检查！")
 
