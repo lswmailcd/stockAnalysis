@@ -14,12 +14,12 @@ STARTYEAR = 2021 #定投起始年
 STARTMONTH = 1 #定投起始月份
 
 ENDYEAR = 2021  #定投结束年
-ENDMONTH = 11  #定投结束月份
+ENDMONTH = 12  #定投结束月份
 
 #卖出日
 SALEYEAR = 2021 #卖出年
 SALEMONTH = 12  #卖出月份
-SALEDAY = 2 #卖出日
+SALEDAY = 24 #卖出日
 
 BUYDAY=(10,) #每月中的定投日期列表
 REPORTYEARLAST = 2020 #最新报表年份
@@ -179,8 +179,9 @@ for i in range(count):
                     nStockTotal += nStockTotal * s
                     #print( year, "年，每10股分红：", 10*r, "送转股数：", 10*s )
                 nStockThisMonth = int(moneyLimit/closePrice/100)*100 #买入股数，如结果为560股则买入500股
-                nStockInvest += nStockThisMonth #总计购入股本
-                if nStockThisMonth==0: nStockThisMonth = 100 #至少保证买入100股
+                if nStockThisMonth==0:
+                    nStockThisMonth = 100 #至少保证买入100股
+                nStockInvest += nStockThisMonth  # 总计购入股本
                 nCapitalInvestThisMonth = nStockThisMonth*closePrice+5  #5元为买入手续费
                 if nMaxInvPerMonth<nCapitalInvestThisMonth: nMaxInvPerMonth = nCapitalInvestThisMonth
                 if nMinInvPerMonth>nCapitalInvestThisMonth: nMinInvPerMonth = nCapitalInvestThisMonth
