@@ -10,18 +10,20 @@ import time
 import stockDataChecker as ck
 import Graph as g
 
-STARTYEAR = 2021 #定投起始年
-STARTMONTH = 1 #定投起始月份
+bSorting = False #是否按收益率降序排列
 
-ENDYEAR = 2021  #定投结束年
+STARTYEAR = 2020 #定投起始年
+STARTMONTH = 12 #定投起始月份
+
+ENDYEAR = 2020  #定投结束年
 ENDMONTH = 12  #定投结束月份
 
 #卖出日
 SALEYEAR = 2021 #卖出年
 SALEMONTH = 12  #卖出月份
-SALEDAY = 24 #卖出日
+SALEDAY = 31 #卖出日
 
-BUYDAY=(10,) #每月中的定投日期列表
+BUYDAY=(31,) #每月中的定投日期列表
 REPORTYEARLAST = 2020 #最新报表年份
 
 moneyLimit = 10000  #每次定投金额上限，实际金额根据买的股数取整
@@ -274,7 +276,7 @@ for i in range(count):
     else:
         print( u"获取卖出日价格失败！",actY, actM, actD)
 
-lsStockInfo.sort( reverse=True )
+if bSorting: lsStockInfo.sort( reverse=True )
 for i, stockInfo in enumerate(lsStockInfo):
     for idx in range(len(ListColumnName)):
         if ListColumnName[idx].find(u'率') != -1:

@@ -19,22 +19,23 @@ style_finance = xlwt.easyxf(num_format_str='￥#,##0.00')
 
 print("\n***注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！***\n")
 
-STARTYEAR = 2021 #定投起始年
-STARTMONTH = 1 #定投起始月份
+bSorting = False #是否对投资率进行降序排列
 
-ENDYEAR = 2021  #定投结束年
-ENDMONTH = 11  #定投结束月份
+STARTYEAR = 2020 #定投起始年
+STARTMONTH = 12 #定投起始月份
 
-INVESTMONEY = "5000"
+ENDYEAR = 2020  #定投结束年
+ENDMONTH = 12  #定投结束月份
 
 #卖出日
 SALEYEAR = 2021 #卖出年
 SALEMONTH = 12  #卖出月份
-SALEDAY = 3 #卖出日
+SALEDAY = 31 #卖出日
 
+INVESTMONEY = "5000"
 
-ENDDAY = 28 #定投结束与月底，考虑2月份，则结束日定在28号
-BUYDAY = 10  #定投日
+ENDDAY = 31 #定投结束与月底，考虑2月份，则结束日定在28号
+BUYDAY = 31  #定投日
 INTERVAL  = 1    #定投间隔的月份
 
 
@@ -338,8 +339,7 @@ for i in range(count):
 
     lsInfo.append( (dictColumnValues[u'投资收益率'], dictColumnValues) )
 
-
-lsInfo.sort( reverse=True )
+if bSorting: lsInfo.sort( reverse=True )
 for i, Info in enumerate(lsInfo):
     for idx in range(len(ListColumnName)):
         if ListColumnName[idx].find(u'率') != -1:
@@ -360,7 +360,7 @@ try:
     workbook.save('.\\data\\dataResult.xls')
 except Exception as e:
     print(e)
-    str = input("文件检查无误请按'ok'！")
+    str = input("文件检查无误请输入'ok'！")
     while str!='ok': str = input("文件检查无误请输入'ok'！")
     workbook.save('.\\data\\dataResult.xls')
 print( "Invest result has been wrotten to dataResult.xls")
