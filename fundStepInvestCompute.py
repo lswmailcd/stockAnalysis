@@ -19,7 +19,7 @@ style_finance = xlwt.easyxf(num_format_str='￥#,##0.00')
 
 print("\n***注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！***\n")
 
-bSorting = False #是否对投资率进行降序排列
+bSorting = True #是否对投资率进行降序排列
 
 STARTYEAR = 2020 #定投起始年
 STARTMONTH = 12 #定投起始月份
@@ -193,7 +193,7 @@ for i in range(count):
         if code[i] == u'' : continue
         url = "http://fund.eastmoney.com/data/FundInvestCaculator_AIPDatas.aspx?fcode=" + code[i]
         url = url + "&sdate=" + endDate + "&edate=" + saleDate + "&shdate=" + saleDate
-        url = url + "&round=" + "%s" %(INTERVAL) + "&dtr=" + "%s" %(BUYDAY) + "&p=" + "0" + "&je=" + INVESTMONEY
+        url = url + "&round=" + "%s" %(INTERVAL) + "&dtr=" + "%s" %(SALEDAY-1 if SALEDAY>1 else SALEDAY) + "&p=" + "0" + "&je=" + INVESTMONEY
         url = url + "&stype=" + stype + "&needfirst=" + "2" + "&jsoncallback=FundDTSY.result"
         response = urllib.request.urlopen(url=url)
         #response = urllib.urlopen(request)
