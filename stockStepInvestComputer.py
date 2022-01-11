@@ -15,15 +15,15 @@ bSorting = False #是否按收益率降序排列
 STARTYEAR = 2020 #定投起始年
 STARTMONTH = 12 #定投起始月份
 
-ENDYEAR = 2020  #定投结束年
-ENDMONTH = 12  #定投结束月份
+ENDYEAR = 2022  #定投结束年
+ENDMONTH = 1  #定投结束月份
 
 #卖出日
-SALEYEAR = 2021 #卖出年
-SALEMONTH = 12  #卖出月份
-SALEDAY = 31 #卖出日
+SALEYEAR = 2022 #卖出年
+SALEMONTH = 1  #卖出月份
+SALEDAY = 10 #卖出日
 
-BUYDAY=(31,) #每月中的定投日期列表
+BUYDAY=(10,) #每月中的定投日期列表
 REPORTYEARLAST = 2020 #最新报表年份
 
 moneyLimit = 10000  #每次定投金额上限，实际金额根据买的股数取整
@@ -99,78 +99,29 @@ for i in range(count):
     bFirstInvest = True
     rateList, dateList = [], []
     for year in range(STARTYEAR,ENDYEAR+1):
-        # # 检查本年分红送配情况
-        # distribYear = year-1
-        # try:
-        #     sqlString = "select distrib from stockreport_"
-        #     sqlString += "%s" % (distribYear)
-        #     sqlString += "_4 where code="
-        #     sqlString += code[i]
-        #     ret = conn.execute(sqlString)
-        #     resultDistrib = ret.first()
-        #     if resultDistrib is None or resultDistrib.distrib is None:
-        #         print( "WARNING:", code[i], name[i], distribYear, u"年，数据库年报分红数据获取失败！此年可能无分红！")
-        #         m = -1  # 无分红，则分红月m的值置为-1
-        #     else:
-        #         try:
-        #             sqlString = "select dividenTime from stockreport_sup_"
-        #             sqlString += "%s" % (distribYear)
-        #             sqlString += "_4 where code="
-        #             sqlString += code[i]
-        #             ret = conn.execute(sqlString)
-        #             resultDividenDate = ret.first()
-        #             if resultDividenDate.dividenTime is None:
-        #                 m = -1
-        #             else:
-        #                 y, m, d = sT.splitDateString(resultDividenDate.dividenTime)
-        #         except Exception as e:
-        #             print( "ERROR: ", code[i], name[i], "connect database failure!")
-        #             print( e)
-        #             exit(1)
-        # except Exception as e:
-        #     print( "WARNING: ", code[i], name[i], distribYear,"年stockreport数据表不存在！")
-        #     m=-1
-
         #逐月定投计算
         nStockThisYear = 0
         nCapitalThisYear = 0.0
-        if year==ENDYEAR:
-            endMonth = ENDMONTH+1
-        else:
-            endMonth = 13
-        if year==STARTYEAR:
-            startMonth = STARTMONTH
-        else:
-            startMonth = 1
-        #step = 1
-        #if year==STARTYEAR: step=1
+        startMonth = STARTMONTH if year == STARTYEAR else 1
+        endMonth = ENDMONTH+1 if year==ENDYEAR else 13
         bDistrib = False
         for month in range(startMonth,endMonth,1):
             for tradeDay in BUYDAY:
-                #计算收益率
-                dateList.append(sT.getDateString(year,month,tradeDay))
-                foundData, price = sT.getClosePrice(code[i], year, month, tradeDay)
-                if foundData and nCapitalInvest!=0:
-                    profit = nStockTotal * price + ndividend - nCapitalInvest
-                    rate = profit / nCapitalInvest
-                    rateList.append(rate)
-                else:#如果当日没有开市或刚开始定投
+                foundData, closePrice, tDate = sT.getClosePriceBackward(code[i], year, month, tradeDay)
+                actY, actM, actD = sT.splitDateString(tDate)
+                if foundData==False or not(actM==month and actY==year):#如果当月没有开市
+                    print( "WARNING:",year, month, u"获取连网股价失败！可能此月股票停牌，暂停定投！")
                     rateList.append( 0.0 if rateList==[] else rateList[-1] )
-                foundData,closePrice, actualDate=sT.getClosePriceBackward(code[i], year, month, tradeDay)
-                actY, actM, actD = sT.splitDateString(actualDate)
-                #如果得到的不是当年当月的日期，则说明股票没有正常交易，此月停止定投
-                if actY>year or actM>month: continue
+                    dateList.append(sT.getDateString( year, month, tradeDay))
+                    continue
                 if bFirstInvest:
                     firstInvestYear = actY; firstInvestMonth = actM; firstInvestDay = actD
                     bFirstInvest = False
-                if foundData==False:
-                    print( "WARNING:",year, month, u"获取连网股价失败！可能此月股票停牌，暂停定投！")
-                    continue
                 # 如果该月是分红月，且不是最后一年就计算此年的分红配送（最后一年年报可能未出）
                 # 如果价格日期大于分红登记日期表示已经除权除息，则需要计算分红送转后再计算回撤
                 _, dividenDate = sT.getDividenTime(code[i], year-1)
                 y, m, d = sT.splitDateString(dividenDate)
-                if (month == m and actD>d or month == m+1 and bDistrib==False) and year <= REPORTYEARLAST+1:
+                if (month == m and actD>=d or month == m+1 and bDistrib==False) and year <= REPORTYEARLAST+1:
                     bDistrib = True
                     #print( year,month,actualDay, "计算分红" , y,m,d
                     # 计算分红送转
@@ -180,7 +131,9 @@ for i in range(count):
                     # 送转增加股本计算
                     nStockTotal += nStockTotal * s
                     #print( year, "年，每10股分红：", 10*r, "送转股数：", 10*s )
-                nStockThisMonth = int(moneyLimit/closePrice/100)*100 #买入股数，如结果为560股则买入500股
+
+                # 当月买入股数，如结果为560股则买入500股
+                nStockThisMonth = int(moneyLimit/closePrice/100)*100
                 if nStockThisMonth==0:
                     nStockThisMonth = 100 #至少保证买入100股
                 nStockInvest += nStockThisMonth  # 总计购入股本
@@ -192,7 +145,9 @@ for i in range(count):
                 nCapitalInvest += nCapitalInvestThisMonth  #本月投入成本
                 profit = nStockTotal*closePrice+ndividend-nCapitalInvest
                 rate = profit/nCapitalInvest
+                rateList.append(rate)
                 tradeDate = sT.getDateString(year, month, actD)
+                dateList.append(tradeDate)
                 if lostMoneyMax>profit:#由于计算时只计算检查日时的最大回撤，可能有比检查日回撤更大的时候，尤其是最后卖出时。
                     lostMoneyMax = profit
                     lostMoneyMaxCaption = nCapitalInvest
@@ -210,12 +165,6 @@ for i in range(count):
                     bestRateTime = tradeDate
                     bestEarn = profit
 
-    # if ENDMONTH==12:
-    #     year = ENDYEAR+1
-    #     month = 1
-    # else:
-    #     year = ENDYEAR
-    #     month = ENDMONTH+1
     foundData,closePrice, actualDate=sT.getClosePriceBackward(code[i], SALEYEAR, SALEMONTH, SALEDAY)
     actY, actM, actD = sT.splitDateString(actualDate)
     if foundData==True:
