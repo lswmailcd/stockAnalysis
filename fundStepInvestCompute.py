@@ -21,21 +21,21 @@ print("\n***注意，一定要保证所有日期处于日历日期内，否则�
 
 bSorting = True #是否对投资率进行降序排列
 
-STARTYEAR = 2020 #定投起始年
-STARTMONTH = 12 #定投起始月份
+STARTYEAR = 2021 #定投起始年
+STARTMONTH = 1 #定投起始月份
 
-ENDYEAR = 2020  #定投结束年
-ENDMONTH = 12  #定投结束月份
+ENDYEAR = 2022 #定投结束年
+ENDMONTH = 1  #定投结束月份
 
 #卖出日
-SALEYEAR = 2021 #卖出年
-SALEMONTH = 12  #卖出月份
-SALEDAY = 31 #卖出日
+SALEYEAR = 2022 #卖出年
+SALEMONTH = 1  #卖出月份
+SALEDAY = 14 #卖出日
 
 INVESTMONEY = "5000"
 
-ENDDAY = 31 #定投结束与月底，考虑2月份，则结束日定在28号
-BUYDAY = 31  #定投日
+ENDDAY = 28 #定投结束与月底，考虑2月份，则结束日定在28号
+BUYDAY = 10  #定投日
 INTERVAL  = 1    #定投间隔的月份
 
 
@@ -150,7 +150,7 @@ for i in range(count):
             if d0<=d[0]<date:
                 disMoney = shareTotal*d[1]
                 if stype == BONUS_SHARE:#红利再投
-                    shareTotal += disMoney/sT.getFundPrice(code[i], d[2])[1]
+                    shareTotal += disMoney/sT.getFundPrice(code[i], d[0])[1]
                 else:#现金红利
                     bonusTotal += disMoney
 
@@ -238,7 +238,7 @@ for i in range(count):
                 if d0<=d[0]<date:
                     disMoney = shareTotal*d[1]
                     if stype == BONUS_SHARE:#红利再投
-                        shareTotal += disMoney/sT.getFundPrice(code[i], d[2])[1]
+                        shareTotal += disMoney/sT.getFundPrice(code[i], d[0])[1]
                     else:#现金红利
                         bonusTotal += disMoney
 
@@ -286,7 +286,7 @@ for i in range(count):
                     if d == db[0]:
                         disMoney = shareTotal * db[1]
                         if stype == BONUS_SHARE:  # 红利再投
-                            shareTotal += disMoney / sT.getFundPrice(code[i], db[2])[1]
+                            shareTotal += disMoney / sT.getFundPrice(code[i], db[0])[1]
                         else:  # 现金红利
                             bonusTotal += disMoney
                         break
@@ -354,7 +354,7 @@ for i, Info in enumerate(lsInfo):
             worksheet.write(i + 1, idx, Info[1][ListColumnName[idx]])
 
     rate = Info[0]; ratePerYear=Info[1][u'投资年化复合收益率']
-    print( code[i], name[i], "总收益率：%.2f%%" % (rate * 100.0), "年化收益率：%.2f%%" % (ratePerYear * 100.0))
+    print( Info[1][u'代码'], Info[1][u'名称'], "总收益率：%.2f%%" % (rate * 100.0), "年化收益率：%.2f%%" % (ratePerYear * 100.0))
 
 try:
     workbook.save('.\\data\\dataResult.xls')
