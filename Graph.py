@@ -3,6 +3,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from pylab import mpl
+import win32api,win32con
+
+width = win32api.GetSystemMetrics(win32con.SM_CXSCREEN)   #获得屏幕分辨率X轴
+height = win32api.GetSystemMetrics(win32con.SM_CYSCREEN)   #获得屏幕分辨率Y轴
+
 
 def  drawColumnChat( ax, XList, YList, XtickLableList, YtickLableList, title, xLableName, yLableName, \
                      fontSize, barWidth, bIntDisp=False, bPercent=False ):
@@ -42,7 +47,8 @@ def autolabel(rects, ax, fs, bIntDisp, bPercent):
         if height<0: height = 0
         ax.text(rect.get_x() + rect.get_width() / 2., height, h, ha='center', va='bottom', fontsize=fs)
 
-def  drawRateChat( XList, YList, labelList, title ):
+def  drawRateChat( XList, YList, labelList, title, saveImg=False, dir="" ):
+    plt.figure(figsize=((width-10) / 100.0, (height-10) / 100.0))
     yScaleMaxList,yScaleMinList=[],[]
     for yList,name in zip(YList, labelList):  # 日期选择一个日期，坐标轴不能有两种不同的日期表示
         yList = [y*100.0 for y in yList]
@@ -63,4 +69,5 @@ def  drawRateChat( XList, YList, labelList, title ):
     plt.legend(loc=0, ncol=6, mode="expand", borderaxespad=0.0)
     plt.gcf().autofmt_xdate()
     plt.grid(True)
+    if saveImg: plt.savefig(dir)
     plt.show()
