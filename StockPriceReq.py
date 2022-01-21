@@ -8,8 +8,10 @@ import tushare as ts
 import time
 import stockTools as sT
 
-sdate = "2019-12-31"
-edate = "2020-12-31"
+sdate = "2020-12-31"
+edate = "2021-12-31"
+
+incRate = 0.03
 
 data = xlrd.open_workbook('.\\data\\StockList.xls')
 table = data.sheets()[0]
@@ -32,7 +34,7 @@ for i in range(nrows):
 for i in range(count):
     lstRate = []
     conn = sT.createDBConnection()
-    sqlString = "select closeprice, date from stockprice where code={} and date between '{}' and '{}'".format(code[i], sdate, edate)
+    sqlString = "select closeprice, date from stockprice where code={} and date between '{}' and '{}' order by date asc".format(code[i], sdate, edate)
     try:
         ret = conn.execute(sqlString)
     except Exception as e:
@@ -41,9 +43,9 @@ for i in range(count):
         exit(1)
     r = ret.fetchall()
     if r:
-        for i in range(len(r)-1):
-            rate = (r[i+1][0]-r[i][0])/r[i][0]
-            if rate>0.03: lstRate.append([rate,r[i+1][1]])
+        for k in range(len(r)-1):
+            rate = (r[k+1][0]-r[k][0])/r[k][0]
+            if rate>incRate: lstRate.append([rate,r[k+1][1]])
 
-        print("从{}到{}，涨幅超过3%的有{}次,占总交易日的{:.2%}".format(sdate,edate,len(lstRate),len(lstRate)/260))
+        print("{}从{}到{}，涨幅超过{:.0%}的有{}次,占总交易日的{:.2%}".format(name[i], sdate,edate,incRate,len(lstRate),len(lstRate)/260))
         for p in lstRate:   print(p)
