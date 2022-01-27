@@ -97,7 +97,7 @@ for i in range(count):
     bestRateTime = ""
     print( code[i],name[i])
     bFirstInvest = True
-    rateList, dateList = [], []
+    rateList, profitList, dateList = [], [], []
     for year in range(STARTYEAR,ENDYEAR+1):
         #逐月定投计算
         nStockThisYear = 0
@@ -144,26 +144,11 @@ for i in range(count):
                 nStockTotal += nStockThisMonth    #本年总计股数
                 nCapitalInvest += nCapitalInvestThisMonth  #本月投入成本
                 profit = nStockTotal*closePrice+ndividend-nCapitalInvest
+                profitList.append(profit)
                 rate = profit/nCapitalInvest
                 rateList.append(rate)
                 tradeDate = sT.getDateString(year, month, actD)
                 dateList.append(tradeDate)
-                if lostMoneyMax>profit:#由于计算时只计算检查日时的最大回撤，可能有比检查日回撤更大的时候，尤其是最后卖出时。
-                    lostMoneyMax = profit
-                    lostMoneyMaxCaption = nCapitalInvest
-                    lostMoneyMaxTime = tradeDate
-                if earnMoneyMax<profit:#由于计算时只计算检查日时的最大收益，可能有比检查日收益更大的时候，尤其是最后卖出时。
-                    earnMoneyMax = profit
-                    earnMoneyMaxCaption = nCapitalInvest
-                    earnMoneyMaxTime = tradeDate
-                if rate<worstRate:
-                    worstRate = rate
-                    worstRateTime = tradeDate
-                    worstLost = profit
-                if rate>bestRate:
-                    bestRate = rate
-                    bestRateTime = tradeDate
-                    bestEarn = profit
 
     foundData,closePrice, actualDate=sT.getClosePriceBackward(code[i], SALEYEAR, SALEMONTH, SALEDAY)
     actY, actM, actD = sT.splitDateString(actualDate)
@@ -182,7 +167,15 @@ for i in range(count):
                     nStockTotal += nStockTotal * db[1]
         nCapitalTotal = nStockTotal*closePrice+ndividend
         income = nCapitalTotal-nCapitalInvest
+        profitList.append(income)
         incomeRate = income/nCapitalInvest
+        rateList.append(incomeRate)
+        dateList.append(actualDate)
+        #最佳，最差收益计算
+        tupRate = zip(rateList, profitList, dateList)
+        tupRate = sorted(tupRate)
+        tupProfit = zip(profitList, rateList, dateList)
+        tupProfit = sorted(tupProfit)
         investPeriod = round(sT.createCalender().dayDiff(firstInvestYear,firstInvestMonth,firstInvestDay,actY,actM, actD)/365.0, 2)
         dictColumnValues[u'代码'] = code[i]
         dictColumnValues[u'名称'] = name[i]
@@ -201,18 +194,18 @@ for i in range(count):
         dictColumnValues[u'购买股本'] = nStockInvest
         dictColumnValues[u"每月最小投资额"] = nMinInvPerMonth
         dictColumnValues[u"每月最大投资额"] = nMaxInvPerMonth
-        dictColumnValues[u'最大回撤额'] = lostMoneyMax
-        dictColumnValues[u'最大回撤额时的收益率'] = round(lostMoneyMax/lostMoneyMaxCaption,4)
-        dictColumnValues[u'最大回撤额出现的时间'] = lostMoneyMaxTime
-        dictColumnValues[u'最大收益额'] = earnMoneyMax
-        dictColumnValues[u'最大收益额时的收益率'] = round(earnMoneyMax/earnMoneyMaxCaption,4)
-        dictColumnValues[u'最大收益额出现的时间'] = earnMoneyMaxTime
-        dictColumnValues[u'最佳收益率'] = bestRate
-        dictColumnValues[u'最差收益率'] = worstRate
-        dictColumnValues[u'最佳收益额'] = bestEarn
-        dictColumnValues[u'最差收益额'] = worstLost
-        dictColumnValues[u'最佳收益时间'] = bestRateTime
-        dictColumnValues[u'最差收益时间'] = worstRateTime
+        dictColumnValues[u'最大回撤额'] = tupProfit[0][0]
+        dictColumnValues[u'最大回撤额时的收益率'] = tupProfit[0][1]
+        dictColumnValues[u'最大回撤额出现的时间'] = tupProfit[0][2]
+        dictColumnValues[u'最大收益额'] = tupProfit[-1][0]
+        dictColumnValues[u'最大收益额时的收益率'] = tupProfit[-1][1]
+        dictColumnValues[u'最大收益额出现的时间'] = tupProfit[-1][2]
+        dictColumnValues[u'最佳收益率'] = tupRate[-1][0]
+        dictColumnValues[u'最佳收益额'] = tupRate[-1][1]
+        dictColumnValues[u'最佳收益时间'] = tupRate[-1][2]
+        dictColumnValues[u'最差收益率'] = tupRate[0][0]
+        dictColumnValues[u'最差收益额'] = tupRate[0][1]
+        dictColumnValues[u'最差收益时间'] = tupRate[0][2]
         s = "-".join([str(x) for x in BUYDAY])
         dictColumnValues[u'投资日'] = s
         lsStockInfo.append((dictColumnValues[u'投资收益率'], dictColumnValues))
