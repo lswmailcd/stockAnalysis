@@ -70,14 +70,11 @@ stype = BONUS_SHARE #红利再投
 if str=="c" :
     stype = BONUS_CASH #现金分红
 
-str = input("如不进行分红检查请按'回车',如需检查请按'c',退出请按'q': ")
-if str=="q" : exit(0)
-if str=="c" :
-    print("开始检查基金分红和份额拆分数据......")
-    for i in range(count):
-        if code[i] == u'': continue
-        sT.checkFundDistribSplit(code[i])
-    print("基金分红和份额拆分数据检查完成！")
+print("开始检查基金分红和份额拆分数据......")
+for i in range(count):
+    if code[i] == u'': continue
+    sT.checkFundDistribSplit(code[i])
+print("基金分红和份额拆分数据检查完成！")
 
 #for i in range(count):
 #    sT.checkFundPrice(code[i], startDate, saleDate)
@@ -123,7 +120,7 @@ for i in range(count):
     p = t[0].replace(",", "").find("星")
     actualStartDate = t[0].replace(",", "")[:p]
 
-    rateList, dateList = [], []
+    rateList, diffList, dateList = [], [], []
     moneyTotal, shareTotalInvest, shareTotal, diffWorst, diffBest, dateWorst, dateBest, diffWorstRate, diffBestRate, \
     rateWorst, rateBest, dateRateWorst, dateRateBest, bonusTotal, lostWorst, earnBest = \
     0.0, 0.0, 0.0, 0.0, 0.0, "", "", 0.0,0.0, 0.0,0.0,"", "", 0.0, 0.0, 0.0
@@ -158,28 +155,11 @@ for i in range(count):
 
         moneyTotal = moneyTotal + float(t[2].replace(",",""))
         diff = float(t[1])*shareTotal - moneyTotal
+        diffList.append(diff)
         rate = diff/moneyTotal
         rateList.append(rate)
         #print(float(t[1]))
         #print('diff=', diff, 'shareTotal=', shareTotal, 'date', date)
-        if diff<diffWorst:
-            diffWorst = diff
-            dateWorst = t[0]
-            diffWorstRate = rate
-            #print('diffWorse=',diffWorse,'dateWorse',dateWorse)
-        if diff>diffBest:
-            diffBest = diff
-            dateBest = t[0]
-            diffBestRate = rate
-            #print('diffBest=', diffBest, 'dateBest', dateBest)
-        if rateWorst>rate:
-            rateWorst = rate
-            dateRateWorst = t[0]
-            lostWorst = diff
-        if rateBest<rate:
-            rateBest = rate
-            dateRateBest = t[0]
-            earnBest = diff
 
     # print(totalValue-investTotal)
     # print(shareTotal*sT.getFundPrice(code[i], endDate)[1]-moneyTotal)
@@ -246,26 +226,9 @@ for i in range(count):
 
             #moneyTotal = moneyTotal + float(t[2].replace(",",""))
             diff = float(t[1])*shareTotal - moneyTotal
+            diffList.append(diff)
             rate = diff/moneyTotal
             rateList.append(rate)
-            if diff<diffWorst:
-                diffWorst = diff
-                dateWorst = t[0]
-                diffWorstRate = rate
-                #print('diffWorse=',diffWorse,'dateWorse',dateWorse)
-            if diff>diffBest:
-                diffBest = diff
-                dateBest = t[0]
-                diffBestRate = rate
-                #print('diffBest=', diffBest, 'dateBest', dateBest)
-            if rateWorst>rate:
-                rateWorst = rate
-                dateRateWorst = t[0]
-                lostWorst = diff
-            if rateBest<rate:
-                rateBest = rate
-                dateRateBest = t[0]
-                earnBest = diff
     else:
         #计算定投结束日至卖出日之间的拆分和红利
         dateSet = set()
@@ -298,10 +261,17 @@ for i in range(count):
         print("无法获得 {} {} {}的基金净值".format(code[i], name[i], saleDate))
         exit(1)
     totalValue = shareTotal*sT.getFundPrice(code[i], saleDate)[1]
+    diff = totalValue - moneyTotal
+    diffList.append(diff)
     rate = (totalValue-moneyTotal)/moneyTotal
     dateList.append(saleDate)
     rateList.append(rate)
     dataList.append([dateList, rateList])
+    #找出最大,最差收益率和收益及时间
+    tupRate = zip(rateList, diffList, dateList)
+    tupRate = sorted(tupRate)
+    tupDiff = zip(diffList, rateList, dateList)
+    tupDiff = sorted(tupDiff)
     #定投时长
     y,m,d=sT.splitDateString(actualStartDate)
     investPeriod = round(sT.createCalender().dayDiff(y,m,d,ENDYEAR,ENDMONTH,BUYDAY)/365.0, 2)
@@ -324,18 +294,18 @@ for i in range(count):
     dictColumnValues[u'投资年化复合收益率'] = ratePerYear
     dictColumnValues[u'总份额'] = shareTotal
     dictColumnValues[u'购买份额'] = shareTotalInvest
-    dictColumnValues[u'最大回撤额'] = diffWorst
-    dictColumnValues[u'最大回撤额时的收益率'] = diffWorstRate
-    dictColumnValues[u'最大回撤额出现的时间'] = dateWorst
-    dictColumnValues[u'最大收益额'] = diffBest
-    dictColumnValues[u'最大收益额时的收益率'] = diffBestRate
-    dictColumnValues[u'最大收益额出现的时间'] = dateBest
-    dictColumnValues[u'最佳收益率'] = rateBest
-    dictColumnValues[u'最佳收益额'] = earnBest
-    dictColumnValues[u'最佳收益时间'] = dateRateBest
-    dictColumnValues[u'最差收益率'] = rateWorst
-    dictColumnValues[u'最差收益额'] = lostWorst
-    dictColumnValues[u'最差收益时间'] = dateRateWorst
+    dictColumnValues[u'最大回撤额'] = tupDiff[0][0]
+    dictColumnValues[u'最大回撤额时的收益率'] = tupDiff[0][1]
+    dictColumnValues[u'最大回撤额出现的时间'] = tupDiff[0][2]
+    dictColumnValues[u'最大收益额'] = tupDiff[-1][0]
+    dictColumnValues[u'最大收益额时的收益率'] = tupDiff[-1][1]
+    dictColumnValues[u'最大收益额出现的时间'] = tupDiff[-1][2]
+    dictColumnValues[u'最佳收益率'] = tupRate[-1][0]
+    dictColumnValues[u'最佳收益额'] = tupRate[-1][1]
+    dictColumnValues[u'最佳收益时间'] = tupRate[-1][2]
+    dictColumnValues[u'最差收益率'] = tupRate[0][0]
+    dictColumnValues[u'最差收益额'] = tupRate[0][1]
+    dictColumnValues[u'最差收益时间'] = tupRate[0][2]
     dictColumnValues[u'投资日'] = BUYDAY
 
     lsInfo.append( (dictColumnValues[u'投资收益率'], dictColumnValues) )
