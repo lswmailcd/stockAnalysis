@@ -10,18 +10,18 @@ import time
 import stockDataChecker as ck
 import Graph as g
 
-bSorting = False #是否按收益率降序排列
+date = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
+
+bSorting = True #是否按收益率降序排列
 
 STARTYEAR = 2020 #定投起始年
 STARTMONTH = 12 #定投起始月份
 
-ENDYEAR = 2022  #定投结束年
-ENDMONTH = 1  #定投结束月份
+#定投结束年月
+ENDYEAR, ENDMONTH, _ = sT.splitDateString(date)
 
 #卖出日
-SALEYEAR = 2022 #卖出年
-SALEMONTH = 1  #卖出月份
-SALEDAY = 10 #卖出日
+SALEYEAR, SALEMONTH, SALEDAY = sT.splitDateString(date)
 
 BUYDAY=(10,) #每月中的定投日期列表
 REPORTYEARLAST = 2020 #最新报表年份

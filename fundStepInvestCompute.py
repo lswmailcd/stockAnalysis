@@ -19,18 +19,18 @@ style_finance = xlwt.easyxf(num_format_str='￥#,##0.00')
 
 print("\n***注意，一定要保证所有日期处于日历日期内，否则程序会报错！！！***\n")
 
+date = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
+
 bSorting = True #是否对投资率进行降序排列
 
 STARTYEAR = 2021 #定投起始年
 STARTMONTH = 1 #定投起始月份
 
-ENDYEAR = 2022 #定投结束年
-ENDMONTH = 1  #定投结束月份
+#定投结束年月
+ENDYEAR, ENDMONTH, _ = sT.splitDateString(date)
 
 #卖出日
-SALEYEAR = 2022 #卖出年
-SALEMONTH = 1  #卖出月份
-SALEDAY = 14 #卖出日
+SALEYEAR, SALEMONTH, SALEDAY = sT.splitDateString(date)
 
 INVESTMONEY = "5000"
 
@@ -286,7 +286,8 @@ for i in range(count):
                     if d == db[0]:
                         disMoney = shareTotal * db[1]
                         if stype == BONUS_SHARE:  # 红利再投
-                            shareTotal += disMoney / sT.getFundPrice(code[i], db[0])[1]
+                            bFound, price = sT.getFundPrice(code[i], db[0])
+                            if bFound: shareTotal += disMoney / price
                         else:  # 现金红利
                             bonusTotal += disMoney
                         break
@@ -294,7 +295,7 @@ for i in range(count):
     #计算卖出日总市值
     found, price = sT.getFundPrice(code[i], saleDate)
     if not found:
-        print("无法获得 {} {}的基金净值".format(name[i], saleDate))
+        print("无法获得 {} {} {}的基金净值".format(code[i], name[i], saleDate))
         exit(1)
     totalValue = shareTotal*sT.getFundPrice(code[i], saleDate)[1]
     rate = (totalValue-moneyTotal)/moneyTotal
