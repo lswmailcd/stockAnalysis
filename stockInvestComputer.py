@@ -47,14 +47,14 @@ for i in range(nrows):
 print()
 for i in range(count):
     if code[i] == "" or code[i]=='0.0': continue
-    date = startdate
-    while date<enddate:
+    date = enddate
+    while date>startdate:
         bFound, closePrice, actDate = sT.getClosePriceForward(code[i], date)
         if bFound and closePrice < price[i]:
             print("{} {}，{} 股票价格{:.2f}元，低于{:.2f}元".format(code[i], name[i], actDate, closePrice, price[i]))
             break
         else:
-            date = sT.getDateString(*sT.createCalender().getNextWorkday(date))
+            date = sT.getDateString(*sT.createCalender().getPrevWorkday(date))
 
 
 
