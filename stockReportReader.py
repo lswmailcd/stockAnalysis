@@ -6,15 +6,15 @@ import stockTools as sT
 import time
 from random import randint
 
-startdate = time.strftime('%Y-%m-%d',time.localtime(time.time()-24*60*60*90*2))#公告起始时间为三个月前
+startdate = time.strftime('%Y-%m-%d',time.localtime(time.time()-24*60*60*90))#公告起始时间为三个月前
 endate = time.strftime('%Y-%m-%d',time.localtime(time.time()))
 
 data = xlrd.open_workbook('.\\data\\StockList.xls')
 table = data.sheets()[0]
 nrows = table.nrows-1
 a = np.zeros([nrows])
-code = np.array(a, dtype=np.unicode)
-name = np.array(a, dtype=np.unicode)
+code = np.array(a, dtype=np.compat.unicode)
+name = np.array(a, dtype=np.compat.unicode)
 count = 0
 for i in range(nrows):
     if table.cell(i + 1, 0).value!="":

@@ -1,6 +1,7 @@
 # coding:utf-8
 
 from datetime import date
+import stockTools as sT
 
 class stockCalender():
     def __init__(self):
@@ -71,8 +72,8 @@ class stockCalender():
             return y,m,d
 
     def getWorkdayBackward(self, y, m, d):
-        if m == 1: d = 4 #元旦
-        if m==5 : d = 6 #五一
+        if m == 1 and (d>0 and d<4): d = 4 #元旦
+        if m==5 and (d>0 and d<6): d = 6 #五一
         if  m==10 and (d>0 and d<8): d = 8 #十一
         wd = self.getWeekday(y, m, d)
         if wd in (6,7):
@@ -88,7 +89,7 @@ class stockCalender():
         else:
             return y,m,d
 
-    def getPrevDay(self, y, m, d):#获得当前日期的前一天
+    def getPrevDay(self, y,m,d):#获得当前日期的前一天
         if d-1 == 0:
             if m-1 == 0:
                 y -= 1
@@ -116,7 +117,8 @@ class stockCalender():
         y, m, d = self.getPrevDay(y, m, d)
         return self.getWorkdayForward(y, m, d)
 
-    def getNextWorkday(self, y, m, d):#获得当前日期的后一个工作日
+    def getNextWorkday(self, dORy, m=0, d=0):#获得当前日期的后一个工作日
+        if m==0: y, m, d = sT.splitDateString(dORy)
         y, m, d = self.getNextDay(y, m, d)
         return self.getWorkdayBackward(y, m, d)
 

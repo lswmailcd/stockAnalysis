@@ -11,15 +11,13 @@ import time
 style_percent = xlwt.easyxf(num_format_str='0.00%')
 style_finance = xlwt.easyxf(num_format_str='￥#,##0.00')
 
-STARTYEAR = 2009 #投资起始年
-STARTMONTH = 1#投资起始月份
-STARTDAY = 5    #投资起始日期
+startdate = time.strftime('%Y-%m-%d',time.localtime(time.time()-24*60*60*90))#起始时间为3个月前
+STARTYEAR, STARTMONTH, STARTDAY = sT.splitDateString(startdate)
 
-date = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
-#DATA2WATCH.append(date)
-ENDYEAR, ENDMONTH, ENDDAY = sT.splitDateString(date)
+enddate = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
+ENDYEAR, ENDMONTH, ENDDAY = sT.splitDateString(enddate)
 
-data = xlrd.open_workbook('.\\data\\StockList.xls')
+data = xlrd.open_workbook('.\\data\\StockAlert.xlsx')
 table = data.sheets()[0]
 nrows = table.nrows-1
 code = []
@@ -46,11 +44,17 @@ for i in range(nrows):
             sT.checkStockPrice(code[i], sT.getDateString(STARTYEAR, STARTMONTH, STARTDAY), \
                                sT.getDateString(ENDYEAR, ENDMONTH, ENDDAY))
 
+print()
 for i in range(count):
     if code[i] == "" or code[i]=='0.0': continue
-    bFound, closePrice, actDate = sT.getClosePriceForward(code[i], ENDYEAR, ENDMONTH, ENDDAY)
-    if bFound and closePrice < price[i]:
-        print("{} {}，{} 股票价格{:.2f}元，低于{:.2f}元".format(code[i], name[i], actDate, closePrice, price[i]))
+    date = startdate
+    while date<enddate:
+        bFound, closePrice, actDate = sT.getClosePriceForward(code[i], date)
+        if bFound and closePrice < price[i]:
+            print("{} {}，{} 股票价格{:.2f}元，低于{:.2f}元".format(code[i], name[i], actDate, closePrice, price[i]))
+            break
+        else:
+            date = sT.getDateString(*sT.createCalender().getNextWorkday(date))
 
 
 
