@@ -113,7 +113,8 @@ class stockCalender():
             d += 1
         return y, m, d
 
-    def getPrevWorkday(self, y, m, d):#获得当前日期的前一个工作日
+    def getPrevWorkday(self, dORy, m=0, d=0):#获得当前日期的前一个工作日
+        if m == 0: y, m, d = sT.splitDateString(dORy)
         y, m, d = self.getPrevDay(y, m, d)
         return self.getWorkdayForward(y, m, d)
 
