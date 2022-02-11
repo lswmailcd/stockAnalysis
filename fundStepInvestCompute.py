@@ -23,12 +23,15 @@ date = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时�
 
 bSorting = True #是否对投资率进行降序排列
 
-STARTYEAR = 2021 #定投起始年
-STARTMONTH = 1 #定投起始月份
+date="2020-12-10"
+#定投起始年月
+STARTYEAR, STARTMONTH, _ = sT.splitDateString(date)
 
+date="2022-02-10"
 #定投结束年月
 ENDYEAR, ENDMONTH, _ = sT.splitDateString(date)
 
+date="2022-02-11"
 #卖出日
 SALEYEAR, SALEMONTH, SALEDAY = sT.splitDateString(date)
 
@@ -310,7 +313,7 @@ for i in range(count):
 
     lsInfo.append( (dictColumnValues[u'投资收益率'], dictColumnValues) )
 
-if bSorting: lsInfo.sort( reverse=True )
+if bSorting: lsInfo.sort( reverse=True, key=lambda x:x[0])
 for i, Info in enumerate(lsInfo):
     for idx in range(len(ListColumnName)):
         if ListColumnName[idx].find(u'率') != -1:

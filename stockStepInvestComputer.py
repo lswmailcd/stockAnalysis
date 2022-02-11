@@ -13,20 +13,23 @@ import Graph as g
 date = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
 
 bSorting = True #是否按收益率降序排列
+BUYDAY=(10,) #每月中的定投日期列表
+REPORTYEARLAST = 2020 #最新报表年份
+moneyLimit = 10000  #每次定投金额上限，实际金额根据买的股数取整
 
-STARTYEAR = 2020 #定投起始年
-STARTMONTH = 12 #定投起始月份
+date="2020-12-31"
+#定投起始年月
+STARTYEAR, STARTMONTH, _ = sT.splitDateString(date)
 
+date="2022-02-10"
 #定投结束年月
 ENDYEAR, ENDMONTH, _ = sT.splitDateString(date)
 
+date="2022-02-11"
 #卖出日
 SALEYEAR, SALEMONTH, SALEDAY = sT.splitDateString(date)
 
-BUYDAY=(10,) #每月中的定投日期列表
-REPORTYEARLAST = 2020 #最新报表年份
 
-moneyLimit = 10000  #每次定投金额上限，实际金额根据买的股数取整
 
 style_percent = xlwt.easyxf(num_format_str='0.00%')
 style_finance = xlwt.easyxf(num_format_str='￥#,##0.00')
