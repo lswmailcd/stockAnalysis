@@ -1,6 +1,7 @@
 # coding:utf-8
 
 from datetime import date
+from datetime import timedelta
 import stockTools as sT
 
 class stockCalender():
@@ -136,6 +137,19 @@ class stockCalender():
             return df.days
         else:
             return None
+
+    def getWorkday(self, days, *d):
+        nParam = len(d)
+        if nParam==1:
+            y, m, d = sT.splitDateString(d)
+        else:
+            y, m, d = d[0], d[1], d[2]
+        dateNew = date(y, m, d).__add__( timedelta(days) )
+        if days<0:
+            return self.getWorkdayForward(dateNew.year, dateNew.month, dateNew.day)
+        else:
+            return self.getWorkdayBackward(dateNew.year, dateNew.month, dateNew.day)
+
 
 
 
