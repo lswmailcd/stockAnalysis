@@ -11,7 +11,7 @@ import time
 style_percent = xlwt.easyxf(num_format_str='0.00%')
 style_finance = xlwt.easyxf(num_format_str='￥#,##0.00')
 
-startdate = time.strftime('%Y-%m-%d',time.localtime(time.time()-24*60*60*90))#起始时间为3个月前
+startdate = time.strftime('%Y-%m-%d',time.localtime(time.time()-24*60*60*90))#起始时间为6个月前
 STARTYEAR, STARTMONTH, STARTDAY = sT.splitDateString(startdate)
 
 enddate = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
@@ -47,14 +47,18 @@ for i in range(nrows):
 print()
 for i in range(count):
     if code[i] == "" or code[i]=='0.0': continue
-    date = enddate
-    while date>startdate:
-        bFound, closePrice, actDate = sT.getClosePriceForward(code[i], date)
-        if bFound and closePrice < price[i]:
-            print("{} {}，{} 股票价格{:.2f}元，低于{:.2f}元".format(code[i], name[i], actDate, closePrice, price[i]))
-            break
-        else:
-            date = sT.getDateString(*sT.createCalender().getPrevWorkday(date))
+    # 查找创新低前的最低点
+    priceList=[]
+    date = startdate
+
+    while date <= enddate:
+        bFound, closePrice, actDate = sT.getClosePriceBackward(code[i], date)
+        if bFound: priceList.append((closePrice, actDate))
+        date = sT.getDateString(*sT.createCalender().getNextWorkday(date))
+    recentPrice, recentDate = priceList[-1]
+    priceList.sort()
+    print("{} {}，股票价格最低价{:.2f}元, 日期{}, 当前价{:.2f}元, 日期{}, 最低价距当前日期{}天".\
+        format(code[i], name[i], priceList[0][0], priceList[0][1],recentPrice, recentDate, sT.createCalender().dayDiff(priceList[0][1],recentDate) ))
 
 
 
