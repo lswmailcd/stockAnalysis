@@ -17,15 +17,15 @@ BUYDAY=(10,) #每月中的定投日期列表
 REPORTYEARLAST = 2020 #最新报表年份
 moneyLimit = 10000  #每次定投金额上限，实际金额根据买的股数取整
 
-date="2020-12-31"
+date="2020-12-10"
 #定投起始年月
 STARTYEAR, STARTMONTH, _ = sT.splitDateString(date)
 
-date="2022-02-10"
+date="2022-04-10"
 #定投结束年月
 ENDYEAR, ENDMONTH, _ = sT.splitDateString(date)
 
-date="2022-02-11"
+date="2022-04-15"
 #卖出日
 SALEYEAR, SALEMONTH, SALEDAY = sT.splitDateString(date)
 
@@ -62,7 +62,11 @@ name = np.array(a, dtype=np.compat.unicode)
 count  = 0
 for i in range(nrows):
     if table.cell(i + 1, 0).value!="":
-        code[count] = table.cell(i + 1, 0).value
+        type = table.cell_type(i + 1, 0)
+        if type==2:#number
+            code[count] = str(int(table.cell(i + 1, 0).value))
+        elif type==1:#string
+            code[count] = table.cell(i + 1, 0).value
         name[count] = sT.getStockNameByCode(code[count])
         sname, yearToMarket,_,_ = sT.getStockBasics(code[count])
         if yearToMarket == 0:

@@ -23,15 +23,15 @@ date = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时�
 
 bSorting = True #是否对投资率进行降序排列
 
-date="2020-12-10"
+date="2021-01-10"
 #定投起始年月
 STARTYEAR, STARTMONTH, _ = sT.splitDateString(date)
 
-date="2022-02-10"
+date="2022-04-10"
 #定投结束年月
 ENDYEAR, ENDMONTH, _ = sT.splitDateString(date)
 
-date="2022-02-11"
+date="2022-04-13"
 #卖出日
 SALEYEAR, SALEMONTH, SALEDAY = sT.splitDateString(date)
 
@@ -62,7 +62,11 @@ name = np.array(a, dtype=np.compat.unicode)
 count  = 0
 for i in range(nrows):
     if table.cell(i + 1, 0).value!="":
-        code[i] = table.cell(i + 1, 0).value
+        type = table.cell_type(i + 1, 0)
+        if type==2:#number
+            code[i] = str(int(table.cell(i + 1, 0).value))
+        elif type==1:#string
+            code[i] = table.cell(i + 1, 0).value
         if code[i] == "" or code[i]=='0.0': continue
         count = count+1
 

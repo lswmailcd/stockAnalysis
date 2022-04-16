@@ -28,7 +28,11 @@ count = 0
 for i in range(nrows):
     if table.cell(i + 1, 0).value!="" or table.cell(i + 1, 1).value!="":
         count += 1
-        code.append(table.cell(i + 1, 0).value)
+        type = table.cell_type(i + 1, 0)
+        if type==2:#number
+            code.append(str(int(table.cell(i + 1, 0).value)))
+        elif type==1:#string
+            code.append(table.cell(i + 1, 0).value)
         if code[i] == "":
             name.append("")
         else:
