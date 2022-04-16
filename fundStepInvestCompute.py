@@ -64,9 +64,11 @@ for i in range(nrows):
     if table.cell(i + 1, 0).value!="":
         type = table.cell_type(i + 1, 0)
         if type==2:#number
-            code[i] = str(int(table.cell(i + 1, 0).value))
+            value = str(int(table.cell(i + 1, 0).value))
         elif type==1:#string
-            code[i] = table.cell(i + 1, 0).value
+            value = table.cell(i + 1, 0).value
+        value = '0'*(6-len(value))+value
+        code[i] = value
         if code[i] == "" or code[i]=='0.0': continue
         count = count+1
 

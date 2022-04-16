@@ -30,9 +30,11 @@ for i in range(nrows):
         count += 1
         type = table.cell_type(i + 1, 0)
         if type==2:#number
-            code.append(str(int(table.cell(i + 1, 0).value)))
+            value = str(int(table.cell(i + 1, 0).value))
         elif type==1:#string
-            code.append(table.cell(i + 1, 0).value)
+            value = table.cell(i + 1, 0).value
+        value = '0'*(6-len(value))+value
+        code.append(value)
         if code[i] == "":
             name.append("")
         else:

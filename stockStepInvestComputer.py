@@ -64,9 +64,11 @@ for i in range(nrows):
     if table.cell(i + 1, 0).value!="":
         type = table.cell_type(i + 1, 0)
         if type==2:#number
-            code[count] = str(int(table.cell(i + 1, 0).value))
+            value = str(int(table.cell(i + 1, 0).value))
         elif type==1:#string
-            code[count] = table.cell(i + 1, 0).value
+            value = table.cell(i + 1, 0).value
+        value = '0'*(6-len(value))+value
+        code[count] = value
         name[count] = sT.getStockNameByCode(code[count])
         sname, yearToMarket,_,_ = sT.getStockBasics(code[count])
         if yearToMarket == 0:
