@@ -13,10 +13,11 @@ style_finance = xlwt.easyxf(num_format_str='￥#,##0.00')
 
 enddate = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
 ENDYEAR, ENDMONTH, ENDDAY = sT.splitDateString(enddate)
+ENDYEAR, ENDMONTH, ENDDAY = sT.createCalender().getWorkdayForward(ENDYEAR, ENDMONTH, ENDDAY) #得到交易日
+enddate = sT.getDateString(ENDYEAR, ENDMONTH, ENDDAY)
 
 STARTYEAR, STARTMONTH, STARTDAY = sT.createCalender().getWorkday(-30*6, ENDYEAR, ENDMONTH, ENDDAY) #起始时间为6个月前
 startdate = sT.getDateString(STARTYEAR, STARTMONTH, STARTDAY)
-
 
 data = xlrd.open_workbook('.\\data\\StockAlert.xlsx')
 table = data.sheets()[0]
@@ -52,11 +53,11 @@ for i in range(count):
     date = startdate
     pLow, dLow=10000.0, startdate
     closePrice, actDate = 0.0, startdate
-    while date <= enddate:
-        bFound, closePrice, actDate = sT.getClosePriceBackward(code[i], date)
-        if bFound and closePrice<pLow:  pLow, dLow = closePrice, actDate
-        date = sT.getDateString(*sT.createCalender().getNextWorkday(date))
-    recentPrice, recentDate = closePrice, actDate
+    priceList=[]
+    sT.getClosePriceList( code[i], priceList, startdate, enddate )
+    recentPrice, recentDate = priceList[-1]
+    priceList.sort()
+    pLow, dLow = priceList[0]
     stockList.append((code[i], name[i], pLow, dLow, recentPrice, recentDate, sT.createCalender().dayDiff(dLow,recentDate)))
 
 stockList.sort(reverse=True, key=lambda x:x[-1])

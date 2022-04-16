@@ -170,6 +170,43 @@ def getClosePrice(code, dORy, month=0, day=0, autp=None):
             return False, -1
     return False, -1
 
+def getClosePriceList(code, pList, *d):
+    nParam = len(d)
+    sDate, eDate = "",""
+    if nParam==2:
+        sDate, eDate = d[0],d[1]
+    else:
+        sDate, eDate = getDateString(d[0],d[1],d[2]), getDateString(d[3],d[4],d[5])
+
+    sqlString = "select min(date) as sd, max(date) as ed from stockprice where code='{}'".format(code)
+    conn = createDBConnection()
+    try:
+        ret = conn.execute(sqlString)
+        r = ret.first()
+        if r.sd is None:
+            print("getClosePriceBackward()出错！，请检查 {} 股票价格是否存在！".format(code))
+            return False
+    except Exception as e:
+        print(e,"数据表stockprice访问出错！")
+        return False
+
+    if sDate<r.sd or eDate>r.ed:
+        print("查找的日期范围：{}---{}不在stockprice表的时间范围：{}---{}内！".format(sDate, eDate, r.sd, r.ed))
+        return False
+
+    sqlString = "select closeprice,date from stockprice where code='{}' and date>='{}' and date<='{}' order by date".\
+                 format(code, sDate, eDate)
+    try:
+        ret = conn.execute(sqlString)
+        r = ret.fetchall()
+    except Exception as e:
+        print(e, "数据表stockprice访问出错！")
+        return False
+    for row in r:
+        pList.append((row.closeprice, row.date))
+    return True
+
+
 
 def  getClosePriceBackward(code, dORy, month=0, day=0): #获取此日或此日后最近的一个交易日的收盘价
     if month==0:#输入的日期在dORy中，以字符串形式输入
@@ -1472,6 +1509,7 @@ def checkFundDistribSplit(code):
         pos1 = cells[3].get_text().find(u'元')
         dis = float(cells[3].get_text()[pos0+1:pos1])
         distrib.append( (cells[1].get_text(), cells[2].get_text() , dis, cells[4].get_text()) )
+        #print(cells[1].get_text(), cells[2].get_text() , dis, cells[4].get_text())
 
     if distrib:
         #检查数据库中分红信息是否完整，不完整则填充
