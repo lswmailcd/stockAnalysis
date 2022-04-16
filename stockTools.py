@@ -191,7 +191,7 @@ def getClosePriceList(code, pList, *d):
         return False
 
     if sDate<r.sd or eDate>r.ed:
-        print("查找的日期范围：{}---{}不在stockprice表的时间范围：{}---{}内！".format(sDate, eDate, r.sd, r.ed))
+        print("{}:查找的日期范围：{}---{}不在stockprice表的时间范围：{}---{}内！".format(code, sDate, eDate, r.sd, r.ed))
         return False
 
     sqlString = "select closeprice,date from stockprice where code='{}' and date>='{}' and date<='{}' order by date".\
