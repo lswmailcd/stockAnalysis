@@ -7,6 +7,8 @@ import stockTools as sT
 import xlrd
 import xlwt
 import time
+import Graph as g
+import matplotlib.pyplot as plt
 
 #60天以上不创新低表示可能下降趋势结束
 
@@ -18,8 +20,17 @@ ENDYEAR, ENDMONTH, ENDDAY = sT.splitDateString(enddate)
 ENDYEAR, ENDMONTH, ENDDAY = sT.createCalender().getWorkdayForward(ENDYEAR, ENDMONTH, ENDDAY) #得到交易日
 enddate = sT.getDateString(ENDYEAR, ENDMONTH, ENDDAY)
 
-STARTYEAR, STARTMONTH, STARTDAY = sT.createCalender().getWorkday(-30*6, ENDYEAR, ENDMONTH, ENDDAY) #起始时间为6个月前
-startdate = sT.getDateString(STARTYEAR, STARTMONTH, STARTDAY)
+nWeeks = 4*6
+startdateList, endateList=[],[]
+n = 0
+y, m, d = ENDYEAR, ENDMONTH, ENDDAY
+STARTYEAR, STARTMONTH, STARTDAY = ENDYEAR, ENDMONTH, ENDDAY
+while n<nWeeks:
+    endateList.insert(0, sT.getDateString(y, m, d))
+    STARTYEAR, STARTMONTH, STARTDAY = sT.createCalender().getWorkday(-30 * 6, y, m, d)  # 起始时间为6个月前
+    startdateList.insert(0, sT.getDateString(STARTYEAR, STARTMONTH, STARTDAY))
+    y, m, d = sT.createCalender().getWorkday(-7, y, m, d)
+    n+=1
 
 data = xlrd.open_workbook('.\\data\\StockAlert.xlsx')
 table = data.sheets()[0]
@@ -53,29 +64,38 @@ for i in range(nrows):
                                sT.getDateString(ENDYEAR, ENDMONTH, ENDDAY))
 
 print()
-stockList=[]
-for i in range(count):
-    if code[i] == "" or code[i]=='0.0': continue
-    # 查找创新低前的最低点
-    priceList=[]
-    date = startdate
-    pLow, dLow=10000.0, startdate
-    closePrice, actDate = 0.0, startdate
-    priceList=[]
-    sT.getClosePriceList( code[i], priceList, startdate, enddate )
-    recentPrice, recentDate = priceList[-1]
-    priceList.sort()
-    pLow, dLow = priceList[0]
-    stockList.append((code[i], name[i], pLow, dLow, recentPrice, recentDate, sT.createCalender().dayDiff(dLow,recentDate)))
+percentList=[]
+for startdate, enddate in zip(startdateList,endateList):
+    stockList=[]
+    for i in range(count):
+        if code[i] == "" or code[i]=='0.0': continue
+        # 查找创新低前的最低点
+        date = startdate
+        pLow, dLow=10000.0, startdate
+        closePrice, actDate = 0.0, startdate
+        priceList=[]
+        sT.getClosePriceList( code[i], priceList, startdate, enddate )
+        recentPrice, recentDate = priceList[-1]
+        priceList.sort()
+        pLow, dLow = priceList[0]
+        stockList.append((code[i], name[i], pLow, dLow, recentPrice, recentDate, sT.createCalender().dayDiff(dLow,recentDate)))
 
-stockList.sort(reverse=True, key=lambda x:x[-1])
-n=0
-for code, name, pLow, dLow, pCur, dCur, diff in stockList:
-    if diff>60: n+=1
-    print("{} {}，股票价格最低价{:.2f}元, 日期{}, 当前价{:.2f}元, 日期{}, 最低价距当前日期{}天, 涨幅{:.2%}\n".\
-        format(code, name, pLow, dLow, pCur, dCur, diff, (pCur-pLow)/pLow))
-print("下降趋势结束(>60天不创新低)股票占比{:.2%}".format(n/len(stockList)))
+    stockList.sort(reverse=True, key=lambda x:x[-1])
+    n=0
+    for c, na, pLow, dLow, pCur, dCur, diff in stockList:
+        if diff>60: n+=1
+        # print("{} {}，股票价格最低价{:.2f}元, 日期{}, 当前价{:.2f}元, 日期{}, 最低价距当前日期{}天, 涨幅{:.2%}\n".\
+        #     format(code, name, pLow, dLow, pCur, dCur, diff, (pCur-pLow)/pLow))
+    #print("下降趋势结束(>60天不创新低)股票占比{:.2%}".format(n/len(stockList)))
+    percentList.append((enddate,n/len(stockList)))
 
+title="{}至{}股票组合下降趋势统计图".format(endateList[0], endateList[-1])
+yScale = 10
+xList = [x[0] for x in percentList]
+yList=[[x[1] for x in percentList]]
+#print(yList[0])
+name=[["下降趋势结束(>60天不创新低)股票占比"]]
+g.drawRateChat(xList, yList, name, title)
 
 
 
