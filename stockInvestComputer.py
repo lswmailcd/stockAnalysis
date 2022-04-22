@@ -84,11 +84,11 @@ for startdate, enddate in zip(startdateList,endateList):
     n, m = 0, 0
     for c, na, pLow, dLow, pCur, dCur, diff in stockList:
         if diff>60: n+=1
-        if diff==0: m+=1
+        if diff<15: m+=1
         if  enddate == endateList[-1]:
             print("{} {}，股票价格最低价{:.2f}元, 日期{}, 当前价{:.2f}元, 日期{}, 最低价距当前日期{}天, 涨幅{:.2%}\n".\
                 format(c, na, pLow, dLow, pCur, dCur, diff, (pCur-pLow)/pLow))
-    if enddate == endateList[-1]:   print("下降趋势结束(>60天不创新低)股票占比{:.2%},当前日期创新低股票占比{:.2%}".\
+    if enddate == endateList[-1]:   print("下降趋势结束(>60天不创新低)股票占比{:.2%},两周内(<15天)创新低股票占比{:.2%}".\
                                           format(n/len(stockList), m/len(stockList)))
     percentList.append((enddate,n/len(stockList)))
 
