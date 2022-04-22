@@ -74,7 +74,7 @@ for startdate, enddate in zip(startdateList,endateList):
         pLow, dLow=10000.0, startdate
         closePrice, actDate = 0.0, startdate
         priceList=[]
-        sT.getClosePriceList( code[i], priceList, startdate, enddate )
+        if not sT.getClosePriceList( code[i], priceList, startdate, enddate ): continue
         recentPrice, recentDate = priceList[-1]
         priceList.sort()
         pLow, dLow = priceList[0]
@@ -90,14 +90,14 @@ for startdate, enddate in zip(startdateList,endateList):
                 format(c, na, pLow, dLow, pCur, dCur, diff, (pCur-pLow)/pLow))
     if enddate == endateList[-1]:   print("下降趋势结束(>60天不创新低)股票占比{:.2%},两周内(<15天)创新低股票占比{:.2%}".\
                                           format(n/len(stockList), m/len(stockList)))
-    percentList.append((enddate,n/len(stockList)))
+    percentList.append((enddate,n/len(stockList), m/len(stockList)))
 
 title="{}至{}股票组合下降趋势统计图".format(endateList[0], endateList[-1])
 yScale = 10
 xList = [x[0] for x in percentList]
-yList=[[x[1] for x in percentList]]
+yList=[[x[1]for x in percentList], [x[2]for x in percentList]]
 #print(yList[0])
-name=[["下降趋势结束(>60天不创新低)股票占比"]]
+name=["下降趋势结束(>60天不创新低)股票占比","两周内(<15天)创新低股票占比"]
 g.drawRateChat(xList, yList, name, title)
 
 

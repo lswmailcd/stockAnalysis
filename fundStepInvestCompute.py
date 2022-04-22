@@ -23,7 +23,7 @@ date = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时�
 
 bSorting = True #是否对投资率进行降序排列
 
-date="2021-01-10"
+date="2022-01-10"
 #定投起始年月
 STARTYEAR, STARTMONTH, _ = sT.splitDateString(date)
 
@@ -31,7 +31,7 @@ date="2022-04-10"
 #定投结束年月
 ENDYEAR, ENDMONTH, _ = sT.splitDateString(date)
 
-date="2022-04-13"
+date="2022-04-22"
 #卖出日
 SALEYEAR, SALEMONTH, SALEDAY = sT.splitDateString(date)
 
@@ -49,9 +49,9 @@ print( u"持有计算时间段为：",STARTYEAR,u"年",STARTMONTH,u"月", BUYDAY
 ---",SALEYEAR,u"年",SALEMONTH,u"月", SALEDAY,u"日")
 
 startDate = sT.getDateString(STARTYEAR, STARTMONTH, BUYDAY)
-endDate = sT.getDateString(ENDYEAR, ENDMONTH, ENDDAY)
+endDate = sT.getDateString(ENDYEAR, ENDMONTH, BUYDAY+1)
 saleDate = sT.getDateString(SALEYEAR, SALEMONTH, SALEDAY)
-if endDate>saleDate: endDate=saleDate
+#if endDate>saleDate: endDate=saleDate
 
 data = xlrd.open_workbook('.\\data\\fundata.xls')
 table = data.sheets()[0]
