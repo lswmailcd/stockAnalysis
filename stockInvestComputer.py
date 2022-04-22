@@ -81,12 +81,15 @@ for startdate, enddate in zip(startdateList,endateList):
         stockList.append((code[i], name[i], pLow, dLow, recentPrice, recentDate, sT.createCalender().dayDiff(dLow,recentDate)))
 
     stockList.sort(reverse=True, key=lambda x:x[-1])
-    n=0
+    n, m = 0, 0
     for c, na, pLow, dLow, pCur, dCur, diff in stockList:
         if diff>60: n+=1
-        # print("{} {}，股票价格最低价{:.2f}元, 日期{}, 当前价{:.2f}元, 日期{}, 最低价距当前日期{}天, 涨幅{:.2%}\n".\
-        #     format(code, name, pLow, dLow, pCur, dCur, diff, (pCur-pLow)/pLow))
-    #print("下降趋势结束(>60天不创新低)股票占比{:.2%}".format(n/len(stockList)))
+        if diff==0: m+=1
+        if  enddate == endateList[-1]:
+            print("{} {}，股票价格最低价{:.2f}元, 日期{}, 当前价{:.2f}元, 日期{}, 最低价距当前日期{}天, 涨幅{:.2%}\n".\
+                format(c, na, pLow, dLow, pCur, dCur, diff, (pCur-pLow)/pLow))
+    if enddate == endateList[-1]:   print("下降趋势结束(>60天不创新低)股票占比{:.2%},当前日期创新低股票占比{:.2%}".\
+                                          format(n/len(stockList), m/len(stockList)))
     percentList.append((enddate,n/len(stockList)))
 
 title="{}至{}股票组合下降趋势统计图".format(endateList[0], endateList[-1])
