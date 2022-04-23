@@ -194,7 +194,7 @@ def getClosePriceList(code, pList, *d):
         print("{}:查找的日期范围：{}---{}不在stockprice表的时间范围：{}---{}内！".format(code, sDate, eDate, r.sd, r.ed))
         return False
 
-    sqlString = "select closeprice,date from stockprice where code='{}' and date>='{}' and date<='{}' order by date".\
+    sqlString = "select close, vol, date from stockprice where code='{}' and date>='{}' and date<='{}' order by date".\
                  format(code, sDate, eDate)
     try:
         ret = conn.execute(sqlString)
@@ -203,7 +203,7 @@ def getClosePriceList(code, pList, *d):
         print(e, "数据表stockprice访问出错！")
         return False
     for row in r:
-        pList.append((row.closeprice, row.date))
+        pList.append((row.close, row.vol, row.date))
     return True
 
 
@@ -1702,7 +1702,8 @@ def checkStockPrice(code, sDate, eDate):
                 date = getDateString(y, m, d, short=True)
                 dfPriceMin = createTushare().daily(ts_code=code + getMarketSign(code), start_date=sDateTu, end_date=date)
                 if not dfPriceMin.empty:
-                    listPriceDF.append(dfPriceMin.loc[:, ['ts_code', 'close', 'trade_date']])
+                    listPriceDF.append(dfPriceMin.loc[:, ['ts_code','trade_date','open','high','low',\
+                                                          'close','pre_close','change','pct_chg','vol','amount']])
                 else:
                     print("checkStockPrice:无法获取股票 {} 价格,开始时间为 {},结束时间为 {} 的价格信息！"\
                           .format(getStockNameByCode(code),sDateTu,date))
@@ -1712,14 +1713,16 @@ def checkStockPrice(code, sDate, eDate):
                 date = getDateString(y, m, d, short=True)
                 dfPriceMax = createTushare().daily(ts_code=code + getMarketSign(code), start_date=date, end_date=eDateTu)
                 if not dfPriceMax.empty:
-                    listPriceDF.append(dfPriceMax.loc[:, ['ts_code', 'close', 'trade_date']])
+                    listPriceDF.append(dfPriceMax.loc[:, ['ts_code','trade_date','open','high','low',\
+                                                          'close','pre_close','change','pct_chg','vol','amount']])
                 else:
                     print("checkStockPrice:无法获取股票 {} 价格,开始时间为 {},结束时间为 {} 的价格信息！"\
                           .format(getStockNameByCode(code),date,eDateTu))
         else:#数据库没有任何该股票数据,向tushare获取数据
             dfPrice = createTushare().daily(ts_code=code + getMarketSign(code), start_date=sDateTu, end_date=eDateTu)
             if not dfPrice.empty:
-                listPriceDF.append(dfPrice.loc[:,['ts_code', 'close', 'trade_date']])
+                listPriceDF.append(dfPrice.loc[:,['ts_code','trade_date','open','high','low',\
+                                                  'close','pre_close','change','pct_chg','vol','amount']])
             else:
                 print("checkStockPrice:无法获取股票 {} 价格,开始时间为 {},结束时间为 {} 的价格信息！"\
                       .format(getStockNameByCode(code),sDateTu,eDateTu))
@@ -1732,8 +1735,10 @@ def checkStockPrice(code, sDate, eDate):
 
         data=""
         for row in dfPrice.iterrows():
-            data += "('{}',{},'{}-{}-{}'),".format(row[1][0][:-3],row[1][1],row[1][2][:4],row[1][2][4:6],row[1][2][6:])
-        sqlString = "insert into stockprice(code,closeprice,date) values{}".format(data[:-1])
+            data += "('{}','{}-{}-{}',{},{},{},{},{},{},{},{},{}),".\
+                format(row[1][0][:-3],row[1][1][:4],row[1][1][4:6],row[1][1][6:],\
+                       row[1][2],row[1][3],row[1][4],row[1][5],row[1][6],row[1][7],row[1][8],row[1][9],row[1][10])
+        sqlString = "insert into stockprice values{};".format(data[:-1])
         try:
             conn.execute(sqlString)
             print(sqlString[:100]+"**********batch insert from tushare*********")
@@ -1842,7 +1847,7 @@ def checkFundPrice(code, sDate, eDate):#暂时无法使用
         data=""
         for priceInfo in priceList:
             data += "('{}',{},'{}'),".format(code, priceInfo[1], priceInfo[2])
-        sqlString = "insert into fundprice(code,closeprice,date) values{}".format(data[:-1])
+        sqlString = "insert into fundprice(code,closeprice,date) values{};".format(data[:-1])
         try:
             conn.execute(sqlString)
             print(sqlString[:100]+"**********batch insert from eastmoney*********")
