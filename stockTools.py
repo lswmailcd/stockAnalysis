@@ -184,7 +184,7 @@ def getClosePriceList(code, pList, *d):
         ret = conn.execute(sqlString)
         r = ret.first()
         if r.sd is None:
-            print("getClosePriceBackward()出错！，请检查 {} 股票价格是否存在！".format(code))
+            print("getClosePriceList()出错！，请检查 {} 股票价格是否存在！".format(code))
             return False
     except Exception as e:
         print(e,"数据表stockprice访问出错！")
@@ -817,6 +817,101 @@ def checkStockAssetDebt_BACKUP(code, startYear, endYear):
     except Exception as e:
         print(e)
         exit(1)
+
+def checkStockShare(code):
+    name, yearToMarket, _, _ = getStockBasics(code)
+    url = "https://vip.stock.finance.sina.com.cn/corp/go.php/vCI_StockStructure/stockid/"
+    url += code
+    url += ".phtml"
+    try:
+        print(code,name,"读取新浪财经股本数据......")
+        response = urllib.request.urlopen(url=url)
+        data = response.read()
+        data = data.decode("gbk")
+        print("新浪财经股本数据读取完毕!")
+        time.sleep(2)
+    except Exception as e:
+        print(code, name, "新浪财经股本数据不存在！")
+        exit(1)
+    bs = bs4.BeautifulSoup(data, "lxml")
+    n=1
+    dates, shareTotal, shareA, shareM, shareR = [],[],[],[],[]
+    table = bs.find('table', {'id': 'StockStructureNewTable0'})
+    while table:
+        tbody = table.find('tbody')
+        rows = tbody.find_all('tr')
+        #变动日期
+        result = rows[0].findAll('td')
+        for i in range(1, len(result)):
+            d = result[i].get_text()
+            dates.append("{}-{}-{}".format(d[:4],d[4:6],d[6:]))
+        #总股本
+        result = rows[4].findAll('td')
+        for i in range(1, len(result)):
+            if result[i].get_text()=='--':
+                shareTotal.append(0.0)
+            else:
+                shareTotal.append(float(result[i].get_text()[:-3])*1e4)
+        #流通A股
+        result = rows[6].findAll('td')
+        for i in range(1, len(result)):
+            if result[i].get_text() == '--':
+                shareA.append(0.0)
+            else:
+                shareA.append(float(result[i].get_text()[:-3]) * 1e4)
+        #高管持股
+        result = rows[7].findAll('td')
+        for i in range(1, len(result)):
+            if result[i].get_text() == '--':
+                shareM.append(0.0)
+            else:
+                shareM.append(float(result[i].get_text()[:-3]) * 1e4)
+        #限售股
+        result = rows[8].findAll('td')
+        for i in range(1, len(result)):
+            if result[i].get_text() == '--':
+                shareR.append(0.0)
+            else:
+                shareR.append(float(result[i].get_text()[:-3]) * 1e4)
+
+        table = bs.find('table', {'id': 'StockStructureNewTable{}'.format(n)})
+        n+=1
+
+    sqlString = "select date from stockshare where code={}".format(code)
+    conn = createDBConnection()
+    try:
+        ret = conn.execute(sqlString)
+    except Exception as e:
+        print(code, name, "stockshare数据表不存在！")
+        exit(1)
+    result = ret.fetchall()
+    newdate=[]
+    if not result:
+        newdate=dates
+    else:
+        for r in result:
+            try:
+                dates.index(r.date)
+            except Exception as e:
+                newdate.append(r.date)
+
+    # 写入数据表stockshare
+    data=""
+    for d in newdate:
+        idx=dates.index(d)
+        data+="('{}',{},{},{},{},'{}'),".format(code,shareTotal[idx],shareA[idx],shareM[idx],shareR[idx],d)
+    if data:
+        sqlString="insert into stockshare values{};".format(data[:-1])
+        try:
+            conn.execute(sqlString)
+            str = sqlString[:100] + "**********batch insert stockshare from 新浪财经*********"
+            print(str)
+            log.writeUtfLog(str)
+        except Exception as e:
+            print(code,name,"批量插入stockshare数据表失败！")
+            exit(1)
+    else:
+        print(code,name,"stockshare表股本数据已经存在，不需添加！")
 
 def checkStockReport(code, startYear, endYear):
     """

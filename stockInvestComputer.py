@@ -62,9 +62,11 @@ for i in range(nrows):
 
             sT.checkStockPrice(code[i], sT.getDateString(STARTYEAR, STARTMONTH, STARTDAY), \
                                sT.getDateString(ENDYEAR, ENDMONTH, ENDDAY))
+            sT.checkStockShare(code[i])
 
 print()
 percentList=[]
+stockTurnover=[]
 for startdate, enddate in zip(startdateList,endateList):
     stockList=[]
     for i in range(count):
@@ -75,19 +77,27 @@ for startdate, enddate in zip(startdateList,endateList):
         closePrice, actDate = 0.0, startdate
         priceList=[]
         if not sT.getClosePriceList( code[i], priceList, startdate, enddate ): continue
-        recentPrice, recentDate = priceList[-1]
+        _,v0,d0 = priceList[0]
+        for _,v,d in priceList:
+            if v/v0>3.0: stockTurnover.append((code[i], name[i], d))
+            v0 = v
+        recentPrice, recentVol, recentDate = priceList[-1]
         priceList.sort()
-        pLow, dLow = priceList[0]
-        stockList.append((code[i], name[i], pLow, dLow, recentPrice, recentDate, sT.createCalender().dayDiff(dLow,recentDate)))
+        pLow, vLow, dLow = priceList[0]
+        stockList.append((code[i], name[i], pLow, vLow, dLow, recentPrice, recentVol, recentDate, sT.createCalender().dayDiff(dLow,recentDate)))
 
     stockList.sort(reverse=True, key=lambda x:x[-1])
     n, m = 0, 0
-    for c, na, pLow, dLow, pCur, dCur, diff in stockList:
+    for c, na, pLow, vLow, dLow, pCur, vCur, dCur, diff in stockList:
         if diff>60: n+=1
         if diff<15: m+=1
         if  enddate == endateList[-1]:
-            print("{} {}，股票价格最低价{:.2f}元, 日期{}, 当前价{:.2f}元, 日期{}, 最低价距当前日期{}天, 涨幅{:.2%}\n".\
+            print("{} {}，股票价格最低价{:.2f}元, 日期{}, 当前价{:.2f}元, 日期{}, 最低价距当前日期{}天, 涨幅{:.2%}".\
                 format(c, na, pLow, dLow, pCur, dCur, diff, (pCur-pLow)/pLow))
+            print("换手率是前一交易日3倍以上：",end="")
+            for stock in stockTurnover:
+                if c==stock[0]: print(stock,end="")
+            print('\n')
     if enddate == endateList[-1]:   print("下降趋势结束(>60天不创新低)股票占比{:.2%},两周内(<15天)创新低股票占比{:.2%}".\
                                           format(n/len(stockList), m/len(stockList)))
     percentList.append((enddate,n/len(stockList), m/len(stockList)))
