@@ -259,31 +259,31 @@ def getStockEPSTTM(code, year, quarter):
     elif quarter==3:
         #epsTTM = 当年3季报eps+去年4季报eps-去年3季报eps
         foundData_Q3, EPS_Q3 = getStockEPS(code, year, 3)
-        totalStockQ3 = getStockCountQuarter(code, year, 3)
+        totalStockQ3 = getStockShare(code, year, 9, 30)
         foundData_LQ4, EPS_LQ4 = getStockEPS(code, year-1, 4)
-        totalStockLQ4 = getStockCountQuarter(code, year-1, 4)
+        totalStockLQ4 = getStockShare(code, year-1, 12, 31)
         foundData_LQ3, EPS_LQ3 = getStockEPS(code, year-1, 3)
-        totalStockLQ3 = getStockCountQuarter(code, year-1, 3)
+        totalStockLQ3 = getStockShare(code, year-1, 9, 30)
         if foundData_Q3:
             return True, (EPS_Q3*totalStockQ3 + EPS_LQ4*totalStockLQ4 - EPS_LQ3*totalStockLQ3)/totalStockQ3
     elif quarter == 2:
         # epsTTM = 当年2季报eps+去年4季报eps-去年2季报eps
         foundData_Q2, EPS_Q2 = getStockEPS(code, year, 2)
-        totalStockQ2 = getStockCountQuarter(code, year, 2)
+        totalStockQ2 = getStockShare(code, year, 6, 30)
         foundData_LQ4, EPS_LQ4 = getStockEPS(code, year - 1, 4)
-        totalStockLQ4 = getStockCountQuarter(code, year - 1, 4)
+        totalStockLQ4 = getStockShare(code, year - 1, 12, 31)
         foundData_LQ2, EPS_LQ2 = getStockEPS(code, year - 1, 2)
-        totalStockLQ2 = getStockCountQuarter(code, year - 1, 2)
+        totalStockLQ2 = getStockShare(code, year - 1, 6, 30)
         if foundData_Q2:
             return True, (EPS_Q2*totalStockQ2 + EPS_LQ4*totalStockLQ4 - EPS_LQ2*totalStockLQ2)/totalStockQ2
     else:
         # epsTTM = 当年1季报eps+去年4季报eps-去年1季报eps
         foundData_Q1, EPS_Q1 = getStockEPS(code, year, 1)
-        totalStockQ1 = getStockCountQuarter(code, year, 1)
+        totalStockQ1 = getStockShare(code, year, 3, 31)
         foundData_LQ4, EPS_LQ4 = getStockEPS(code, year - 1, 4)
-        totalStockLQ4 = getStockCountQuarter(code, year - 1, 4)
+        totalStockLQ4 = getStockShare(code, year - 1, 12, 31)
         foundData_LQ1, EPS_LQ1 = getStockEPS(code, year - 1, 1)
-        totalStockLQ1 = getStockCountQuarter(code, year - 1, 1)
+        totalStockLQ1 = getStockShare(code, year - 1, 3, 31)
         if foundData_Q1:
             return True, (EPS_Q1*totalStockQ1 + EPS_LQ4*totalStockLQ4 - EPS_LQ1*totalStockLQ1)/totalStockQ1
 
@@ -295,31 +295,31 @@ def getStockEPSdiscountTTM(code, year, quarter):
     elif quarter==3:
         #epsTTM = 当年3季报eps+去年4季报eps-去年3季报eps
         foundData_Q3, EPS_Q3 = getStockEPSdiscount(code, year, 3)
-        totalStockQ3 = getStockCountQuarter(code, year, 3)
+        totalStockQ3 = getStockShare(code, year, 9, 30)
         foundData_LQ4, EPS_LQ4 = getStockEPSdiscount(code, year-1, 4)
-        totalStockLQ4 = getStockCountQuarter(code, year-1, 4)
+        totalStockLQ4 = getStockShare(code, year-1, 12, 31)
         foundData_LQ3, EPS_LQ3 = getStockEPSdiscount(code, year-1, 3)
-        totalStockLQ3 = getStockCountQuarter(code, year-1, 3)
+        totalStockLQ3 = getStockShare(code, year-1, 9, 30)
         if foundData_Q3:
             return True, (EPS_Q3*totalStockQ3 + EPS_LQ4*totalStockLQ4 - EPS_LQ3*totalStockLQ3)/totalStockQ3
     elif quarter == 2:
         # epsTTM = 当年2季报eps+去年4季报eps-去年2季报eps
         foundData_Q2, EPS_Q2 = getStockEPSdiscount(code, year, 2)
-        totalStockQ2 = getStockCountQuarter(code, year, 2)
+        totalStockQ2 = getStockShare(code, year, 6, 30)
         foundData_LQ4, EPS_LQ4 = getStockEPSdiscount(code, year - 1, 4)
         foundData_LQ2, EPS_LQ2 = getStockEPSdiscount(code, year - 1, 2)
-        totalStockLQ4 = getStockCountQuarter(code, year - 1, 4)
-        totalStockLQ2 = getStockCountQuarter(code, year - 1, 2)
+        totalStockLQ4 = getStockShare(code, year - 1, 12, 31)
+        totalStockLQ2 = getStockShare(code, year - 1, 6, 30)
         if foundData_Q2:
             return True, (EPS_Q2*totalStockQ2 + EPS_LQ4*totalStockLQ4 - EPS_LQ2*totalStockLQ2)/totalStockQ2
     else:
         # epsTTM = 当年1季报eps+去年4季报eps-去年1季报eps
         foundData_Q1, EPS_Q1 = getStockEPSdiscount(code, year, 1)
-        totalStockQ1 = getStockCountQuarter(code, year, 1)
+        totalStockQ1 = getStockShare(code, year, 3, 31)
         foundData_LQ4, EPS_LQ4 = getStockEPSdiscount(code, year - 1, 4)
         foundData_LQ1, EPS_LQ1 = getStockEPSdiscount(code, year - 1, 1)
-        totalStockLQ4 = getStockCountQuarter(code, year-1, 4)
-        totalStockLQ1 = getStockCountQuarter(code, year-1, 1)
+        totalStockLQ4 = getStockShare(code, year-1, 12, 31)
+        totalStockLQ1 = getStockShare(code, year-1, 3, 31)
         if foundData_Q1:
             return True, (EPS_Q1*totalStockQ1 + EPS_LQ4*totalStockLQ4 - EPS_LQ1*totalStockLQ1)/totalStockQ1
 
@@ -398,24 +398,24 @@ def getStockEPS(code, year, quarter):#获取基本EPS
         return True, result.eps
 
 #有股本数据时，返回当前季度股本；没有股本数据时，返回0.0
-def getStockCountQuarter(code, year, quarter):
-    #获取股本
-    sqlString = "select gb from asset_debt_"
-    sqlString += "%s" % (year)
-    sqlString += "_%s where code=" %(quarter)
-    sqlString += code
-    try:
-        conn = createDBConnection()
-        ret = conn.execute(sqlString)
-    except Exception as e:
-        print(code, year, '年',quarter,"季度，获取股本数据,asset_debt数据库访问失败！")
-        return 0.0
-    result = ret.first()
-    if result is None or result.gb is None:
-        print(code, year, "年",quarter, "季度，asset_debt资产负债表股本数据获取失败！")
-        return 0.0
-    else:
-        return result.gb
+# def getStockCountQuarter(code, year, quarter):
+#     #获取股本
+#     sqlString = "select gb from asset_debt_"
+#     sqlString += "%s" % (year)
+#     sqlString += "_%s where code=" %(quarter)
+#     sqlString += code
+#     try:
+#         conn = createDBConnection()
+#         ret = conn.execute(sqlString)
+#     except Exception as e:
+#         print(code, year, '年',quarter,"季度，获取股本数据,asset_debt数据库访问失败！")
+#         return 0.0
+#     result = ret.first()
+#     if result is None or result.gb is None:
+#         print(code, year, "年",quarter, "季度，asset_debt资产负债表股本数据获取失败！")
+#         return 0.0
+#     else:
+#         return result.gb
 
 def getDividenTime(code, year):#取得股权登记日，为分红日的前一天
     sqlString = "select dividentime from stockreport_sup_"
@@ -476,30 +476,30 @@ def getStockShare(code, *d):
             return r.sharetotal
     return 0.0
 
-def getStockCount(code, dORy, month=0, day=0):
-    if month==0:#输入的日期在dORy中，以字符串形式输入
-        y,m,d = splitDateString(dORy)
-    else:
-        y=dORy; m=month; d=day
-    quarter = createCalender().getQuarter(m)
-    #查找是否存在转股
-    #检查去年末的股数
-    gblast = getStockCountQuarter(code,y-1,4)
-    # 获取当前季度的股本
-    gb = getStockCountQuarter(code, y, quarter)
-    if gblast!=gb:#去年末和当前季度存在股数变化
-        found, dividenTime = getDividenTime(code, y - 1)
-        if found and dividenTime >= getDateString(y, m, d):  # 去年有分红且当前日期还没有分红送股
-            gb = gblast
-    if abs(gb)<0.001:#本年本季度股本数据没有找到
-        gb = gblast
-        found, dividenTime = getDividenTime(code, y-1)
-        if found and dividenTime<getDateString(y,m,d):#去年有分红且当前日期已经分了红了，要检查是否有送转股数
-            found, money, stock = getDistrib(code, y-1)
-            if found and stock>0.0: #去年有分红且有送转股
-                gb = (1+stock)*gblast
-
-    return gb
+# def getStockCount(code, dORy, month=0, day=0):
+#     if month==0:#输入的日期在dORy中，以字符串形式输入
+#         y,m,d = splitDateString(dORy)
+#     else:
+#         y=dORy; m=month; d=day
+#     quarter = createCalender().getQuarter(m)
+#     #查找是否存在转股
+#     #检查去年末的股数
+#     gblast = getStockCountQuarter(code,y-1,4)
+#     # 获取当前季度的股本
+#     gb = getStockCountQuarter(code, y, quarter)
+#     if gblast!=gb:#去年末和当前季度存在股数变化
+#         found, dividenTime = getDividenTime(code, y - 1)
+#         if found and dividenTime >= getDateString(y, m, d):  # 去年有分红且当前日期还没有分红送股
+#             gb = gblast
+#     if abs(gb)<0.001:#本年本季度股本数据没有找到
+#         gb = gblast
+#         found, dividenTime = getDividenTime(code, y-1)
+#         if found and dividenTime<getDateString(y,m,d):#去年有分红且当前日期已经分了红了，要检查是否有送转股数
+#             found, money, stock = getDistrib(code, y-1)
+#             if found and stock>0.0: #去年有分红且有送转股
+#                 gb = (1+stock)*gblast
+#
+#     return gb
 
 def getMarketType( code ):
     if code[:3] in ("600","601") : return "sh_main"
