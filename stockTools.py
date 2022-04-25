@@ -124,7 +124,7 @@ def  getClosePriceForward(code, dORy, month=0, day=0):#获取当年此月或此�
         return False, -1, None
     else:
         if date >r.ed: date=r.ed
-        sqlString = "select closeprice, date from stockprice where code='{}' and date='{}'".format(code, date)
+        sqlString = "select close, date from stockprice where code='{}' and date='{}'".format(code, date)
         try:
             ret = conn.execute(sqlString)
             r = ret.first()
@@ -132,9 +132,9 @@ def  getClosePriceForward(code, dORy, month=0, day=0):#获取当年此月或此�
             print(e, "数据表stockprice访问出错！")
             return False, -1, None
         if r:
-            return True, r.closeprice, r.date
+            return True, r.close, r.date
         else:#所找股票价格的日期不在stockprice当前股票价格日期中
-            sqlString = "select closeprice, date from stockprice where code='{}' and date<'{}' order by date desc limit 1".format(code, date)
+            sqlString = "select close, date from stockprice where code='{}' and date<'{}' order by date desc limit 1".format(code, date)
             try:
                 ret = conn.execute(sqlString)
                 r = ret.first()
@@ -142,7 +142,7 @@ def  getClosePriceForward(code, dORy, month=0, day=0):#获取当年此月或此�
                 print(e, "数据表stockprice访问出错！")
                 return False, -1, None
             if r:
-                return True, r.closeprice, r.date
+                return True, r.close, r.date
 
     return False, -1, None
 
@@ -154,7 +154,7 @@ def getClosePrice(code, dORy, month=0, day=0, autp=None):
     if createCalender().validDate(y,m,d):
         date = getDateString(y, m, d)
         conn = createDBConnection()
-        sqlString = "select closeprice from stockprice where code="
+        sqlString = "select close from stockprice where code="
         sqlString += code
         sqlString += " and date='"
         sqlString += date
@@ -164,8 +164,8 @@ def getClosePrice(code, dORy, month=0, day=0, autp=None):
             result = ret.first()
         except Exception as e:
             print(e)
-        if result is not None and result.closeprice is not None:
-            return True, result.closeprice
+        if result is not None and result.close is not None:
+            return True, result.close
         else:
             return False, -1
     return False, -1
@@ -231,7 +231,7 @@ def  getClosePriceBackward(code, dORy, month=0, day=0): #获取此日或此日�
         return False, -1, None
     else:
         if date<r.sd: date = r.sd
-        sqlString = "select closeprice,date from stockprice where code='{}' and date='{}'".format(code, date)
+        sqlString = "select close,date from stockprice where code='{}' and date='{}'".format(code, date)
         try:
             ret = conn.execute(sqlString)
             r = ret.first()
@@ -239,9 +239,9 @@ def  getClosePriceBackward(code, dORy, month=0, day=0): #获取此日或此日�
             print(e, "数据表stockprice访问出错！")
             return False, -1, None
         if r:
-            return True, r.closeprice, r.date
+            return True, r.close, r.date
         else:#所找股票价格的日期不在stockprice当前股票价格日期中
-            sqlString = "select closeprice, date from stockprice where code='{}' and date>'{}' order by date asc limit 1".format(code, date)
+            sqlString = "select close, date from stockprice where code='{}' and date>'{}' order by date asc limit 1".format(code, date)
             try:
                 ret = conn.execute(sqlString)
                 r = ret.first()
@@ -249,7 +249,7 @@ def  getClosePriceBackward(code, dORy, month=0, day=0): #获取此日或此日�
                 print(e, "数据表stockprice访问出错！")
                 return False, -1, None
             if r:
-                return True, r.closeprice, r.date
+                return True, r.close, r.date
 
     return False, -1, None
 
@@ -454,6 +454,27 @@ def getDistrib(code, year):
         money, stock = parseDistrib(result.distrib)
         return True, money, stock
 
+def getStockShare(code, *d):
+    n=len(d)
+    if n==3:
+        date = getDateString(d[0],d[1],d[2])
+    else:
+        date = d
+
+    conn = createDBConnection()
+    sqlString = "select sharetotal from stockshare where code='{}' and date<='{}' order by date desc limit 1,1".format(code, date)
+    try:
+        ret = conn.execute(sqlString)
+    except Exception as e:
+        print(e)
+        print(code, "getStockShare()访问出错！")
+        exit(1)
+
+    if ret:
+        r = ret.first()
+        if r:
+            return r.sharetotal
+    return 0.0
 
 def getStockCount(code, dORy, month=0, day=0):
     if month==0:#输入的日期在dORy中，以字符串形式输入
@@ -851,28 +872,28 @@ def checkStockShare(code):
             if result[i].get_text()=='--':
                 shareTotal.append(0.0)
             else:
-                shareTotal.append(float(result[i].get_text()[:-3])*1e4)
+                shareTotal.append(float(result[i].get_text()[:-3]))
         #流通A股
         result = rows[6].findAll('td')
         for i in range(1, len(result)):
             if result[i].get_text() == '--':
                 shareA.append(0.0)
             else:
-                shareA.append(float(result[i].get_text()[:-3]) * 1e4)
+                shareA.append(float(result[i].get_text()[:-3]))
         #高管持股
         result = rows[7].findAll('td')
         for i in range(1, len(result)):
             if result[i].get_text() == '--':
                 shareM.append(0.0)
             else:
-                shareM.append(float(result[i].get_text()[:-3]) * 1e4)
+                shareM.append(float(result[i].get_text()[:-3]))
         #限售股
         result = rows[8].findAll('td')
         for i in range(1, len(result)):
             if result[i].get_text() == '--':
                 shareR.append(0.0)
             else:
-                shareR.append(float(result[i].get_text()[:-3]) * 1e4)
+                shareR.append(float(result[i].get_text()[:-3]))
 
         table = bs.find('table', {'id': 'StockStructureNewTable{}'.format(n)})
         n+=1

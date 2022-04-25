@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 style_percent = xlwt.easyxf(num_format_str='0.00%')
 style_finance = xlwt.easyxf(num_format_str='￥#,##0.00')
 
-enddate = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
+enddate = "2022-04-22"#time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
 ENDYEAR, ENDMONTH, ENDDAY = sT.splitDateString(enddate)
 ENDYEAR, ENDMONTH, ENDDAY = sT.createCalender().getWorkdayForward(ENDYEAR, ENDMONTH, ENDDAY) #得到交易日
 enddate = sT.getDateString(ENDYEAR, ENDMONTH, ENDDAY)
@@ -77,10 +77,11 @@ for startdate, enddate in zip(startdateList,endateList):
         closePrice, actDate = 0.0, startdate
         priceList=[]
         if not sT.getClosePriceList( code[i], priceList, startdate, enddate ): continue
-        _,v0,d0 = priceList[0]
-        for _,v,d in priceList:
-            if v/v0>3.0: stockTurnover.append((code[i], name[i], d))
-            v0 = v
+        if enddate == endateList[-1]:
+            _,v0,d0 = priceList[0]
+            for _,v,d in priceList:
+                if v/v0>3.0: stockTurnover.append((code[i], name[i], d))
+                v0 = v
         recentPrice, recentVol, recentDate = priceList[-1]
         priceList.sort()
         pLow, vLow, dLow = priceList[0]
@@ -96,7 +97,7 @@ for startdate, enddate in zip(startdateList,endateList):
                 format(c, na, pLow, dLow, pCur, dCur, diff, (pCur-pLow)/pLow))
             print("换手率是前一交易日3倍以上：",end="")
             for stock in stockTurnover:
-                if c==stock[0]: print(stock,end="")
+                if c==stock[0]: print(stock[2],end=" ")
             print('\n')
     if enddate == endateList[-1]:   print("下降趋势结束(>60天不创新低)股票占比{:.2%},两周内(<15天)创新低股票占比{:.2%}".\
                                           format(n/len(stockList), m/len(stockList)))

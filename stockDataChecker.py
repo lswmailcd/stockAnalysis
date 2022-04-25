@@ -26,6 +26,11 @@ def subprocess(code, sYear, eYear):
         sT.checkDistrib(code, sYear, eYear)
     except Exception as e:
         print(e)
+    print("*******checking share*******")
+    try:
+        sT.checkStockShare(code)
+    except Exception as e:
+        print(e)
 
     print("*******checking DONE*******")
 
