@@ -1087,7 +1087,7 @@ def checkStockReport(code, startYear, endYear):#stock_report可从tushare获取�
                             sqlString = "insert into stockreport_"
                             sqlString += "%s" % (year)
                             sqlString += "_%s" % (i)
-                            sqlString += "(code,name,eps,bvps,roe,net_profits,profits_yoy,earn_yoy) values('"
+                            sqlString += "(code,name,eps,bvps,roe,net_profits,profits_yoy) values('"
                             sqlString += code
                             sqlString += "','"
                             sqlString += name
