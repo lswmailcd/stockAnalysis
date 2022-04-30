@@ -134,7 +134,7 @@ def  getClosePriceForward(code, dORy, month=0, day=0):#获取当年此月或此�
         if r:
             return True, r.close, r.date
         else:#所找股票价格的日期不在stockprice当前股票价格日期中
-            sqlString = "select close, date from stockprice where code='{}' and date<'{}' order by date desc limit 1".format(code, date)
+            sqlString = "select close, date from stockprice where code='{}' and date<'{}' order by date desc limit 0,1".format(code, date)
             try:
                 ret = conn.execute(sqlString)
                 r = ret.first()
@@ -241,7 +241,7 @@ def  getClosePriceBackward(code, dORy, month=0, day=0): #获取此日或此日�
         if r:
             return True, r.close, r.date
         else:#所找股票价格的日期不在stockprice当前股票价格日期中
-            sqlString = "select close, date from stockprice where code='{}' and date>'{}' order by date asc limit 1".format(code, date)
+            sqlString = "select close, date from stockprice where code='{}' and date>'{}' order by date asc limit 0,1".format(code, date)
             try:
                 ret = conn.execute(sqlString)
                 r = ret.first()
@@ -378,6 +378,34 @@ def getStockEPSdiscount(code, year, quarter):#获取扣非EPS
     else:
         return True, result.eps_discount
 
+def getStockEarnIncRate(code, year, quarter):#获取营业收入同比增长
+    sqlString = "select mbrg from stockgrowth_{}_{} where code={}".format(year,quarter,code)
+    try:
+        conn = createDBConnection()
+        ret = conn.execute(sqlString)
+        result = ret.first()
+    except Exception as e:
+        return False, 0
+    if result is None or result.mbrg is None:
+        print(code, getStockNameByCode(code), year, u"年", quarter, u"季度", u"stockgrowth数据表中无此股票!")
+        return False, 0
+    else:
+        return True, result.mbrg
+
+def getStockROE(code, year, quarter):#获取ROE
+    sqlString = "select roe from stockreport_{}_{} where code={}".format(year,quarter,code)
+    try:
+        conn = createDBConnection()
+        ret = conn.execute(sqlString)
+        result = ret.first()
+    except Exception as e:
+        return False, 0
+    if result is None or result.roe is None:
+        print(code, getStockNameByCode(code), year, u"年", quarter, u"季度", u"stockgrowth数据表中无此股票!")
+        return False, 0
+    else:
+        return True, result.roe
+
 def getStockEPS(code, year, quarter):#获取基本EPS
     sqlString = "select eps from stockreport_"
     sqlString += "%s" % (year)
@@ -462,7 +490,7 @@ def getStockShare(code, *d):
         date = d
 
     conn = createDBConnection()
-    sqlString = "select sharetotal from stockshare where code='{}' and date<='{}' order by date desc limit 1,1".format(code, date)
+    sqlString = "select sharetotal,date from stockshare where code='{}' and date<='{}' order by date desc limit 0,1".format(code, date)
     try:
         ret = conn.execute(sqlString)
     except Exception as e:
@@ -625,6 +653,7 @@ def checkStockAssetDebt(code, startYear, endYear):
                     continue
                 bs = bs4.BeautifulSoup(data, "lxml")
                 tb = bs.find('table',{'id':'BalanceSheetNewTable0'})
+                if tb is None: continue
                 rows = tb.find('tbody').findAll('tr')
                 Qt = 0
                 for row in rows:
@@ -911,9 +940,7 @@ def checkStockShare(code):
         newdate=dates
     else:
         for r in result:
-            try:
-                dates.index(r.date)
-            except Exception as e:
+            if r.date not in dates:
                 newdate.append(r.date)
 
     # 写入数据表stockshare
@@ -934,7 +961,7 @@ def checkStockShare(code):
     else:
         print(code,name,"stockshare表股本数据已经存在，不需添加！")
 
-def checkStockReport(code, startYear, endYear):
+def checkStockReport(code, startYear, endYear):#stock_report可从tushare获取，也可从新浪获取;stock_report_sup则只从新浪获取
     """
 
     :rtype: object
@@ -1030,6 +1057,7 @@ def checkStockReport(code, startYear, endYear):
                     continue
                 bs = bs4.BeautifulSoup(data,"lxml")
                 table = bs.find('table',{'id':'BalanceSheetNewTable0'})
+                if table is None: continue
                 tbody = table.find('tbody')
                 rows = tbody.find_all('tr')
                 Qt = 0
@@ -1059,7 +1087,7 @@ def checkStockReport(code, startYear, endYear):
                             sqlString = "insert into stockreport_"
                             sqlString += "%s" % (year)
                             sqlString += "_%s" % (i)
-                            sqlString += "(code,name,eps,bvps,roe,net_profits,profits_yoy) values('"
+                            sqlString += "(code,name,eps,bvps,roe,net_profits,profits_yoy,earn_yoy) values('"
                             sqlString += code
                             sqlString += "','"
                             sqlString += name
@@ -1408,9 +1436,7 @@ def checkStockReportEastMoney(code, startYear, endYear):#EastMoney
 
 def getStockBasics(code):
     try:
-        sqlString = "select name, timetomarket from stockbasics "
-        sqlString += "where code="
-        sqlString += code
+        sqlString = "select name, list_date from stockbasics where code='{}'".format(code)
         conn = createDBConnection()
         ret = conn.execute(sqlString)
         result = ret.first()
@@ -1420,12 +1446,12 @@ def getStockBasics(code):
     if result is None :
         print(code, "股票基本数据获取失败！")
         return "", 0
-    elif result.timetomarket == 0:
+    elif result.list_date == 0:
         print(code, result.name,"股票上市时间数据为空！")
         return  result.name, 0
-    y = int(result.timetomarket / 1E4)
-    m = int( (result.timetomarket-y*1E4) / 1E2)
-    d = int(result.timetomarket-y*1E4-m*1E2)
+    y = int(result.list_date[:4])
+    m = int(result.list_date[4:6])
+    d = int(result.list_date[6:])
     return  result.name, y, m, d
 
 def checkDistrib(code, startYear, endYear):
@@ -1796,6 +1822,7 @@ def getMarketSign(code):
     c = code[0]
     if c in ("0","3"): return ".SZ"
     if c in ("6"): return ".SH"
+    if c in ("8"): return ".BJ"
 
 def checkStockPrice(code, sDate, eDate):
     if sDate>eDate:
