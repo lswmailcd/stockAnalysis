@@ -39,11 +39,8 @@ sG.lock.acquire()
 strInfo = input("不检查历史数据继续请按'回车',如需检查请按'c',退出请按'q': ")
 sG.lock.release()
 if strInfo=="q" : exit(0)
-if strInfo=="c" :
-    ck.subprocess(code, YEARSTART-1, y)
+ck.subprocess(code, YEARSTART-1, y, True) if strInfo=="c" else ck.subprocess(code, YEARSTART-1, y)
 
-sT.checkStockPrice(code, sT.getDateString(YEARSTART,1,1), sT.getDateString(y,12,31))
-sT.checkStockShare(code)
 
 YEARList = []
 PEList = []
@@ -188,8 +185,8 @@ EPSList.sort(key=lambda x:(x[0],x[1]))
 earnList.sort(key=lambda x:(x[0],x[1]))
 roeList.sort(key=lambda x:(x[0],x[1]))
 EPSList = [x[2] for x in EPSList]
-earnList = [x[2] for x in earnList]
-roeList = [x[2] for x in roeList]
+earnList = [x[2]/100.0 for x in earnList]
+roeList = [x[2]/100.0 for x in roeList]
 
 min = min(PEList)
 max = max(PEList)
@@ -230,10 +227,10 @@ ax2.axhline(color='cornflowerblue',y=drawPE)
 Graph.drawColumnChat( ax3, YEARList, PEDiscList,YEARList, PEDiscList, u'', u'', u'DiscPE_TTM', fs, 0.5)
 ax3.axhline(color='cornflowerblue',y=PEDiscList[-1])
 #fig4
-Graph.drawColumnChat( ax4, YEARList, EPSList,YEARList, EPSList, u'', u'', u'EPS', fs, 0.5)
+Graph.drawColumnChat( ax4, YEARList, EPSList,YEARList, EPSList, u'', u'', u'adjustEPS_TTM', fs, 0.5)
 #fig5
-Graph.drawColumnChat( ax5, YEARList, earnList,YEARList, earnList, u'', u'', u'earnIncRate', fs, 0.5)
+Graph.drawColumnChat( ax5, YEARList, earnList,YEARList, earnList, u'', u'', u'earnIncRate', fs, 0.5, bPercent=True)
 #fig6
-Graph.drawColumnChat( ax6, YEARList, roeList,YEARList, roeList, u'', u'', u'ROE', fs, 0.5)
+Graph.drawColumnChat( ax6, YEARList, roeList,YEARList, roeList, u'', u'', u'ROE', fs, 0.5, bPercent=True)
 print( code,name,u"历史图绘制完成")
 plt.show()

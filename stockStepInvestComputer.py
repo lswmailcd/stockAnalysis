@@ -25,7 +25,7 @@ date="2022-04-10"
 #定投结束年月
 ENDYEAR, ENDMONTH, _ = sT.splitDateString(date)
 
-date="2022-04-15"
+date="2022-04-29"
 #卖出日
 SALEYEAR, SALEMONTH, SALEDAY = sT.splitDateString(date)
 
@@ -74,10 +74,9 @@ for i in range(nrows):
         if yearToMarket == 0:
             print( code[count], name[count], u"上市时间不详!")
             exit(1)
-        sT.checkStockPrice(code[count], sT.getDateString(STARTYEAR, STARTMONTH, 1), \
-                           sT.getDateString(SALEYEAR, SALEMONTH, SALEDAY))
-        if s == "c":
-            ck.subprocess(code[count], 2008, REPORTYEARLAST)
+
+        ck.subprocess(code[count], 2008, REPORTYEARLAST, True) if s == "c" else ck.subprocess(code[count], 2008, REPORTYEARLAST)
+
         count += 1
 
 dataList=[]

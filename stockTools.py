@@ -406,44 +406,21 @@ def getStockROE(code, year, quarter):#获取ROE
     else:
         return True, result.roe
 
-def getStockEPS(code, year, quarter):#获取基本EPS
-    sqlString = "select eps from stockreport_"
-    sqlString += "%s" % (year)
-    sqlString += "_"
-    sqlString += "%s" % (quarter)
-    sqlString += " where code="
-    sqlString += code
+def getStockEPS(code, year, quarter):#获取"调整后每股收益"
+
+    sqlString = "select eps_adj from stockreport_sup_{}_{} where code={}".format(year,quarter,code)
     try:
         conn = createDBConnection()
         ret = conn.execute(sqlString)
         result = ret.first()
     except Exception as e:
+        print(code, getStockNameByCode(code), year, u"年", quarter, u"季度", u"stockreport_sup数据表不存在!")
         return False, 0
-    if result is None or result.eps is None:
-        print(code, getStockNameByCode(code), year, u"年", quarter, u"季度", u"stockreport数据库中无此股票!")
+    if result is None or result.eps_adj==sG.sNINF:
+        print(code, getStockNameByCode(code), year, u"年", quarter, u"季度", u"stockreport_sup数据表中无此股票每股收益!")
         return False, 0
     else:
-        return True, result.eps
-
-#有股本数据时，返回当前季度股本；没有股本数据时，返回0.0
-# def getStockCountQuarter(code, year, quarter):
-#     #获取股本
-#     sqlString = "select gb from asset_debt_"
-#     sqlString += "%s" % (year)
-#     sqlString += "_%s where code=" %(quarter)
-#     sqlString += code
-#     try:
-#         conn = createDBConnection()
-#         ret = conn.execute(sqlString)
-#     except Exception as e:
-#         print(code, year, '年',quarter,"季度，获取股本数据,asset_debt数据库访问失败！")
-#         return 0.0
-#     result = ret.first()
-#     if result is None or result.gb is None:
-#         print(code, year, "年",quarter, "季度，asset_debt资产负债表股本数据获取失败！")
-#         return 0.0
-#     else:
-#         return result.gb
+        return True, result.eps_adj
 
 def getDividenTime(code, year):#取得股权登记日，为分红日的前一天
     sqlString = "select dividentime from stockreport_sup_"
@@ -961,7 +938,7 @@ def checkStockShare(code):
     else:
         print(code,name,"stockshare表股本数据已经存在，不需添加！")
 
-def checkStockReport(code, startYear, endYear):#stock_report可从tushare获取，也可从新浪获取;stock_report_sup则只从新浪获取
+def checkStockFinanceReport(code, startYear, endYear):#stock_report可从tushare获取，也可从新浪获取;stock_report_sup则只从新浪获取
     """
 
     :rtype: object
@@ -1067,8 +1044,8 @@ def checkStockReport(code, startYear, endYear):#stock_report可从tushare获取�
                         Qt = len(row.findAll('td'))-1
                     elif findRow(row, u'摊薄每股收益(元)',items): epsavg = getData(items)
                     elif findRow(row, u'加权每股收益(元)', items): epsw = getData(items)
-                    elif findRow(row, u'每股收益_调整后(元)', items): epsadj = getData(items)
                     elif findRow(row, u'扣除非经常性损益后的每股收益(元)', items): epsdiscount = getData(items)
+                    elif findRow(row, u'每股收益_调整后(元)', items): epsadj = getData(items)
                     elif findRow(row, u'每股净资产_调整前(元)', items): bvps_bfadj = getData(items)
                     elif findRow(row, u'每股净资产_调整后(元)', items): bvps_adj = getData(items)
                     elif findRow(row, u'每股经营性现金流(元)', items): epcf = getData(items)
@@ -1077,8 +1054,7 @@ def checkStockReport(code, startYear, endYear):#stock_report可从tushare获取�
                     elif findRow(row, u'销售毛利率(%)', items): gpr = getData(items)
                     elif findRow(row, u'净资产收益率(%)', items): roe = getData(items)
                     elif findRow(row, u'加权净资产收益率(%)', items): roew = getData(items)
-                    elif findRow(row, u'扣除非经常性损益后的净利润(元)', items):
-                        net_profits_discount = [d/10**4 for d in getData(items)]
+                    elif findRow(row, u'扣除非经常性损益后的净利润(元)', items): net_profits_discount = getData(items)
                     elif findRow(row, u'净利润增长率(%)', items): profits_yoy = getData(items)
                 if bDataExit.count(False)>0:
                 #将获取的数据插入数据表stock_report
@@ -1108,6 +1084,10 @@ def checkStockReport(code, startYear, endYear):#stock_report可从tushare获取�
                 if bDataSupExist.count(False)>0:
                     for i in range(1,Qt+1):
                         if bDataSupExist[i-1]==False:#数据有缺失时，由前代码的逻辑必然数据表存在
+                            if epsdiscount[Qt-i]==-sG.sNINF:#1、3季度扣非每股收益没有找到，需要自己计算
+                                d = 30 if i in (2,3) else 31
+                                share = getStockShare(code, year, i*3, d)
+                                epsdiscount[Qt-i] = net_profits_discount[Qt-i]/share
                             sqlString = "insert into stockreport_sup_"
                             sqlString += "%s" % (year)
                             sqlString += "_%s" % (i)

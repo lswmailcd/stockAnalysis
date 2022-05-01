@@ -10,29 +10,32 @@ import xlwt
 import stockTools as sT
 import logRecoder as log
 
-def subprocess(code, sYear, eYear):
-    print("*******checking reports*******")
-    try:
-        sT.checkStockReport(code, sYear, eYear)
-    except Exception as e:
-        print(e)
-    print("*******checking asset_debt*******")
-    try:
-        sT.checkStockAssetDebt(code, sYear, eYear)
-    except Exception as e:
-        print(e)
-    print("*******checking distrib*******")
-    try:
-        sT.checkDistrib(code, sYear, eYear)
-    except Exception as e:
-        print(e)
-    print("*******checking share*******")
-    try:
-        sT.checkStockShare(code)
-    except Exception as e:
-        print(e)
+def subprocess(code, sYear, eYear, bOptCheck=False):
+    print('*'*10+'checking START'+'*'*10)
+    #alway check when called, must check before checkStockFinanceReport()
+    sT.checkStockPrice(code, sT.getDateString(sYear, 1, 1), sT.getDateString(eYear, 12, 31))
+    sT.checkStockShare(code)
 
-    print("*******checking DONE*******")
+    if bOptCheck:
+        print("*******checking financial reports*******")
+        try:
+            sT.checkStockFinanceReport(code, sYear, eYear)
+        except Exception as e:
+            print(e)
+        print("*******checking asset&debt reports*******")
+        try:
+            sT.checkStockAssetDebt(code, sYear, eYear)
+        except Exception as e:
+            print(e)
+        print("*******checking distrib reports*******")
+        try:
+            sT.checkDistrib(code, sYear, eYear)
+        except Exception as e:
+            print(e)
+
+
+
+    print('*'*10+'checking DONE'+'*'*10)
 
 def process(STARTYEAR, ENDYEAR, FileName):
     s = "\n*******************stockDataChecker开始检查......*******************\n"

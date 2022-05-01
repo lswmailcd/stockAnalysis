@@ -4,6 +4,7 @@ import os
 import numpy as np
 import tushare as ts
 import stockTools as sT
+import stockDataChecker as ck
 import xlrd
 import xlwt
 import time
@@ -15,7 +16,7 @@ import matplotlib.pyplot as plt
 style_percent = xlwt.easyxf(num_format_str='0.00%')
 style_finance = xlwt.easyxf(num_format_str='￥#,##0.00')
 
-enddate = "2022-04-22"#time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
+enddate = time.strftime('%Y-%m-%d', time.localtime(time.time())) #统计结束时间为当前时间
 ENDYEAR, ENDMONTH, ENDDAY = sT.splitDateString(enddate)
 ENDYEAR, ENDMONTH, ENDDAY = sT.createCalender().getWorkdayForward(ENDYEAR, ENDMONTH, ENDDAY) #得到交易日
 enddate = sT.getDateString(ENDYEAR, ENDMONTH, ENDDAY)
@@ -60,9 +61,7 @@ for i in range(nrows):
                 print( code[i], name[i], u"上市时间不详!")
                 exit(1)
 
-            sT.checkStockPrice(code[i], sT.getDateString(STARTYEAR, STARTMONTH, STARTDAY), \
-                               sT.getDateString(ENDYEAR, ENDMONTH, ENDDAY))
-            sT.checkStockShare(code[i])
+            ck.subprocess(code[i], STARTYEAR, ENDYEAR)
 
 print()
 percentList=[]
@@ -106,9 +105,9 @@ for startdate, enddate in zip(startdateList,endateList):
 title="{}至{}股票组合下降趋势统计图".format(endateList[0], endateList[-1])
 yScale = 10
 xList = [x[0] for x in percentList]
-yList=[[x[1]for x in percentList], [x[2]for x in percentList]]
+yList=[[x[2]for x in percentList], [x[1]for x in percentList]]
 #print(yList[0])
-name=["下降趋势结束(>60天不创新低)股票占比","两周内(<15天)创新低股票占比"]
+name=["两周内(<15天)创新低股票占比","下降趋势结束(>60天不创新低)股票占比"]
 g.drawRateChat(xList, yList, name, title)
 
 
