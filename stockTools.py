@@ -362,7 +362,7 @@ def getStockEPSdiscount(code, year, quarter):#获取扣非EPS
             print(code, getStockNameByCode(code), year, u"年", quarter, u"季度", u"stockreport_sup数据库中无此股票DiscountEPS信息!")
             return False, sG.sNINF
         else:#通过扣非利润计算每股扣非，并填空eps_discount列
-            EPSdiscount = result.net_profits_discount / result1.gb
+            EPSdiscount = result.net_profits_discount / (result1.gb*1e4)
             sqlString = "update stockreport_sup_"
             sqlString += "%s" % (year)
             sqlString += "_"
@@ -459,7 +459,7 @@ def getDistrib(code, year):
         money, stock = parseDistrib(result.distrib)
         return True, money, stock
 
-def getStockShare(code, *d):
+def getStockShare(code, *d):#数据库中股本单位为“万股”，返回数据为计算方便，将转为“股”为单位返回
     n=len(d)
     if n==3:
         date = getDateString(d[0],d[1],d[2])
@@ -478,7 +478,7 @@ def getStockShare(code, *d):
     if ret:
         r = ret.first()
         if r:
-            return r.sharetotal
+            return r.sharetotal*1e4
     return 0.0
 
 # def getStockCount(code, dORy, month=0, day=0):

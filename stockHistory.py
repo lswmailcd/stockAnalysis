@@ -14,7 +14,7 @@ import stockDataChecker as ck
 code = "300003"
 REPORTYEARLAST = 2021 #最新年报时间
 
-YEARSTART = REPORTYEARLAST-9#统计时间十年
+YEARSTART = REPORTYEARLAST-10
 DATA2WATCH =[]#指定观察时间点
 #贵州茅台["2018-06-12","2015-05-25","2012-07-13"]
 #五粮液["2018-01-15","2015-06-08","2007-10-15"]
@@ -46,8 +46,8 @@ YEARList = []
 PEList = []
 PEDiscList = []
 PriceList = []
-EPSTTMList=[]
-EPSTTMdiscountList=[]
+ETTMList=[]
+ETTMdiscountList=[]
 earnList = []
 roeList = []
 EPS=0.0
@@ -60,10 +60,10 @@ for year in range(YEARSTART, y+1):
     YEARList.append(year)
     foundData, EPS = sT.getStockEPSTTM(code, year, 4)
     if foundData:
-        EPSTTMList.append((year, 12, EPS))
-        _, epsdic = sT.getStockEPSdiscountTTM(code, year, 4)
-        EPSTTMdiscountList.append((year, 12, epsdic))
         totalStock = sT.getStockShare(code, year, 12, 31)  # 得到总市值
+        ETTMList.append((year, 12, EPS*totalStock))
+        _, epsdic = sT.getStockEPSdiscountTTM(code, year, 4)
+        ETTMdiscountList.append((year, 12, epsdic*totalStock))
         found, earnRate = sT.getStockEarnIncRate(code, year, 4)
         earnList.append((year, 12, earnRate)) if found else earnList.append((year, 12, 0.0))
         _, roe = sT.getStockROE(code, year, 4)
@@ -74,21 +74,21 @@ for year in range(YEARSTART, y+1):
         #epsTTM = 当年3季报eps+去年4季报eps-去年3季报eps
         foundData, EPS = sT.getStockEPSTTM( code, year, 3 )
         if foundData:
-            EPSTTMList.append((year, 12, EPS))
             totalStock = sT.getStockShare(code, year, 12, 31)  # 得到总市值
+            ETTMList.append((year, 12, EPS*totalStock))
             _, earnRate = sT.getStockEarnIncRate(code, year, 3)
             earnList.append((year, 12, earnRate))
             _, disEPS = sT.getStockEPSdiscountTTM(code, year, 3)
-            EPSTTMdiscountList.append((year, 12, disEPS))
+            ETTMdiscountList.append((year, 12, disEPS*totalStock))
         else:
             strInfo = "%s" % (code) + name + "%s" % (year) + "年3季度,数据库中无此股票EPS!epsTTM = 当年2季报eps+去年4季报eps-去年2季报eps"
             # epsTTM = 当年2季报eps+去年4季报eps-去年2季报eps
             foundData, EPS = sT.getStockEPSTTM(code, year, 2)
             if foundData:
-                EPSTTMList.append((year, 9, EPS))
-                _, disEPS = sT.getStockEPSdiscountTTM(code, year, 2)
-                EPSTTMdiscountList.append((year, 9, disEPS))
                 totalStock = sT.getStockShare(code, year, 9, 30)  # 得到总市值
+                ETTMList.append((year, 9, EPS*totalStock))
+                _, disEPS = sT.getStockEPSdiscountTTM(code, year, 2)
+                ETTMdiscountList.append((year, 9, disEPS*totalStock))
                 _, earnRate = sT.getStockEarnIncRate(code, year, 2)
                 earnList.append((year, 9, earnRate))
             else:
@@ -96,10 +96,10 @@ for year in range(YEARSTART, y+1):
                 # epsTTM = 当年1季报eps+去年4季报eps-去年1季报eps
                 foundData, EPS = sT.getStockEPSTTM(code, year, 1)
                 if foundData:
-                    EPSTTMList.append((year, 6, EPS))
-                    _, disEPS = sT.getStockEPSdiscountTTM(code, year, 1)
-                    EPSTTMdiscountList.append((year, 6, disEPS))
                     totalStock = sT.getStockShare(code, year, 6, 30)  # 得到总市值
+                    ETTMList.append((year, 6, EPS*totalStock))
+                    _, disEPS = sT.getStockEPSdiscountTTM(code, year, 1)
+                    ETTMdiscountList.append((year, 6, disEPS*totalStock))
                     _, earnRate = sT.getStockEarnIncRate(code, year, 1)
                     earnList.append((year, 6, earnRate))
                 else:
@@ -108,17 +108,17 @@ for year in range(YEARSTART, y+1):
                     foundData, EPS = sT.getStockEPSTTM(code, year-1, 4)
                     earnList.append((year, 3, 0.0))
                     if foundData:
-                        EPSTTMList.append((year, 3, EPS))
-                        EPSTTMdiscountList.append((year, 3, 0.0))
                         totalStock = sT.getStockShare(code, year, 3, 31)  # 得到总市值
+                        ETTMList.append((year, 3, EPS*totalStock))
+                        ETTMdiscountList.append((year, 3, 0.0))
                     else:
                         strInfo = "%s," % (code) + name + "%s" % (year-1) + "年4季度, 数据库中无此股票EPS!采用去年3季报eps+前年4季报eps-前年3季报eps"
                         # epsTTM = 去年3季报eps+前年4季报eps-前年3季报eps
                         foundData, EPS = sT.getStockEPSTTM(code, year - 1, 3)
-                        EPSTTMList.append((year - 1, 12, EPS))
-                        _, epsdic = sT.getStockEPSdiscountTTM(code, year - 1, 3)
-                        EPSTTMdiscountList.append((year-1, 12, epsdic))
                         totalStock = sT.getStockShare(code, year-1, 12, 31)  # 得到总市值
+                        ETTMList.append((year - 1, 12, EPS*totalStock))
+                        _, epsdic = sT.getStockEPSdiscountTTM(code, year - 1, 3)
+                        ETTMdiscountList.append((year-1, 12, epsdic*totalStock))
 
     # EPSTTMList.append(EPS)
     # EPSTTMdiscountList.append(epsdic)
@@ -132,8 +132,7 @@ for year in range(YEARSTART, y+1):
     PEDiscList.append(0 if epsdic<=0 else closePrice / epsdic)
     PriceList.append(closePrice * totalStock)  # 得到当年总市值
     print( sT.getDateString(year,m2,d2),",BasicPETTM=",PEList[-1],", ","discountPETTM=",PEDiscList[-1],\
-                           "stockshare=",totalStock,"priceTotal=", round(PriceList[-1]/10**4,2), ",EPSTTM=",EPS,\
-                           ",EPSDicountTTM=",epsdic)
+                           "stockshare=",totalStock,"priceTotal=", round(PriceList[-1]/10**8,2) )
     drawPE = PEList[-1]
     for dt in DATA2WATCH:
         y1,m1,d1=sT.splitDateString(dt)
@@ -166,23 +165,27 @@ for year in range(YEARSTART, y+1):
                     PriceList.append(closePrice * totalStock)
                     PEList.append(closePrice / EPSTTM)
                     PEDiscList.append(closePrice / EPSdiscountTTM)
+                ETTMList.append((y1, m1, EPSTTM*totalStock))
+                ETTMdiscountList.append((y1, m1, EPSdiscountTTM*totalStock))
                 print( dt, ",BasicPETTM=",PEList[-1],", ","discountPETTM=",PEDiscList[-1],"stockshare=",totalStock,\
-                      ",priceTotal=", round(PriceList[-1]/10**4,2), ",EPSTTM=",EPS, ",EPSDicountTTM=",epsdic)
-                EPSTTMList.append((y1, m1, EPSTTM))
-                EPSTTMdiscountList.append((y1, m1, EPSdiscountTTM))
+                      ",priceTotal=", round(PriceList[-1]/10**8,2) )
 
 for i in range(len(PriceList)):
-    PriceList[i] = PriceList[i]/10**4
+    PriceList[i] = PriceList[i]/10**8
 
-EPSTTMList.sort(key=lambda x:(x[0],x[1]))
-EPSTTMdiscountList.sort(key=lambda x:(x[0],x[1]))
+ETTMList.sort(key=lambda x:(x[0],x[1]))
+ETTMdiscountList.sort(key=lambda x:(x[0],x[1]))
 earnList.sort(key=lambda x:(x[0],x[1]))
 roeList.sort(key=lambda x:(x[0],x[1]))
 
-EPSTTMList = [x[2] for x in EPSTTMList]
-EPSTTMdiscountList = [x[2] for x in EPSTTMdiscountList]
+ETTMList = [x[2] for x in ETTMList]
+ETTMdiscountList = [x[2] for x in ETTMdiscountList]
 earnList = [x[2]/100.0 for x in earnList]
 roeList = [x[2]/100.0 for x in roeList]
+EPSTTMRateList, EPSTTMdiscountRateList = [0.0],[0.0]
+for i in range(1, len(YEARList)):
+    EPSTTMRateList.append( (ETTMList[i]-ETTMList[i-1])/ETTMList[i-1] )
+    EPSTTMdiscountRateList.append((ETTMdiscountList[i] - ETTMdiscountList[i - 1]) / ETTMdiscountList[i - 1])
 
 min = min(PEList)
 max = max(PEList)
@@ -224,10 +227,10 @@ Graph.drawColumnChat( ax[j], YEARList, PEDiscList,YEARList, PEDiscList, u'', u''
 ax[j].axhline(color='cornflowerblue',y=PEDiscList[-1])
 j+=1
 #fig4
-Graph.drawColumnChat( ax[j], YEARList, EPSTTMList,YEARList, EPSTTMList, u'', u'', u'adjustEPS_TTM', fs, 0.5)
+Graph.drawColumnChat( ax[j], YEARList, EPSTTMRateList,YEARList, EPSTTMRateList, u'', u'', u'adjustE_TTM_Rate', fs, 0.5, bPercent=True)
 j+=1
 #fig4
-Graph.drawColumnChat( ax[j], YEARList, EPSTTMdiscountList,YEARList, EPSTTMdiscountList, u'', u'', u'DiscEPS_TTM', fs, 0.5)
+Graph.drawColumnChat( ax[j], YEARList, EPSTTMdiscountRateList,YEARList, EPSTTMdiscountRateList, u'', u'', u'DiscE_TTM_Rate', fs, 0.5, bPercent=True)
 j+=1
 #fig5
 Graph.drawColumnChat( ax[j], YEARList, earnList,YEARList, earnList, u'', u'', u'earnIncRate', fs, 0.5, bPercent=True)
